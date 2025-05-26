@@ -7,14 +7,28 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/s
 const Index = () => {
   console.log('=== INDEX PAGE START ===');
   console.log('Index page rendering...');
-  console.log('About to render ContentSidebar...');
   
+  const renderContentSidebar = () => {
+    try {
+      console.log('=== ATTEMPTING TO RENDER CONTENTSIDEBAR ===');
+      return <ContentSidebar />;
+    } catch (error) {
+      console.error('=== ERROR RENDERING CONTENTSIDEBAR ===', error);
+      return (
+        <div className="w-64 bg-red-100 p-4">
+          <h3 className="text-red-700">Sidebar Error</h3>
+          <p className="text-red-600 text-sm">{String(error)}</p>
+        </div>
+      );
+    }
+  };
+
   try {
     console.log('=== STARTING RETURN BLOCK ===');
     return (
       <SidebarProvider>
         <div className="min-h-screen flex w-full bg-gray-50">
-          <ContentSidebar />
+          {renderContentSidebar()}
           <SidebarInset className="flex-1">
             <Header />
             <div className="flex items-center gap-2 px-4 py-2 border-b bg-white">
