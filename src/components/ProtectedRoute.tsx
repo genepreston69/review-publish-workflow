@@ -23,9 +23,10 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Redirect editors and publishers to admin dashboard if they're on the root path
-  if (location.pathname === '/' && (userRole === 'edit' || userRole === 'publish')) {
-    return <Navigate to="/admin?tab=create-policy" replace />;
+  // Redirect all admin users (editors, publishers, and super-admins) to admin dashboard if they're on the root path
+  if (location.pathname === '/' && (userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin')) {
+    const defaultTab = userRole === 'super-admin' ? 'users' : 'create-policy';
+    return <Navigate to={`/admin?tab=${defaultTab}`} replace />;
   }
 
   return <>{children}</>;
