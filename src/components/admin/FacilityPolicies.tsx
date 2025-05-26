@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +31,25 @@ export function FacilityPolicies() {
         if (error) {
           console.error('Error fetching policies:', error);
         } else {
-          setPolicies(data || []);
+          // Sort policies by policy number
+          const sortedPolicies = (data || []).sort((a, b) => {
+            // Handle null policy numbers by placing them at the end
+            if (!a.policy_number && !b.policy_number) return 0;
+            if (!a.policy_number) return 1;
+            if (!b.policy_number) return -1;
+            
+            // Sort numerically if both are numbers, otherwise alphabetically
+            const aNum = parseFloat(a.policy_number);
+            const bNum = parseFloat(b.policy_number);
+            
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+              return aNum - bNum;
+            }
+            
+            return a.policy_number.localeCompare(b.policy_number);
+          });
+          
+          setPolicies(sortedPolicies);
         }
       } catch (error) {
         console.error('Error fetching policies:', error);
