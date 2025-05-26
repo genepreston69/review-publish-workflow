@@ -36,7 +36,6 @@ interface Policy {
   created_at: string;
 }
 
-// Function to strip HTML tags from text
 const stripHtml = (html: string | null): string => {
   if (!html) return '';
   const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -60,58 +59,27 @@ const getStatusColor = (status: string | null) => {
 };
 
 export function ContentSidebar() {
-  console.log('=== CONTENT SIDEBAR FUNCTION START ===');
+  console.log('=== CONTENT SIDEBAR RENDERING ===');
   
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>('read-only');
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
 
-  // Simplified auth check without useAuth hook
   useEffect(() => {
-    console.log('=== CHECKING AUTH STATE ===');
+    console.log('=== CONTENT SIDEBAR MOUNTED ===');
     
-    const checkAuth = async () => {
+    const fetchPolicies = async () => {
       try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        console.log('=== USER FROM SUPABASE ===', { user, userError });
+        console.log('=== FETCHING POLICIES ===');
+        setIsLoadingPolicies(true);
         
-        if (userError) {
-          console.error('=== AUTH ERROR ===', userError);
-          setAuthError(userError.message);
-          return;
-        }
-
-        if (user) {
-          console.log('=== USER FOUND, FETCHING ROLE ===', user.id);
-          // Simplified role fetch
-          setUserRole('read-only'); // Default for now
-        } else {
-          console.log('=== NO USER FOUND ===');
-          setUserRole(null);
-        }
-      } catch (error) {
-        console.error('=== ERROR IN CHECK AUTH ===', error);
-        setAuthError(String(error));
-      }
-    };
-
-    checkAuth();
-  }, []);
-
-  useEffect(() => {
-    console.log('=== POLICIES USEEFFECT TRIGGERED ===');
-    
-    async function fetchPolicies() {
-      try {
-        console.log('=== STARTING FETCH POLICIES ===');
         const { data, error } = await supabase
           .from('Policies')
           .select('*')
           .eq('status', 'active')
           .order('policy_number', { ascending: true });
 
-        console.log('=== SUPABASE RESPONSE ===', { data, error });
+        console.log('=== POLICIES RESPONSE ===', { data, error });
 
         if (error) {
           console.error('Error fetching policies:', error);
@@ -123,31 +91,17 @@ export function ContentSidebar() {
         console.error('Error in fetchPolicies:', error);
       } finally {
         setIsLoadingPolicies(false);
+        console.log('=== POLICIES LOADING COMPLETE ===');
       }
-    }
+    };
 
     fetchPolicies();
   }, []);
 
-  console.log('Current state:', { userRole, authError, policies: policies.length, isLoadingPolicies });
-
-  if (authError) {
-    console.log('=== RENDERING AUTH ERROR ===');
-    return (
-      <Sidebar className="border-r">
-        <SidebarContent>
-          <div className="p-4 text-red-600">
-            <h3>Auth Error</h3>
-            <p className="text-xs">{authError}</p>
-          </div>
-        </SidebarContent>
-      </Sidebar>
-    );
-  }
+  console.log('=== SIDEBAR RENDER STATE ===', { userRole, policies: policies.length, isLoadingPolicies });
 
   const canCreateContent = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
-  // Main navigation items
   const navigationItems = [
     {
       title: "Dashboard",
@@ -160,8 +114,6 @@ export function ContentSidebar() {
       isActive: false,
     }] : []),
   ];
-
-  console.log('=== ABOUT TO RENDER SIDEBAR ===');
 
   return (
     <Sidebar className="border-r">
@@ -176,7 +128,6 @@ export function ContentSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Navigation */}
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -193,7 +144,6 @@ export function ContentSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Facility Policies */}
         <SidebarGroup className="flex-1">
           <SidebarGroupLabel className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
