@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import {
   Sidebar,
   SidebarContent,
@@ -61,12 +62,13 @@ const getStatusColor = (status: string | null) => {
 export function ContentSidebar() {
   console.log('=== CONTENT SIDEBAR RENDERING ===');
   
-  const [userRole] = useState<string | null>('read-only');
+  const { userRole } = useAuth();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
 
   useEffect(() => {
     console.log('=== CONTENT SIDEBAR USEEFFECT RUNNING ===');
+    console.log('=== USER ROLE FROM AUTH ===', userRole);
     
     const fetchPolicies = async () => {
       try {
