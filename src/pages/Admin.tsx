@@ -9,12 +9,13 @@ import { UserManagement } from '@/components/admin/UserManagement';
 import { AssignmentManagement } from '@/components/admin/AssignmentManagement';
 import { SystemAnalytics } from '@/components/admin/SystemAnalytics';
 import { ContentModeration } from '@/components/admin/ContentModeration';
+import { FacilityPolicies } from '@/components/admin/FacilityPolicies';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { Shield, Users, Link, BarChart3, FileText } from 'lucide-react';
 
 const Admin = () => {
   const { userRole, isLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState('directors-report');
+  const [activeTab, setActiveTab] = useState('facility-policies');
 
   if (isLoading) {
     return (
@@ -50,9 +51,9 @@ const Admin = () => {
           <div className="flex-1 p-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-5 mb-8">
-                <TabsTrigger value="directors-report" className="flex items-center gap-2">
+                <TabsTrigger value="facility-policies" className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
-                  Director's Report
+                  Facility Policies
                 </TabsTrigger>
                 <TabsTrigger value="users" className="flex items-center gap-2">
                   <Users className="w-4 h-4" />
@@ -72,15 +73,8 @@ const Admin = () => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="directors-report">
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold">Director's Report</h2>
-                  </div>
-                  <div className="bg-white p-6 rounded-lg shadow">
-                    <p className="text-gray-600">Director's report content will be displayed here.</p>
-                  </div>
-                </div>
+              <TabsContent value="facility-policies">
+                <FacilityPolicies />
               </TabsContent>
 
               <TabsContent value="users">

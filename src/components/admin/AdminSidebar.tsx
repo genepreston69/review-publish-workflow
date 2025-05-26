@@ -15,9 +15,9 @@ import { Shield, FileText, Users, Link, BarChart3, Settings } from 'lucide-react
 
 const menuItems = [
   {
-    title: "Director's Report",
+    title: "Facility Policies",
     icon: FileText,
-    tabValue: "directors-report",
+    tabValue: "facility-policies",
   },
 ];
 
