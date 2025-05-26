@@ -14,7 +14,7 @@ import { Shield, Users, Link, BarChart3, FileText } from 'lucide-react';
 
 const Admin = () => {
   const { userRole, isLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState('users');
+  const [activeTab, setActiveTab] = useState('directors-report');
 
   if (isLoading) {
     return (
@@ -49,7 +49,11 @@ const Admin = () => {
           
           <div className="flex-1 p-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 mb-8">
+              <TabsList className="grid w-full grid-cols-5 mb-8">
+                <TabsTrigger value="directors-report" className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Director's Report
+                </TabsTrigger>
                 <TabsTrigger value="users" className="flex items-center gap-2">
                   <Users className="w-4 h-4" />
                   User Management
@@ -67,6 +71,17 @@ const Admin = () => {
                   Content Moderation
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="directors-report">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold">Director's Report</h2>
+                  </div>
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <p className="text-gray-600">Director's report content will be displayed here.</p>
+                  </div>
+                </div>
+              </TabsContent>
 
               <TabsContent value="users">
                 <UserManagement />
