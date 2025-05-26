@@ -61,10 +61,14 @@ const Admin = () => {
 
   // Calculate grid columns based on visible tabs
   const getTabsGridCols = () => {
+    if (isSuperAdmin) {
+      // For super admin: Create Policy + Users + Assignments + Analytics = 4 tabs
+      return 'grid-cols-4';
+    }
+    
     let cols = 2; // Create Policy + Facility Policies
     if (isEditor) cols += 1; // Draft Policies
     if (canPublish && !isEditor) cols += 1; // Review Policies
-    if (isSuperAdmin) cols += 4; // Admin tabs
     return `grid-cols-${cols}`;
   };
 
@@ -155,14 +159,6 @@ const Admin = () => {
                     <Plus className="w-4 h-4" />
                     Create Policy
                   </TabsTrigger>
-                  <TabsTrigger value="review-policies" className="flex items-center gap-2">
-                    <FileCheck className="w-4 h-4" />
-                    Review Policies
-                  </TabsTrigger>
-                  <TabsTrigger value="facility-policies" className="flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
-                    Facility Policies
-                  </TabsTrigger>
                   <TabsTrigger value="users" className="flex items-center gap-2">
                     <Users className="w-4 h-4" />
                     User Management
@@ -174,10 +170,6 @@ const Admin = () => {
                   <TabsTrigger value="analytics" className="flex items-center gap-2">
                     <BarChart3 className="w-4 h-4" />
                     Analytics
-                  </TabsTrigger>
-                  <TabsTrigger value="moderation" className="flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
-                    Content Moderation
                   </TabsTrigger>
                 </TabsList>
               ) : (
