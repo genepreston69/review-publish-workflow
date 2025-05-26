@@ -21,9 +21,10 @@ interface PolicyListProps {
   isEditor: boolean;
   canPublish: boolean;
   onUpdateStatus: (policyId: string, newStatus: string) => void;
+  onDelete?: (policyId: string) => void;
 }
 
-export function PolicyList({ policies, isLoading, isEditor, canPublish, onUpdateStatus }: PolicyListProps) {
+export function PolicyList({ policies, isLoading, isEditor, canPublish, onUpdateStatus, onDelete }: PolicyListProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -60,6 +61,7 @@ export function PolicyList({ policies, isLoading, isEditor, canPublish, onUpdate
           policy={policy}
           canPublish={canPublish}
           onUpdateStatus={onUpdateStatus}
+          onDelete={onDelete}
         />
       ))}
     </div>

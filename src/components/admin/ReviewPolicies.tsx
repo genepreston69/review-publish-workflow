@@ -5,7 +5,7 @@ import { usePolicies } from './policy/usePolicies';
 
 export function ReviewPolicies() {
   const { userRole } = useAuth();
-  const { policies, isLoadingPolicies, updatePolicyStatus } = usePolicies();
+  const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, isSuperAdmin } = usePolicies();
 
   // Filter to show policies that need review
   const reviewPolicies = policies.filter(policy => 
@@ -44,6 +44,7 @@ export function ReviewPolicies() {
         isEditor={false}
         canPublish={true}
         onUpdateStatus={updatePolicyStatus}
+        onDelete={isSuperAdmin ? deletePolicy : undefined}
       />
     </div>
   );

@@ -24,6 +24,7 @@ export function usePolicies() {
 
   const isEditor = userRole === 'edit';
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
+  const isSuperAdmin = userRole === 'super-admin';
 
   useEffect(() => {
     async function fetchPolicies() {
@@ -87,6 +88,41 @@ export function usePolicies() {
     }
   };
 
+  const deletePolicy = async (policyId: string) => {
+    if (!isSuperAdmin) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Only super admins can delete policies.",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('Policies')
+        .delete()
+        .eq('id', policyId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Policy deleted successfully.",
+      });
+
+      // Remove from local state
+      setPolicies(prev => prev.filter(p => p.id !== policyId));
+    } catch (error) {
+      console.error('Error deleting policy:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete policy.",
+      });
+    }
+  };
+
   const addPolicy = (newPolicy: Policy) => {
     setPolicies(prev => [newPolicy, ...prev]);
   };
@@ -95,8 +131,10 @@ export function usePolicies() {
     policies,
     isLoadingPolicies,
     updatePolicyStatus,
+    deletePolicy,
     addPolicy,
     isEditor,
-    canPublish
+    canPublish,
+    isSuperAdmin
   };
 }

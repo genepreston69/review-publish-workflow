@@ -5,7 +5,7 @@ import { usePolicies } from './policy/usePolicies';
 
 export function DraftPolicies() {
   const { userRole } = useAuth();
-  const { policies, isLoadingPolicies, updatePolicyStatus } = usePolicies();
+  const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, isSuperAdmin } = usePolicies();
 
   // Filter to show only draft policies for the current user
   const draftPolicies = policies.filter(policy => policy.status === 'draft');
@@ -40,6 +40,7 @@ export function DraftPolicies() {
         isEditor={true}
         canPublish={false}
         onUpdateStatus={updatePolicyStatus}
+        onDelete={isSuperAdmin ? deletePolicy : undefined}
       />
     </div>
   );

@@ -2,7 +2,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, User, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, User, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Policy {
   id: string;
@@ -20,6 +21,7 @@ interface PolicyCardProps {
   policy: Policy;
   canPublish: boolean;
   onUpdateStatus: (policyId: string, newStatus: string) => void;
+  onDelete?: (policyId: string) => void;
 }
 
 // Function to strip HTML tags from text
@@ -45,7 +47,10 @@ const getStatusColor = (status: string | null) => {
   }
 };
 
-export function PolicyCard({ policy, canPublish, onUpdateStatus }: PolicyCardProps) {
+export function PolicyCard({ policy, canPublish, onUpdateStatus, onDelete }: PolicyCardProps) {
+  const { userRole } = useAuth();
+  const isSuperAdmin = userRole === 'super-admin';
+
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader>
@@ -94,28 +99,44 @@ export function PolicyCard({ policy, canPublish, onUpdateStatus }: PolicyCardPro
             </div>
           </div>
 
-          {/* Publisher Actions */}
-          {canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') && (
-            <div className="flex gap-2 pt-3 border-t">
+          {/* Action buttons */}
+          <div className="pt-3 border-t space-y-2">
+            {/* Publisher Actions */}
+            {canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') && (
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => onUpdateStatus(policy.id, 'active')}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-xs"
+                >
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Publish
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onUpdateStatus(policy.id, 'archived')}
+                  className="flex-1 border-red-300 text-red-600 hover:bg-red-50 text-xs"
+                >
+                  <XCircle className="w-3 h-3 mr-1" />
+                  Reject
+                </Button>
+              </div>
+            )}
+
+            {/* Super Admin Delete Action */}
+            {isSuperAdmin && onDelete && (
               <Button
                 size="sm"
-                onClick={() => onUpdateStatus(policy.id, 'active')}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-xs"
+                variant="destructive"
+                onClick={() => onDelete(policy.id)}
+                className="w-full text-xs"
               >
-                <CheckCircle className="w-3 h-3 mr-1" />
-                Publish
+                <Trash2 className="w-3 h-3 mr-1" />
+                Delete Policy
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onUpdateStatus(policy.id, 'archived')}
-                className="flex-1 border-red-300 text-red-600 hover:bg-red-50 text-xs"
-              >
-                <XCircle className="w-3 h-3 mr-1" />
-                Reject
-              </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { FileText, Calendar, User, CheckCircle, XCircle } from 'lucide-react';
+import { FileText, Calendar, User, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 
 interface Policy {
   id: string;
@@ -34,52 +34,53 @@ export function FacilityPolicies() {
   const { toast } = useToast();
 
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
+  const isSuperAdmin = userRole === 'super-admin';
 
   useEffect(() => {
-    async function fetchPolicies() {
-      try {
-        const { data, error } = await supabase
-          .from('Policies')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('Error fetching policies:', error);
-        } else {
-          // Sort policies by policy number
-          const sortedPolicies = (data || []).sort((a, b) => {
-            // Handle null policy numbers by placing them at the end
-            if (!a.policy_number && !b.policy_number) return 0;
-            if (!a.policy_number) return 1;
-            if (!b.policy_number) return -1;
-            
-            // Sort numerically if both are numbers, otherwise alphabetically
-            const aNum = parseFloat(a.policy_number);
-            const bNum = parseFloat(b.policy_number);
-            
-            if (!isNaN(aNum) && !isNaN(bNum)) {
-              return aNum - bNum;
-            }
-            
-            return a.policy_number.localeCompare(b.policy_number);
-          });
-          
-          setPolicies(sortedPolicies);
-        }
-      } catch (error) {
-        console.error('Error fetching policies:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load policies.",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
     fetchPolicies();
   }, [toast]);
+
+  const fetchPolicies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('Policies')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching policies:', error);
+      } else {
+        // Sort policies by policy number
+        const sortedPolicies = (data || []).sort((a, b) => {
+          // Handle null policy numbers by placing them at the end
+          if (!a.policy_number && !b.policy_number) return 0;
+          if (!a.policy_number) return 1;
+          if (!b.policy_number) return -1;
+          
+          // Sort numerically if both are numbers, otherwise alphabetically
+          const aNum = parseFloat(a.policy_number);
+          const bNum = parseFloat(b.policy_number);
+          
+          if (!isNaN(aNum) && !isNaN(bNum)) {
+            return aNum - bNum;
+          }
+          
+          return a.policy_number.localeCompare(b.policy_number);
+        });
+        
+        setPolicies(sortedPolicies);
+      }
+    } catch (error) {
+      console.error('Error fetching policies:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load policies.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const updatePolicyStatus = async (policyId: string, newStatus: string) => {
     try {
@@ -96,20 +97,48 @@ export function FacilityPolicies() {
       });
 
       // Refresh policies
-      const { data } = await supabase
-        .from('Policies')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (data) {
-        setPolicies(data);
-      }
+      fetchPolicies();
     } catch (error) {
       console.error('Error updating policy status:', error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to update policy status.",
+      });
+    }
+  };
+
+  const deletePolicy = async (policyId: string) => {
+    if (!isSuperAdmin) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Only super admins can delete policies.",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('Policies')
+        .delete()
+        .eq('id', policyId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Policy deleted successfully.",
+      });
+
+      // Refresh policies
+      fetchPolicies();
+    } catch (error) {
+      console.error('Error deleting policy:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete policy.",
       });
     }
   };
@@ -218,28 +247,44 @@ export function FacilityPolicies() {
                     </div>
                   </div>
 
-                  {/* Publisher Actions */}
-                  {canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') && (
-                    <div className="flex gap-2 pt-3 border-t">
+                  {/* Action buttons */}
+                  <div className="pt-3 border-t space-y-2">
+                    {/* Publisher Actions */}
+                    {canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') && (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => updatePolicyStatus(policy.id, 'active')}
+                          className="flex-1 bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Publish
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updatePolicyStatus(policy.id, 'archived')}
+                          className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                        >
+                          <XCircle className="w-3 h-3 mr-1" />
+                          Reject
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Super Admin Delete Action */}
+                    {isSuperAdmin && (
                       <Button
                         size="sm"
-                        onClick={() => updatePolicyStatus(policy.id, 'active')}
-                        className="flex-1 bg-green-600 hover:bg-green-700"
+                        variant="destructive"
+                        onClick={() => deletePolicy(policy.id)}
+                        className="w-full"
                       >
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Publish
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        Delete Policy
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updatePolicyStatus(policy.id, 'archived')}
-                        className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
-                      >
-                        <XCircle className="w-3 h-3 mr-1" />
-                        Reject
-                      </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
