@@ -38,7 +38,14 @@ export function CreatePolicy() {
   const generatedPolicyNumber = usePolicyNumberGeneration(selectedPolicyType);
 
   const onSubmit = async (data: PolicyFormValues) => {
+    console.log('=== FORM SUBMISSION STARTED ===');
+    console.log('Form data:', data);
+    console.log('Current user:', currentUser);
+    console.log('User role:', userRole);
+    console.log('Generated policy number:', generatedPolicyNumber);
+
     if (!currentUser || !hasEditAccess) {
+      console.log('=== ACCESS DENIED ===');
       toast({
         variant: "destructive",
         title: "Access Denied",
@@ -48,6 +55,7 @@ export function CreatePolicy() {
     }
 
     if (!generatedPolicyNumber) {
+      console.log('=== NO POLICY NUMBER ===');
       toast({
         variant: "destructive",
         title: "Error",
@@ -63,33 +71,44 @@ export function CreatePolicy() {
       // For publishers and super-admins, create as under review
       const status = userRole === 'edit' ? 'draft' : 'under-review';
 
-      const { error } = await supabase
-        .from('Policies')
-        .insert({
-          name: data.name,
-          policy_type: data.policy_type,
-          purpose: data.purpose,
-          procedure: data.procedure,
-          policy_text: data.policy_text,
-          policy_number: generatedPolicyNumber,
-          status,
-          reviewer: currentUser.email,
-        });
+      console.log('=== INSERTING POLICY ===');
+      const policyData = {
+        name: data.name,
+        policy_type: data.policy_type,
+        purpose: data.purpose,
+        procedure: data.procedure,
+        policy_text: data.policy_text,
+        policy_number: generatedPolicyNumber,
+        status,
+        reviewer: currentUser.email,
+      };
+      console.log('Policy data to insert:', policyData);
 
-      if (error) throw error;
+      const { data: insertedData, error } = await supabase
+        .from('Policies')
+        .insert(policyData)
+        .select();
+
+      if (error) {
+        console.error('=== SUPABASE ERROR ===', error);
+        throw error;
+      }
+
+      console.log('=== POLICY CREATED SUCCESSFULLY ===', insertedData);
 
       toast({
         title: "Success",
         description: `Policy created successfully with number ${generatedPolicyNumber}.`,
       });
 
+      // Reset the form
       form.reset();
     } catch (error) {
-      console.error('Error creating policy:', error);
+      console.error('=== ERROR CREATING POLICY ===', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to create policy. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to create policy. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -109,6 +128,17 @@ export function CreatePolicy() {
       </Card>
     );
   }
+
+  // Check form validation state
+  const formErrors = form.formState.errors;
+  const isFormValid = Object.keys(formErrors).length === 0;
+  console.log('=== FORM STATE ===', {
+    errors: formErrors,
+    isValid: isFormValid,
+    isDirty: form.formState.isDirty,
+    isSubmitting,
+    generatedPolicyNumber
+  });
 
   return (
     <div className="space-y-6">
