@@ -6,11 +6,11 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/s
 
 const Index = () => {
   console.log('Index page rendering...');
+  console.log('About to render ContentSidebar...');
   
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-50">
-        {console.log('About to render ContentSidebar...')}
         <ContentSidebar />
         <SidebarInset className="flex-1">
           <Header />
