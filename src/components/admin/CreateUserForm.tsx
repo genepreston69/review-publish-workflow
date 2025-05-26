@@ -40,28 +40,49 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
     setIsLoading(true);
 
     try {
-      // Create the user using Supabase Admin API
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      console.log('Creating user with signup method:', formData.email);
+      
+      // Create the user using regular signup
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        user_metadata: {
-          name: formData.name
-        },
-        email_confirm: true // Auto-confirm email for admin-created users
+        options: {
+          data: {
+            name: formData.name
+          }
+        }
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error('Auth signup error:', authError);
+        throw authError;
+      }
 
       if (authData.user) {
-        // The user profile will be created automatically by the trigger
-        // Now we need to update the role if it's not read-only (which is the default)
+        console.log('User created successfully:', authData.user.id);
+        
+        // Wait a moment for the profile to be created by the trigger
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Update the user role if it's not read-only (which is the default)
         if (formData.role !== 'read-only') {
+          console.log('Updating user role to:', formData.role);
           const { error: roleError } = await supabase
             .from('user_roles')
             .update({ role: formData.role })
             .eq('user_id', authData.user.id);
 
-          if (roleError) throw roleError;
+          if (roleError) {
+            console.error('Role update error:', roleError);
+            // Don't throw here, as the user was created successfully
+            toast({
+              variant: "destructive",
+              title: "Warning",
+              description: "User created but role assignment failed. Please update manually.",
+            });
+          } else {
+            console.log('Role updated successfully');
+          }
         }
 
         toast({
@@ -79,12 +100,23 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         setOpen(false);
         onUserCreated();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating user:', error);
+      
+      let errorMessage = "Failed to create user. Please try again.";
+      
+      if (error.message?.includes('User already registered')) {
+        errorMessage = "A user with this email address already exists.";
+      } else if (error.message?.includes('Password')) {
+        errorMessage = "Password must be at least 6 characters long.";
+      } else if (error.message?.includes('Email')) {
+        errorMessage = "Please provide a valid email address.";
+      }
+      
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to create user. Please try again.",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -129,14 +161,15 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Temporary Password *</Label>
+            <Label htmlFor="password">Password *</Label>
             <Input
               id="password"
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              placeholder="Enter temporary password"
+              placeholder="Enter password (min 6 characters)"
               required
+              minLength={6}
             />
           </div>
 
