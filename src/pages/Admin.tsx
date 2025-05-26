@@ -15,6 +15,7 @@ import { Shield, Users, Link, BarChart3, FileText, FileCheck } from 'lucide-reac
 
 const Admin = () => {
   const { userRole, isLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState('users');
 
   if (isLoading) {
     return (
@@ -29,10 +30,14 @@ const Admin = () => {
     return <Navigate to="/" replace />;
   }
 
+  const handleTabChange = (tabValue: string) => {
+    setActiveTab(tabValue);
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <AdminSidebar />
+        <AdminSidebar onTabChange={handleTabChange} activeTab={activeTab} />
         <SidebarInset className="flex-1">
           <Header />
           <div className="flex items-center gap-2 px-4 py-2 border-b">
@@ -44,7 +49,7 @@ const Admin = () => {
           </div>
           
           <div className="flex-1 p-6">
-            <Tabs defaultValue="users" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-5 mb-8">
                 <TabsTrigger value="users" className="flex items-center gap-2">
                   <Users className="w-4 h-4" />

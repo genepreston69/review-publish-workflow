@@ -1,3 +1,4 @@
+
 import {
   Sidebar,
   SidebarContent,
@@ -16,12 +17,12 @@ const menuItems = [
   {
     title: "Director's Report",
     icon: FileText,
-    url: "#directors-report",
+    tabValue: "directors-report",
   },
   {
     title: "Facility Policies",
     icon: FileCheck,
-    url: "#facility-policies",
+    tabValue: "policies",
   },
 ];
 
@@ -29,26 +30,31 @@ const adminItems = [
   {
     title: "User Management",
     icon: Users,
-    url: "#user-management",
+    tabValue: "users",
   },
   {
     title: "Assignments",
     icon: Link,
-    url: "#assignments",
+    tabValue: "assignments",
   },
   {
     title: "Analytics",
     icon: BarChart3,
-    url: "#analytics",
+    tabValue: "analytics",
   },
   {
     title: "Content Moderation",
     icon: FileText,
-    url: "#content-moderation",
+    tabValue: "moderation",
   },
 ];
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  onTabChange: (tabValue: string) => void;
+  activeTab: string;
+}
+
+export function AdminSidebar({ onTabChange, activeTab }: AdminSidebarProps) {
   return (
     <Sidebar>
       <SidebarHeader className="border-b p-4">
@@ -65,11 +71,13 @@ export function AdminSidebar() {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-2">
-                      <item.icon className="w-4 h-4" />
-                      <span>{item.title}</span>
-                    </a>
+                  <SidebarMenuButton 
+                    onClick={() => onTabChange(item.tabValue)}
+                    isActive={activeTab === item.tabValue}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <item.icon className="w-4 h-4" />
+                    <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -83,11 +91,13 @@ export function AdminSidebar() {
             <SidebarMenu>
               {adminItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-2">
-                      <item.icon className="w-4 h-4" />
-                      <span>{item.title}</span>
-                    </a>
+                  <SidebarMenuButton 
+                    onClick={() => onTabChange(item.tabValue)}
+                    isActive={activeTab === item.tabValue}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <item.icon className="w-4 h-4" />
+                    <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
