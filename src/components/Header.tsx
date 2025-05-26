@@ -5,7 +5,16 @@ import { useAuth } from '@/hooks/useAuth';
 import { User, LogOut } from 'lucide-react';
 
 export const Header = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, userRole, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+  };
+
+  // Get user name from metadata or email
+  const userName = currentUser?.user_metadata?.name || 
+                  currentUser?.email?.split('@')[0] || 
+                  'User';
 
   return (
     <header className="border-b bg-white">
@@ -16,17 +25,17 @@ export const Header = () => {
               Content Management System
             </h1>
           </div>
-          {currentUser && (
+          {currentUser && userRole && (
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-gray-500" />
-                <span className="text-sm font-medium">{currentUser.name}</span>
-                <RoleBadge role={currentUser.role} />
+                <span className="text-sm font-medium">{userName}</span>
+                <RoleBadge role={userRole} />
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={logout}
+                onClick={handleLogout}
               >
                 <LogOut className="w-4 h-4 mr-1" />
                 Logout

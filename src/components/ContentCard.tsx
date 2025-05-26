@@ -14,10 +14,15 @@ interface ContentCardProps {
 }
 
 export const ContentCard = ({ content, onEdit, onView, onPublish }: ContentCardProps) => {
-  const { currentUser } = useAuth();
+  const { currentUser, userRole } = useAuth();
 
-  const canEdit = currentUser?.role === 'edit' || currentUser?.role === 'publish';
-  const canPublish = currentUser?.role === 'publish' && content.status === 'under-review';
+  const canEdit = userRole === 'edit' || userRole === 'publish';
+  const canPublish = userRole === 'publish' && content.status === 'under-review';
+  const isAuthor = currentUser?.id === content.authorId;
+  const isAssignedPublisher = currentUser?.id === content.assignedPublisherId;
+
+  // Only show edit button if user can edit and is either the author or a publisher
+  const showEdit = canEdit && (isAuthor || userRole === 'publish');
 
   return (
     <Card className="hover:shadow-md transition-shadow duration-200">
@@ -44,7 +49,7 @@ export const ContentCard = ({ content, onEdit, onView, onPublish }: ContentCardP
               <Eye className="w-4 h-4 mr-1" />
               View
             </Button>
-            {canEdit && (
+            {showEdit && (
               <Button
                 variant="outline"
                 size="sm"

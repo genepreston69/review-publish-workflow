@@ -1,65 +1,149 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ContentCard } from './ContentCard';
 import { useAuth } from '@/hooks/useAuth';
 import { Content } from '@/types/content';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export const Dashboard = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, userRole } = useAuth();
+  const [contents, setContents] = useState<Content[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
   
-  // Mock data for demonstration
-  const [contents] = useState<Content[]>([
-    {
-      id: '1',
-      title: 'Introduction to React Hooks',
-      body: 'React Hooks are a powerful feature that allow you to use state and other React features without writing a class component. They were introduced in React 16.8 and have revolutionized the way we write React applications.',
-      status: 'draft',
-      authorId: '1',
-      createdAt: new Date('2024-01-15'),
-      updatedAt: new Date('2024-01-15'),
-    },
-    {
-      id: '2',
-      title: 'Advanced TypeScript Patterns',
-      body: 'TypeScript provides many advanced patterns that can help you write more robust and maintainable code. In this article, we explore utility types, conditional types, and mapped types.',
-      status: 'under-review',
-      authorId: '1',
-      assignedPublisherId: '3',
-      createdAt: new Date('2024-01-10'),
-      updatedAt: new Date('2024-01-12'),
-    },
-    {
-      id: '3',
-      title: 'Building Scalable Web Applications',
-      body: 'Scalability is a crucial consideration when building web applications. This guide covers best practices for architecture, database design, and deployment strategies.',
-      status: 'published',
-      authorId: '2',
-      createdAt: new Date('2024-01-05'),
-      updatedAt: new Date('2024-01-08'),
-      publishedAt: new Date('2024-01-08'),
-    },
-  ]);
+  const canCreate = userRole === 'edit' || userRole === 'publish';
 
-  const canCreate = currentUser?.role === 'edit' || currentUser?.role === 'publish';
+  const fetchContents = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('content')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching content:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load content.",
+        });
+        return;
+      }
+
+      // Convert the data to match our Content type
+      const mappedContents: Content[] = data.map(item => ({
+        id: item.id,
+        title: item.title,
+        body: item.body,
+        status: item.status as 'draft' | 'under-review' | 'published',
+        authorId: item.author_id,
+        assignedPublisherId: item.assigned_publisher_id || undefined,
+        createdAt: new Date(item.created_at),
+        updatedAt: new Date(item.updated_at),
+        publishedAt: item.published_at ? new Date(item.published_at) : undefined,
+      }));
+
+      setContents(mappedContents);
+    } catch (error) {
+      console.error('Error fetching content:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchContents();
+    }
+  }, [currentUser]);
 
   const handleCreateNew = () => {
     console.log('Create new content');
+    toast({
+      title: "Feature coming soon",
+      description: "Content creation will be implemented next.",
+    });
   };
 
   const handleEdit = (content: Content) => {
     console.log('Edit content:', content.id);
+    toast({
+      title: "Feature coming soon",
+      description: "Content editing will be implemented next.",
+    });
   };
 
   const handleView = (content: Content) => {
     console.log('View content:', content.id);
+    toast({
+      title: "Feature coming soon",
+      description: "Content viewing will be implemented next.",
+    });
   };
 
-  const handlePublish = (content: Content) => {
-    console.log('Publish content:', content.id);
+  const handlePublish = async (content: Content) => {
+    if (userRole !== 'publish') {
+      toast({
+        variant: "destructive",
+        title: "Permission denied",
+        description: "Only publishers can publish content.",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('content')
+        .update({ 
+          status: 'published',
+          published_at: new Date().toISOString()
+        })
+        .eq('id', content.id);
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to publish content.",
+        });
+        return;
+      }
+
+      toast({
+        title: "Content published",
+        description: "The content has been successfully published.",
+      });
+
+      // Refresh the content list
+      fetchContents();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred.",
+      });
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
+        </div>
+      </div>
+    );
+  }
 
   const draftContents = contents.filter(c => c.status === 'draft');
   const reviewContents = contents.filter(c => c.status === 'under-review');
@@ -79,66 +163,90 @@ export const Dashboard = () => {
 
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="all">All Content</TabsTrigger>
+          <TabsTrigger value="all">All Content ({contents.length})</TabsTrigger>
           <TabsTrigger value="drafts">Drafts ({draftContents.length})</TabsTrigger>
           <TabsTrigger value="review">Under Review ({reviewContents.length})</TabsTrigger>
           <TabsTrigger value="published">Published ({publishedContents.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {contents.map((content) => (
-              <ContentCard
-                key={content.id}
-                content={content}
-                onEdit={handleEdit}
-                onView={handleView}
-                onPublish={handlePublish}
-              />
-            ))}
-          </div>
+          {contents.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No content found. {canCreate && "Create your first piece of content to get started."}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {contents.map((content) => (
+                <ContentCard
+                  key={content.id}
+                  content={content}
+                  onEdit={handleEdit}
+                  onView={handleView}
+                  onPublish={handlePublish}
+                />
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="drafts" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {draftContents.map((content) => (
-              <ContentCard
-                key={content.id}
-                content={content}
-                onEdit={handleEdit}
-                onView={handleView}
-                onPublish={handlePublish}
-              />
-            ))}
-          </div>
+          {draftContents.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No draft content found.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {draftContents.map((content) => (
+                <ContentCard
+                  key={content.id}
+                  content={content}
+                  onEdit={handleEdit}
+                  onView={handleView}
+                  onPublish={handlePublish}
+                />
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="review" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {reviewContents.map((content) => (
-              <ContentCard
-                key={content.id}
-                content={content}
-                onEdit={handleEdit}
-                onView={handleView}
-                onPublish={handlePublish}
-              />
-            ))}
-          </div>
+          {reviewContents.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No content under review.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {reviewContents.map((content) => (
+                <ContentCard
+                  key={content.id}
+                  content={content}
+                  onEdit={handleEdit}
+                  onView={handleView}
+                  onPublish={handlePublish}
+                />
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="published" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {publishedContents.map((content) => (
-              <ContentCard
-                key={content.id}
-                content={content}
-                onEdit={handleEdit}
-                onView={handleView}
-                onPublish={handlePublish}
-              />
-            ))}
-          </div>
+          {publishedContents.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No published content found.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {publishedContents.map((content) => (
+                <ContentCard
+                  key={content.id}
+                  content={content}
+                  onEdit={handleEdit}
+                  onView={handleView}
+                  onPublish={handlePublish}
+                />
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
