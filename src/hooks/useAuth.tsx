@@ -78,10 +78,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (session?.user) {
           console.log('=== USER FOUND, FETCHING ROLE ===');
           try {
-            // Use Promise.race with a shorter timeout for role fetching
+            // Reduced timeout and better error handling
             const rolePromise = fetchUserRole(session.user.id);
             const timeoutPromise = new Promise<UserRole>((_, reject) => {
-              setTimeout(() => reject(new Error('Role fetch timeout')), 5000);
+              setTimeout(() => reject(new Error('Role fetch timeout')), 10000); // Increased to 10 seconds
             });
 
             const role = await Promise.race([rolePromise, timeoutPromise]);
@@ -121,7 +121,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (session?.user) {
           try {
-            const role = await fetchUserRole(session.user.id);
+            // Use timeout for initial role fetch as well
+            const rolePromise = fetchUserRole(session.user.id);
+            const timeoutPromise = new Promise<UserRole>((_, reject) => {
+              setTimeout(() => reject(new Error('Initial role fetch timeout')), 10000);
+            });
+
+            const role = await Promise.race([rolePromise, timeoutPromise]);
+            console.log('=== INITIAL ROLE FETCHED ===', role);
             setUserRole(role);
           } catch (error) {
             console.error('=== INITIAL ROLE FETCH FAILED ===', error);
