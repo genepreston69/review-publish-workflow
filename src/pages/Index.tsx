@@ -5,9 +5,12 @@ import { ContentSidebar } from '@/components/ContentSidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 
 const Index = () => {
+  console.log('Index page rendering...');
+  
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-50">
+        {console.log('About to render ContentSidebar...')}
         <ContentSidebar />
         <SidebarInset className="flex-1">
           <Header />
