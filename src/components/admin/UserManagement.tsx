@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { RoleBadge } from '@/components/RoleBadge';
+import { CreateUserForm } from './CreateUserForm';
 import { UserRole } from '@/types/user';
 import { User, Loader2 } from 'lucide-react';
 
@@ -111,10 +112,13 @@ export const UserManagement = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <User className="w-5 h-5" />
-          User Management
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <User className="w-5 h-5" />
+            User Management
+          </CardTitle>
+          <CreateUserForm onUserCreated={fetchUsers} />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
