@@ -9,6 +9,7 @@ import { UserManagement } from '@/components/admin/UserManagement';
 import { AssignmentManagement } from '@/components/admin/AssignmentManagement';
 import { SystemAnalytics } from '@/components/admin/SystemAnalytics';
 import { ContentModeration } from '@/components/admin/ContentModeration';
+import { FacilityPolicies } from '@/components/admin/FacilityPolicies';
 import { CreatePolicy } from '@/components/admin/CreatePolicy';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { Shield, Users, Link, BarChart3, FileText, Plus } from 'lucide-react';
@@ -50,10 +51,14 @@ const Admin = () => {
           
           <div className="flex-1 p-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-5 mb-8">
+              <TabsList className="grid w-full grid-cols-6 mb-8">
                 <TabsTrigger value="create-policy" className="flex items-center gap-2">
                   <Plus className="w-4 h-4" />
                   Create Policy
+                </TabsTrigger>
+                <TabsTrigger value="facility-policies" className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Facility Policies
                 </TabsTrigger>
                 <TabsTrigger value="users" className="flex items-center gap-2">
                   <Users className="w-4 h-4" />
@@ -75,6 +80,10 @@ const Admin = () => {
 
               <TabsContent value="create-policy">
                 <CreatePolicy />
+              </TabsContent>
+
+              <TabsContent value="facility-policies">
+                <FacilityPolicies />
               </TabsContent>
 
               <TabsContent value="users">

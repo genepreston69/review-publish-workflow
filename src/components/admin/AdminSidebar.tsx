@@ -19,6 +19,11 @@ const menuItems = [
     icon: Plus,
     tabValue: "create-policy",
   },
+  {
+    title: "Facility Policies",
+    icon: FileText,
+    tabValue: "facility-policies",
+  },
 ];
 
 const adminItems = [
