@@ -1,55 +1,23 @@
 
-import { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Plus, Loader2, FileText } from 'lucide-react';
-
-const policyFormSchema = z.object({
-  name: z.string().min(1, 'Policy name is required'),
-  policy_type: z.string().min(1, 'Policy type is required'),
-  purpose: z.string().min(1, 'Purpose is required'),
-  procedure: z.string().min(1, 'Procedure is required'),
-  policy_text: z.string().min(1, 'Policy text is required'),
-});
-
-type PolicyFormValues = z.infer<typeof policyFormSchema>;
-
-const POLICY_TYPES = [
-  { value: 'RP', label: 'RP - Recovery Point Policy' },
-  { value: 'HR', label: 'HR - Human Resources Policy' },
-  { value: 'S', label: 'S - Staff Policy' },
-  { value: 'OTHER', label: 'Other Policy Type' },
-];
+import { Form } from '@/components/ui/form';
+import { Plus, Loader2 } from 'lucide-react';
+import { PolicyFormFields } from './policy/PolicyFormFields';
+import { PolicyNumberDisplay } from './policy/PolicyNumberDisplay';
+import { usePolicyNumberGeneration } from './policy/usePolicyNumberGeneration';
+import { policyFormSchema, PolicyFormValues } from './policy/PolicyFormSchema';
 
 export function CreatePolicy() {
   const { currentUser, userRole } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [generatedPolicyNumber, setGeneratedPolicyNumber] = useState<string>('');
 
   const form = useForm<PolicyFormValues>({
     resolver: zodResolver(policyFormSchema),
@@ -67,32 +35,7 @@ export function CreatePolicy() {
 
   // Watch policy type changes to generate policy number
   const selectedPolicyType = form.watch('policy_type');
-
-  useEffect(() => {
-    const generatePolicyNumber = async () => {
-      if (!selectedPolicyType) {
-        setGeneratedPolicyNumber('');
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .rpc('generate_next_policy_number', { p_policy_type: selectedPolicyType });
-
-        if (error) {
-          console.error('Error generating policy number:', error);
-          setGeneratedPolicyNumber('');
-        } else {
-          setGeneratedPolicyNumber(data);
-        }
-      } catch (error) {
-        console.error('Error generating policy number:', error);
-        setGeneratedPolicyNumber('');
-      }
-    };
-
-    generatePolicyNumber();
-  }, [selectedPolicyType]);
+  const generatedPolicyNumber = usePolicyNumberGeneration(selectedPolicyType);
 
   const onSubmit = async (data: PolicyFormValues) => {
     if (!currentUser || !hasEditAccess) {
@@ -141,7 +84,6 @@ export function CreatePolicy() {
       });
 
       form.reset();
-      setGeneratedPolicyNumber('');
     } catch (error) {
       console.error('Error creating policy:', error);
       toast({
@@ -190,124 +132,9 @@ export function CreatePolicy() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Policy Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter policy name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="policy_type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Policy Type</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select policy type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {POLICY_TYPES.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {generatedPolicyNumber && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-blue-600" />
-                    <div>
-                      <p className="font-medium text-blue-900">Generated Policy Number</p>
-                      <p className="text-blue-700 font-mono text-lg">{generatedPolicyNumber}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <FormField
-                control={form.control}
-                name="purpose"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Purpose</FormLabel>
-                    <FormControl>
-                      <RichTextEditor 
-                        content={field.value}
-                        onChange={field.onChange}
-                        placeholder="Describe the purpose of this policy..."
-                        className="min-h-[150px]"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Explain why this policy exists and what it aims to achieve.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="procedure"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Procedure</FormLabel>
-                    <FormControl>
-                      <RichTextEditor 
-                        content={field.value}
-                        onChange={field.onChange}
-                        placeholder="Outline the step-by-step procedure..."
-                        className="min-h-[180px]"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Provide detailed steps on how this policy should be implemented.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="policy_text"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Policy Text</FormLabel>
-                    <FormControl>
-                      <RichTextEditor 
-                        content={field.value}
-                        onChange={field.onChange}
-                        placeholder="Enter the complete policy text..."
-                        className="min-h-[250px]"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      The full text of the policy document with formatting.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <PolicyFormFields control={form.control} />
+              
+              <PolicyNumberDisplay policyNumber={generatedPolicyNumber} />
 
               <div className="flex justify-end">
                 <Button 
