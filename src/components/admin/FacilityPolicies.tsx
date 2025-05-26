@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +16,13 @@ interface Policy {
   status: string | null;
   created_at: string;
 }
+
+// Function to strip HTML tags from text
+const stripHtml = (html: string | null): string => {
+  if (!html) return '';
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body.textContent || '';
+};
 
 export function FacilityPolicies() {
   const [policies, setPolicies] = useState<Policy[]>([]);
@@ -137,7 +145,7 @@ export function FacilityPolicies() {
                     <div>
                       <h4 className="font-medium text-sm text-gray-700">Purpose</h4>
                       <p className="text-sm text-gray-600 line-clamp-2">
-                        {policy.purpose}
+                        {stripHtml(policy.purpose)}
                       </p>
                     </div>
                   )}
@@ -146,7 +154,7 @@ export function FacilityPolicies() {
                     <div>
                       <h4 className="font-medium text-sm text-gray-700">Procedure</h4>
                       <p className="text-sm text-gray-600 line-clamp-2">
-                        {policy.procedure}
+                        {stripHtml(policy.procedure)}
                       </p>
                     </div>
                   )}
@@ -155,7 +163,7 @@ export function FacilityPolicies() {
                     {policy.reviewer && (
                       <div className="flex items-center gap-1">
                         <User className="h-3 w-3" />
-                        <span>{policy.reviewer}</span>
+                        <span>{stripHtml(policy.reviewer)}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-1">
