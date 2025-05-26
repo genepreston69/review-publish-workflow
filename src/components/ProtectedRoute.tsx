@@ -1,6 +1,6 @@
 
 import { useAuth } from '@/hooks/useAuth';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -8,7 +8,8 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { currentUser, isLoading } = useAuth();
+  const { currentUser, userRole, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -20,6 +21,11 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!currentUser) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Redirect editors and publishers to admin dashboard if they're on the root path
+  if (location.pathname === '/' && (userRole === 'edit' || userRole === 'publish')) {
+    return <Navigate to="/admin?tab=create-policy" replace />;
   }
 
   return <>{children}</>;
