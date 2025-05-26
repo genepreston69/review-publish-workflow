@@ -137,7 +137,7 @@ export const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="p-8">
         <div className="flex justify-center items-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
         </div>
@@ -150,9 +150,12 @@ export const Dashboard = () => {
   const publishedContents = contents.filter(c => c.status === 'published');
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-2xl font-bold text-gray-900">Content Dashboard</h2>
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Content Management</h2>
+          <p className="text-gray-600">Manage your content across different stages</p>
+        </div>
         {canCreate && (
           <Button onClick={handleCreateNew}>
             <Plus className="w-4 h-4 mr-2" />
