@@ -1,0 +1,157 @@
+
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { FileText, Calendar, User } from 'lucide-react';
+
+interface Policy {
+  id: string;
+  name: string | null;
+  policy_number: string | null;
+  policy_text: string | null;
+  procedure: string | null;
+  purpose: string | null;
+  reviewer: string | null;
+  status: string | null;
+  created_at: string;
+}
+
+export function FacilityPolicies() {
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchPolicies() {
+      try {
+        const { data, error } = await supabase
+          .from('Policies')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching policies:', error);
+        } else {
+          setPolicies(data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching policies:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchPolicies();
+  }, []);
+
+  const getStatusColor = (status: string | null) => {
+    switch (status?.toLowerCase()) {
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'draft':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'under review':
+        return 'bg-blue-100 text-blue-800';
+      case 'archived':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Facility Policies</h2>
+          <p className="text-muted-foreground">
+            Manage and review facility policies and procedures
+          </p>
+        </div>
+      </div>
+
+      {policies.length === 0 ? (
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <FileText className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-4 text-lg font-medium">No policies found</h3>
+              <p className="text-gray-500">No facility policies have been created yet.</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {policies.map((policy) => (
+            <Card key={policy.id} className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg">
+                      {policy.name || 'Untitled Policy'}
+                    </CardTitle>
+                    {policy.policy_number && (
+                      <CardDescription className="font-mono text-sm">
+                        {policy.policy_number}
+                      </CardDescription>
+                    )}
+                  </div>
+                  {policy.status && (
+                    <Badge 
+                      variant="secondary" 
+                      className={getStatusColor(policy.status)}
+                    >
+                      {policy.status}
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {policy.purpose && (
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-700">Purpose</h4>
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        {policy.purpose}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {policy.procedure && (
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-700">Procedure</h4>
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        {policy.procedure}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t">
+                    {policy.reviewer && (
+                      <div className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        <span>{policy.reviewer}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      <span>{new Date(policy.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

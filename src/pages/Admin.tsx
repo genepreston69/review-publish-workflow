@@ -9,8 +9,9 @@ import { UserManagement } from '@/components/admin/UserManagement';
 import { AssignmentManagement } from '@/components/admin/AssignmentManagement';
 import { SystemAnalytics } from '@/components/admin/SystemAnalytics';
 import { ContentModeration } from '@/components/admin/ContentModeration';
+import { FacilityPolicies } from '@/components/admin/FacilityPolicies';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
-import { Shield, Users, Link, BarChart3, FileText } from 'lucide-react';
+import { Shield, Users, Link, BarChart3, FileText, FileCheck } from 'lucide-react';
 
 const Admin = () => {
   const { userRole, isLoading } = useAuth();
@@ -44,7 +45,7 @@ const Admin = () => {
           
           <div className="flex-1 p-6">
             <Tabs defaultValue="users" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 mb-8">
+              <TabsList className="grid w-full grid-cols-5 mb-8">
                 <TabsTrigger value="users" className="flex items-center gap-2">
                   <Users className="w-4 h-4" />
                   User Management
@@ -60,6 +61,10 @@ const Admin = () => {
                 <TabsTrigger value="moderation" className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
                   Content Moderation
+                </TabsTrigger>
+                <TabsTrigger value="policies" className="flex items-center gap-2">
+                  <FileCheck className="w-4 h-4" />
+                  Facility Policies
                 </TabsTrigger>
               </TabsList>
 
@@ -77,6 +82,10 @@ const Admin = () => {
 
               <TabsContent value="moderation">
                 <ContentModeration />
+              </TabsContent>
+
+              <TabsContent value="policies">
+                <FacilityPolicies />
               </TabsContent>
             </Tabs>
           </div>
