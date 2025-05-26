@@ -144,13 +144,14 @@ export const UserManagement = () => {
                       value={user.role}
                       onValueChange={(value: UserRole) => updateUserRole(user.id, value)}
                     >
-                      <SelectTrigger className="w-32">
+                      <SelectTrigger className="w-40">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="read-only">Read Only</SelectItem>
                         <SelectItem value="edit">Editor</SelectItem>
                         <SelectItem value="publish">Publisher</SelectItem>
+                        <SelectItem value="super-admin">Super Admin</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>

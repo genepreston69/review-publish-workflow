@@ -1,5 +1,5 @@
 
-export type UserRole = 'read-only' | 'edit' | 'publish';
+export type UserRole = 'read-only' | 'edit' | 'publish' | 'super-admin';
 
 export interface User {
   id: string;

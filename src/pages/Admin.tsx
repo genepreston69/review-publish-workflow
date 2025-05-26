@@ -21,8 +21,8 @@ const Admin = () => {
     );
   }
 
-  // Only publishers (admins) can access this page
-  if (userRole !== 'publish') {
+  // Only super-admins can access this page
+  if (userRole !== 'super-admin') {
     return <Navigate to="/" replace />;
   }
 
@@ -33,9 +33,9 @@ const Admin = () => {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Shield className="w-8 h-8 text-purple-600" />
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
           </div>
-          <p className="text-gray-600">Manage users, content, and system settings</p>
+          <p className="text-gray-600">Manage users, content, and system settings with full administrative privileges</p>
         </div>
 
         <Tabs defaultValue="users" className="w-full">
