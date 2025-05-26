@@ -32,49 +32,36 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchUserRole = async (userId: string) => {
+  const fetchUserRole = async (userId: string): Promise<UserRole> => {
     try {
       console.log('=== FETCHING ROLE FOR USER ===', userId);
       
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Role fetch timeout')), 10000);
-      });
-
-      const queryPromise = supabase
+      const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .order('role', { ascending: false });
-
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+        .order('role', { ascending: false })
+        .limit(1);
 
       if (error) {
         console.error('=== ERROR FETCHING USER ROLE ===', error);
-        return 'read-only' as UserRole;
+        // If there's a database error, default to read-only
+        return 'read-only';
       }
 
       console.log('=== USER ROLES DATA ===', data);
 
       if (data && data.length > 0) {
-        const roleHierarchy: UserRole[] = ['super-admin', 'publish', 'edit', 'read-only'];
-        
-        for (const hierarchyRole of roleHierarchy) {
-          const foundRole = data.find(item => item.role === hierarchyRole);
-          if (foundRole) {
-            console.log('=== FOUND ROLE ===', foundRole.role);
-            return foundRole.role as UserRole;
-          }
-        }
-        
-        return data[0].role as UserRole;
+        const role = data[0].role as UserRole;
+        console.log('=== FOUND ROLE ===', role);
+        return role;
       }
 
       console.log('=== NO ROLE FOUND, DEFAULTING TO READ-ONLY ===');
-      return 'read-only' as UserRole;
+      return 'read-only';
     } catch (error) {
       console.error('=== ERROR IN FETCH USER ROLE ===', error);
-      return 'read-only' as UserRole;
+      return 'read-only';
     }
   };
 
@@ -91,11 +78,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (session?.user) {
           console.log('=== USER FOUND, FETCHING ROLE ===');
           try {
-            const role = await fetchUserRole(session.user.id);
+            // Use Promise.race with a shorter timeout for role fetching
+            const rolePromise = fetchUserRole(session.user.id);
+            const timeoutPromise = new Promise<UserRole>((_, reject) => {
+              setTimeout(() => reject(new Error('Role fetch timeout')), 5000);
+            });
+
+            const role = await Promise.race([rolePromise, timeoutPromise]);
             console.log('=== ROLE FETCHED ===', role);
             setUserRole(role);
           } catch (error) {
             console.error('=== ROLE FETCH FAILED ===', error);
+            // Always set a fallback role so the app doesn't stay in loading state
             setUserRole('read-only');
           } finally {
             setIsLoading(false);
@@ -108,16 +102,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     );
 
-    // Get initial session with timeout
+    // Get initial session
     const initAuth = async () => {
       try {
         console.log('=== GETTING INITIAL SESSION ===');
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Initial session timeout')), 5000);
-        });
-
-        const sessionPromise = supabase.auth.getSession();
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+        
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('=== INITIAL SESSION ERROR ===', error);
+          setIsLoading(false);
+          return;
+        }
         
         console.log('=== INITIAL SESSION ===', session?.user?.email);
         setSession(session);
