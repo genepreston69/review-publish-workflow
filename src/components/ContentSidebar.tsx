@@ -61,26 +61,36 @@ const getStatusColor = (status: string | null) => {
 };
 
 export function ContentSidebar() {
+  console.log('ContentSidebar rendering...');
+  
   const { userRole } = useAuth();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
 
+  console.log('User role:', userRole);
+
   useEffect(() => {
+    console.log('useEffect triggered for policies fetch');
+    
     async function fetchPolicies() {
       try {
+        console.log('Starting to fetch policies...');
         const { data, error } = await supabase
           .from('Policies')
           .select('*')
           .eq('status', 'active')
           .order('policy_number', { ascending: true });
 
+        console.log('Supabase response:', { data, error });
+
         if (error) {
           console.error('Error fetching policies:', error);
         } else {
+          console.log('Policies fetched successfully:', data);
           setPolicies(data || []);
         }
       } catch (error) {
-        console.error('Error fetching policies:', error);
+        console.error('Error in fetchPolicies:', error);
       } finally {
         setIsLoadingPolicies(false);
       }
@@ -88,6 +98,9 @@ export function ContentSidebar() {
 
     fetchPolicies();
   }, []);
+
+  console.log('Current policies state:', policies);
+  console.log('Is loading policies:', isLoadingPolicies);
 
   const canCreateContent = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
@@ -104,6 +117,8 @@ export function ContentSidebar() {
       isActive: false,
     }] : []),
   ];
+
+  console.log('Navigation items:', navigationItems);
 
   return (
     <Sidebar className="border-r">
