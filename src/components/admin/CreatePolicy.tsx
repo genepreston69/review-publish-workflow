@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { useToast } from '@/hooks/use-toast';
 import {
   Form,
@@ -114,7 +114,7 @@ export function CreatePolicy() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Create Policy</h2>
         <p className="text-muted-foreground">
-          Create a new facility policy. {userRole === 'edit' ? 'Your policy will be saved as a draft and assigned to a publisher for review.' : 'Your policy will be created for review.'}
+          Create a new facility policy with rich text formatting. {userRole === 'edit' ? 'Your policy will be saved as a draft and assigned to a publisher for review.' : 'Your policy will be created for review.'}
         </p>
       </div>
 
@@ -125,7 +125,7 @@ export function CreatePolicy() {
             New Policy Form
           </CardTitle>
           <CardDescription>
-            Fill out the form below to create a new facility policy.
+            Fill out the form below to create a new facility policy. Use the rich text editor for formatted content.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -168,10 +168,11 @@ export function CreatePolicy() {
                   <FormItem>
                     <FormLabel>Purpose</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Describe the purpose of this policy"
-                        className="min-h-[100px]"
-                        {...field} 
+                      <RichTextEditor 
+                        content={field.value}
+                        onChange={field.onChange}
+                        placeholder="Describe the purpose of this policy..."
+                        className="min-h-[150px]"
                       />
                     </FormControl>
                     <FormDescription>
@@ -189,10 +190,11 @@ export function CreatePolicy() {
                   <FormItem>
                     <FormLabel>Procedure</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Outline the step-by-step procedure"
-                        className="min-h-[120px]"
-                        {...field} 
+                      <RichTextEditor 
+                        content={field.value}
+                        onChange={field.onChange}
+                        placeholder="Outline the step-by-step procedure..."
+                        className="min-h-[180px]"
                       />
                     </FormControl>
                     <FormDescription>
@@ -210,14 +212,15 @@ export function CreatePolicy() {
                   <FormItem>
                     <FormLabel>Policy Text</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Enter the complete policy text"
-                        className="min-h-[150px]"
-                        {...field} 
+                      <RichTextEditor 
+                        content={field.value}
+                        onChange={field.onChange}
+                        placeholder="Enter the complete policy text..."
+                        className="min-h-[250px]"
                       />
                     </FormControl>
                     <FormDescription>
-                      The full text of the policy document.
+                      The full text of the policy document with formatting.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
