@@ -11,18 +11,13 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Shield, FileText, Users, Link, BarChart3, Settings, Plus } from 'lucide-react';
+import { Shield, Users, Link, BarChart3, Settings, Plus, FileText } from 'lucide-react';
 
 const menuItems = [
   {
     title: "Create Policy",
     icon: Plus,
     tabValue: "create-policy",
-  },
-  {
-    title: "Facility Policies",
-    icon: FileText,
-    tabValue: "facility-policies",
   },
 ];
 
@@ -66,7 +61,7 @@ export function AdminSidebar({ onTabChange, activeTab }: AdminSidebarProps) {
       
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Reports</SidebarGroupLabel>
+          <SidebarGroupLabel>Policies</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
