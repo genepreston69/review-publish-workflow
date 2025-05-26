@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -22,7 +23,8 @@ import {
   Calendar, 
   User,
   Settings,
-  LayoutDashboard 
+  LayoutDashboard,
+  Plus
 } from 'lucide-react';
 
 interface Policy {
@@ -63,6 +65,7 @@ export function ContentSidebar() {
   console.log('=== CONTENT SIDEBAR RENDERING ===');
   
   const { userRole } = useAuth();
+  const navigate = useNavigate();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
 
@@ -103,6 +106,12 @@ export function ContentSidebar() {
   console.log('=== SIDEBAR RENDER STATE ===', { userRole, policies: policies.length, isLoadingPolicies });
 
   const canCreateContent = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
+  const canCreatePolicies = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
+
+  const handleCreatePolicy = () => {
+    // Navigate to admin page with create-policy tab for editors and publishers
+    navigate('/admin?tab=create-policy');
+  };
 
   const navigationItems = [
     {
@@ -114,6 +123,12 @@ export function ContentSidebar() {
       title: "Create Content",
       icon: PlusCircle,
       isActive: false,
+    }] : []),
+    ...(canCreatePolicies ? [{
+      title: "Create Policy",
+      icon: Plus,
+      isActive: false,
+      onClick: handleCreatePolicy,
     }] : []),
   ];
 
@@ -136,7 +151,11 @@ export function ContentSidebar() {
             <SidebarMenu>
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton isActive={item.isActive}>
+                  <SidebarMenuButton 
+                    isActive={item.isActive}
+                    onClick={item.onClick}
+                    className={item.onClick ? "cursor-pointer" : ""}
+                  >
                     <item.icon className="w-4 h-4" />
                     <span>{item.title}</span>
                   </SidebarMenuButton>
