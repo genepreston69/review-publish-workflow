@@ -96,6 +96,42 @@ export type Database = {
           },
         ]
       }
+      Policies: {
+        Row: {
+          created_at: string
+          id: string
+          name: string | null
+          policy_number: string | null
+          policy_text: string | null
+          procedure: string | null
+          purpose: string | null
+          reviewer: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          policy_number?: string | null
+          policy_text?: string | null
+          procedure?: string | null
+          purpose?: string | null
+          reviewer?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          policy_number?: string | null
+          policy_text?: string | null
+          procedure?: string | null
+          purpose?: string | null
+          reviewer?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

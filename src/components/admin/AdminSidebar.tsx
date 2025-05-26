@@ -1,4 +1,3 @@
-
 import {
   Sidebar,
   SidebarContent,
@@ -11,13 +10,18 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Shield, FileText, Users, Link, BarChart3, Settings } from 'lucide-react';
+import { Shield, FileText, Users, Link, BarChart3, Settings, FileCheck } from 'lucide-react';
 
 const menuItems = [
   {
     title: "Director's Report",
     icon: FileText,
     url: "#directors-report",
+  },
+  {
+    title: "Facility Policies",
+    icon: FileCheck,
+    url: "#facility-policies",
   },
 ];
 
