@@ -34,6 +34,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const fetchUserRole = async (userId: string) => {
     try {
+      console.log('Fetching role for user:', userId);
+      
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
@@ -42,8 +44,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (error) {
         console.error('Error fetching user role:', error);
-        return null;
+        // If there's an error fetching the role, default to read-only
+        return 'read-only' as UserRole;
       }
+
+      console.log('User roles data:', data);
 
       // If user has multiple roles, prioritize super-admin > publish > edit > read-only
       if (data && data.length > 0) {
@@ -52,6 +57,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         for (const hierarchyRole of roleHierarchy) {
           const foundRole = data.find(item => item.role === hierarchyRole);
           if (foundRole) {
+            console.log('Found role:', foundRole.role);
             return foundRole.role as UserRole;
           }
         }
@@ -60,10 +66,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return data[0].role as UserRole;
       }
 
-      return null;
+      // If no role found, default to read-only
+      console.log('No role found, defaulting to read-only');
+      return 'read-only' as UserRole;
     } catch (error) {
       console.error('Error fetching user role:', error);
-      return null;
+      // Default to read-only on any error
+      return 'read-only' as UserRole;
     }
   };
 
@@ -77,11 +86,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (session?.user) {
           // Fetch user role after setting user
-          setTimeout(async () => {
-            const role = await fetchUserRole(session.user.id);
-            setUserRole(role);
-            setIsLoading(false);
-          }, 0);
+          const role = await fetchUserRole(session.user.id);
+          setUserRole(role);
+          setIsLoading(false);
         } else {
           setUserRole(null);
           setIsLoading(false);
@@ -90,15 +97,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     );
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('Initial session:', session?.user?.email);
       setSession(session);
       setCurrentUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchUserRole(session.user.id).then((role) => {
-          setUserRole(role);
-          setIsLoading(false);
-        });
+        const role = await fetchUserRole(session.user.id);
+        setUserRole(role);
+        setIsLoading(false);
       } else {
         setIsLoading(false);
       }
