@@ -16,10 +16,8 @@ import {
 } from '@/components/ui/sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   FileText, 
-  Home, 
   PlusCircle, 
   Calendar, 
   User,
@@ -73,7 +71,7 @@ export function ContentSidebar() {
         const { data, error } = await supabase
           .from('Policies')
           .select('*')
-          .eq('status', 'active') // Only show active policies
+          .eq('status', 'active')
           .order('policy_number', { ascending: true });
 
         if (error) {
@@ -144,7 +142,7 @@ export function ContentSidebar() {
             Facility Policies
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <ScrollArea className="h-[400px]">
+            <div className="max-h-96 overflow-y-auto">
               {isLoadingPolicies ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
                   Loading policies...
@@ -204,7 +202,7 @@ export function ContentSidebar() {
                   ))}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
