@@ -61,16 +61,16 @@ const getStatusColor = (status: string | null) => {
 export function ContentSidebar() {
   console.log('=== CONTENT SIDEBAR RENDERING ===');
   
-  const [userRole, setUserRole] = useState<string | null>('read-only');
+  const [userRole] = useState<string | null>('read-only');
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
 
   useEffect(() => {
-    console.log('=== CONTENT SIDEBAR MOUNTED ===');
+    console.log('=== CONTENT SIDEBAR USEEFFECT RUNNING ===');
     
     const fetchPolicies = async () => {
       try {
-        console.log('=== FETCHING POLICIES ===');
+        console.log('=== FETCHING POLICIES START ===');
         setIsLoadingPolicies(true);
         
         const { data, error } = await supabase

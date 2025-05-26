@@ -2,7 +2,6 @@
 import { Header } from '@/components/Header';
 import { Dashboard } from '@/components/Dashboard';
 import { ContentSidebar } from '@/components/ContentSidebar';
-import { DebugTest } from '@/components/DebugTest';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 
 const Index = () => {
@@ -10,7 +9,6 @@ const Index = () => {
   
   return (
     <div className="min-h-screen">
-      <DebugTest />
       <SidebarProvider>
         <div className="min-h-screen flex w-full bg-gray-50">
           <ContentSidebar />
