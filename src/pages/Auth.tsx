@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
 const Auth = () => {
@@ -17,6 +18,30 @@ const Auth = () => {
   const [name, setName] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { currentUser, isLoading: authLoading } = useAuth();
+
+  // Redirect if user is already authenticated
+  useEffect(() => {
+    console.log('=== AUTH PAGE - USER STATE ===', { currentUser, authLoading });
+    if (!authLoading && currentUser) {
+      console.log('=== REDIRECTING TO MAIN PAGE ===');
+      navigate('/');
+    }
+  }, [currentUser, authLoading, navigate]);
+
+  // Show loading spinner while checking auth state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
+      </div>
+    );
+  }
+
+  // Don't render auth form if user is authenticated
+  if (currentUser) {
+    return null;
+  }
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +98,8 @@ const Auth = () => {
           description: error.message,
         });
       } else {
-        navigate('/');
+        // Don't manually navigate here - let the useEffect handle it
+        console.log('=== SIGN IN SUCCESSFUL ===');
       }
     } catch (error) {
       toast({
