@@ -10,12 +10,13 @@ import { AssignmentManagement } from '@/components/admin/AssignmentManagement';
 import { SystemAnalytics } from '@/components/admin/SystemAnalytics';
 import { ContentModeration } from '@/components/admin/ContentModeration';
 import { FacilityPolicies } from '@/components/admin/FacilityPolicies';
+import { CreatePolicy } from '@/components/admin/CreatePolicy';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
-import { Shield, Users, Link, BarChart3, FileText } from 'lucide-react';
+import { Shield, Users, Link, BarChart3, FileText, Plus } from 'lucide-react';
 
 const Admin = () => {
   const { userRole, isLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState('facility-policies');
+  const [activeTab, setActiveTab] = useState('create-policy');
 
   if (isLoading) {
     return (
@@ -50,7 +51,11 @@ const Admin = () => {
           
           <div className="flex-1 p-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-5 mb-8">
+              <TabsList className="grid w-full grid-cols-6 mb-8">
+                <TabsTrigger value="create-policy" className="flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  Create Policy
+                </TabsTrigger>
                 <TabsTrigger value="facility-policies" className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
                   Facility Policies
@@ -72,6 +77,10 @@ const Admin = () => {
                   Content Moderation
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="create-policy">
+                <CreatePolicy />
+              </TabsContent>
 
               <TabsContent value="facility-policies">
                 <FacilityPolicies />

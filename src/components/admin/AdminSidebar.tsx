@@ -11,9 +11,14 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Shield, FileText, Users, Link, BarChart3, Settings } from 'lucide-react';
+import { Shield, FileText, Users, Link, BarChart3, Settings, Plus } from 'lucide-react';
 
 const menuItems = [
+  {
+    title: "Create Policy",
+    icon: Plus,
+    tabValue: "create-policy",
+  },
   {
     title: "Facility Policies",
     icon: FileText,

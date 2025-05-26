@@ -3,7 +3,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Calendar, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { FileText, Calendar, User, CheckCircle, XCircle } from 'lucide-react';
 
 interface Policy {
   id: string;
@@ -27,6 +30,10 @@ const stripHtml = (html: string | null): string => {
 export function FacilityPolicies() {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { userRole } = useAuth();
+  const { toast } = useToast();
+
+  const canPublish = userRole === 'publish' || userRole === 'super-admin';
 
   useEffect(() => {
     async function fetchPolicies() {
@@ -61,13 +68,51 @@ export function FacilityPolicies() {
         }
       } catch (error) {
         console.error('Error fetching policies:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load policies.",
+        });
       } finally {
         setIsLoading(false);
       }
     }
 
     fetchPolicies();
-  }, []);
+  }, [toast]);
+
+  const updatePolicyStatus = async (policyId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('Policies')
+        .update({ status: newStatus })
+        .eq('id', policyId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Policy ${newStatus === 'active' ? 'published' : 'rejected'} successfully.`,
+      });
+
+      // Refresh policies
+      const { data } = await supabase
+        .from('Policies')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (data) {
+        setPolicies(data);
+      }
+    } catch (error) {
+      console.error('Error updating policy status:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update policy status.",
+      });
+    }
+  };
 
   const getStatusColor = (status: string | null) => {
     switch (status?.toLowerCase()) {
@@ -75,6 +120,7 @@ export function FacilityPolicies() {
         return 'bg-green-100 text-green-800';
       case 'draft':
         return 'bg-yellow-100 text-yellow-800';
+      case 'under-review':
       case 'under review':
         return 'bg-blue-100 text-blue-800';
       case 'archived':
@@ -171,6 +217,29 @@ export function FacilityPolicies() {
                       <span>{new Date(policy.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
+
+                  {/* Publisher Actions */}
+                  {canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') && (
+                    <div className="flex gap-2 pt-3 border-t">
+                      <Button
+                        size="sm"
+                        onClick={() => updatePolicyStatus(policy.id, 'active')}
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Publish
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updatePolicyStatus(policy.id, 'archived')}
+                        className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                      >
+                        <XCircle className="w-3 h-3 mr-1" />
+                        Reject
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
