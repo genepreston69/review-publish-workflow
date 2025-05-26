@@ -123,7 +123,11 @@ export function CreatePolicy() {
       const { error } = await supabase
         .from('Policies')
         .insert({
-          ...data,
+          name: data.name,
+          policy_type: data.policy_type,
+          purpose: data.purpose,
+          procedure: data.procedure,
+          policy_text: data.policy_text,
           policy_number: generatedPolicyNumber,
           status,
           reviewer: currentUser.email,
