@@ -34,92 +34,128 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const fetchUserRole = async (userId: string) => {
     try {
-      console.log('Fetching role for user:', userId);
+      console.log('=== FETCHING ROLE FOR USER ===', userId);
       
-      const { data, error } = await supabase
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Role fetch timeout')), 10000);
+      });
+
+      const queryPromise = supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .order('role', { ascending: false }); // Get highest privilege role first
+        .order('role', { ascending: false });
+
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
       if (error) {
-        console.error('Error fetching user role:', error);
-        // If there's an error fetching the role, default to read-only
+        console.error('=== ERROR FETCHING USER ROLE ===', error);
         return 'read-only' as UserRole;
       }
 
-      console.log('User roles data:', data);
+      console.log('=== USER ROLES DATA ===', data);
 
-      // If user has multiple roles, prioritize super-admin > publish > edit > read-only
       if (data && data.length > 0) {
         const roleHierarchy: UserRole[] = ['super-admin', 'publish', 'edit', 'read-only'];
         
         for (const hierarchyRole of roleHierarchy) {
           const foundRole = data.find(item => item.role === hierarchyRole);
           if (foundRole) {
-            console.log('Found role:', foundRole.role);
+            console.log('=== FOUND ROLE ===', foundRole.role);
             return foundRole.role as UserRole;
           }
         }
         
-        // Fallback to first role if none match hierarchy
         return data[0].role as UserRole;
       }
 
-      // If no role found, default to read-only
-      console.log('No role found, defaulting to read-only');
+      console.log('=== NO ROLE FOUND, DEFAULTING TO READ-ONLY ===');
       return 'read-only' as UserRole;
     } catch (error) {
-      console.error('Error fetching user role:', error);
-      // Default to read-only on any error
+      console.error('=== ERROR IN FETCH USER ROLE ===', error);
       return 'read-only' as UserRole;
     }
   };
 
   useEffect(() => {
+    console.log('=== AUTH PROVIDER USEEFFECT STARTING ===');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log('=== AUTH STATE CHANGED ===', event, session?.user?.email);
         setSession(session);
         setCurrentUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user role after setting user
-          const role = await fetchUserRole(session.user.id);
-          setUserRole(role);
-          setIsLoading(false);
+          console.log('=== USER FOUND, FETCHING ROLE ===');
+          try {
+            const role = await fetchUserRole(session.user.id);
+            console.log('=== ROLE FETCHED ===', role);
+            setUserRole(role);
+          } catch (error) {
+            console.error('=== ROLE FETCH FAILED ===', error);
+            setUserRole('read-only');
+          } finally {
+            setIsLoading(false);
+          }
         } else {
+          console.log('=== NO USER, CLEARING STATE ===');
           setUserRole(null);
           setIsLoading(false);
         }
       }
     );
 
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      console.log('Initial session:', session?.user?.email);
-      setSession(session);
-      setCurrentUser(session?.user ?? null);
-      
-      if (session?.user) {
-        const role = await fetchUserRole(session.user.id);
-        setUserRole(role);
-        setIsLoading(false);
-      } else {
+    // Get initial session with timeout
+    const initAuth = async () => {
+      try {
+        console.log('=== GETTING INITIAL SESSION ===');
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Initial session timeout')), 5000);
+        });
+
+        const sessionPromise = supabase.auth.getSession();
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+        
+        console.log('=== INITIAL SESSION ===', session?.user?.email);
+        setSession(session);
+        setCurrentUser(session?.user ?? null);
+        
+        if (session?.user) {
+          try {
+            const role = await fetchUserRole(session.user.id);
+            setUserRole(role);
+          } catch (error) {
+            console.error('=== INITIAL ROLE FETCH FAILED ===', error);
+            setUserRole('read-only');
+          }
+        }
+      } catch (error) {
+        console.error('=== INITIAL AUTH ERROR ===', error);
+      } finally {
         setIsLoading(false);
       }
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    initAuth();
+
+    return () => {
+      console.log('=== CLEANING UP AUTH SUBSCRIPTION ===');
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
+    console.log('=== SIGNING OUT ===');
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Error signing out:', error);
     }
   };
+
+  console.log('=== AUTH PROVIDER RENDER ===', { currentUser: !!currentUser, userRole, isLoading });
 
   return (
     <AuthContext.Provider value={{ 
