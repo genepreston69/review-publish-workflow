@@ -2,7 +2,8 @@
 import { Button } from '@/components/ui/button';
 import { RoleBadge } from './RoleBadge';
 import { useAuth } from '@/hooks/useAuth';
-import { User, LogOut } from 'lucide-react';
+import { User, LogOut, Shield } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const Header = () => {
   const { currentUser, userRole, signOut } = useAuth();
@@ -21,9 +22,9 @@ export const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            <h1 className="text-xl font-bold text-gray-900">
+            <Link to="/" className="text-xl font-bold text-gray-900 hover:text-gray-700">
               Content Management System
-            </h1>
+            </Link>
           </div>
           {currentUser && userRole && (
             <div className="flex items-center gap-4">
@@ -32,14 +33,24 @@ export const Header = () => {
                 <span className="text-sm font-medium">{userName}</span>
                 <RoleBadge role={userRole} />
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-              >
-                <LogOut className="w-4 h-4 mr-1" />
-                Logout
-              </Button>
+              <div className="flex items-center gap-2">
+                {userRole === 'publish' && (
+                  <Link to="/admin">
+                    <Button variant="outline" size="sm">
+                      <Shield className="w-4 h-4 mr-1" />
+                      Admin
+                    </Button>
+                  </Link>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="w-4 h-4 mr-1" />
+                  Logout
+                </Button>
+              </div>
             </div>
           )}
         </div>
