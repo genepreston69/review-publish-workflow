@@ -103,6 +103,7 @@ export type Database = {
           name: string | null
           policy_number: string | null
           policy_text: string | null
+          policy_type: string
           procedure: string | null
           purpose: string | null
           reviewer: string | null
@@ -114,6 +115,7 @@ export type Database = {
           name?: string | null
           policy_number?: string | null
           policy_text?: string | null
+          policy_type: string
           procedure?: string | null
           purpose?: string | null
           reviewer?: string | null
@@ -125,6 +127,7 @@ export type Database = {
           name?: string | null
           policy_number?: string | null
           policy_text?: string | null
+          policy_type?: string
           procedure?: string | null
           purpose?: string | null
           reviewer?: string | null
@@ -193,6 +196,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_next_policy_number: {
+        Args: { p_policy_type: string }
+        Returns: string
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
