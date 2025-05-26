@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,15 +14,35 @@ export const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
-  const canCreate = userRole === 'edit' || userRole === 'publish';
+  const canCreate = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
   const fetchContents = async () => {
     try {
+      console.log('=== FETCHING CONTENTS FOR ROLE ===', userRole);
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('content')
-        .select('*')
-        .order('created_at', { ascending: false });
+      
+      let query = supabase.from('content').select('*');
+      
+      // Different access levels based on role
+      if (userRole === 'super-admin') {
+        // Super admin can see all content
+        console.log('=== SUPER ADMIN: FETCHING ALL CONTENT ===');
+      } else if (userRole === 'publish') {
+        // Publishers can see all content
+        console.log('=== PUBLISHER: FETCHING ALL CONTENT ===');
+      } else if (userRole === 'edit') {
+        // Editors can see their own content and content assigned to them
+        console.log('=== EDITOR: FETCHING OWN AND ASSIGNED CONTENT ===');
+        query = query.or(`author_id.eq.${currentUser?.id},assigned_publisher_id.eq.${currentUser?.id}`);
+      } else {
+        // Read-only users can only see published content
+        console.log('=== READ-ONLY: FETCHING PUBLISHED CONTENT ===');
+        query = query.eq('status', 'published');
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      console.log('=== CONTENT QUERY RESULT ===', { data, error, userRole });
 
       if (error) {
         console.error('Error fetching content:', error);
@@ -36,7 +55,7 @@ export const Dashboard = () => {
       }
 
       // Convert the data to match our Content type
-      const mappedContents: Content[] = data.map(item => ({
+      const mappedContents: Content[] = (data || []).map(item => ({
         id: item.id,
         title: item.title,
         body: item.body,
@@ -48,6 +67,7 @@ export const Dashboard = () => {
         publishedAt: item.published_at ? new Date(item.published_at) : undefined,
       }));
 
+      console.log('=== MAPPED CONTENTS ===', mappedContents);
       setContents(mappedContents);
     } catch (error) {
       console.error('Error fetching content:', error);
@@ -62,10 +82,11 @@ export const Dashboard = () => {
   };
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && userRole) {
+      console.log('=== DASHBOARD USEEFFECT: FETCHING CONTENT ===', { currentUser: !!currentUser, userRole });
       fetchContents();
     }
-  }, [currentUser]);
+  }, [currentUser, userRole]);
 
   const handleCreateNew = () => {
     console.log('Create new content');
@@ -154,7 +175,9 @@ export const Dashboard = () => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Content Management</h2>
-          <p className="text-gray-600">Manage your content across different stages</p>
+          <p className="text-gray-600">
+            Manage your content across different stages • Role: {userRole}
+          </p>
         </div>
         {canCreate && (
           <Button onClick={handleCreateNew}>
@@ -175,7 +198,10 @@ export const Dashboard = () => {
         <TabsContent value="all" className="mt-6">
           {contents.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500">No content found. {canCreate && "Create your first piece of content to get started."}</p>
+              <p className="text-gray-500">
+                No content found for your role ({userRole}). 
+                {canCreate && " Create your first piece of content to get started."}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
