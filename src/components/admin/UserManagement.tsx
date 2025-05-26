@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { RoleBadge } from '@/components/RoleBadge';
 import { CreateUserForm } from './CreateUserForm';
 import { UserRole } from '@/types/user';
-import { User, Loader2 } from 'lucide-react';
+import { User, Loader2, Trash2 } from 'lucide-react';
 
 interface UserWithRole {
   id: string;
@@ -22,6 +23,7 @@ interface UserWithRole {
 export const UserManagement = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchUsers = async () => {
@@ -95,6 +97,50 @@ export const UserManagement = () => {
     }
   };
 
+  const deleteUser = async (userId: string) => {
+    try {
+      setDeletingUserId(userId);
+
+      // First delete user roles
+      const { error: rolesError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (rolesError) throw rolesError;
+
+      // Then delete profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (profileError) throw profileError;
+
+      // Finally delete from auth (this requires admin privileges)
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+
+      if (authError) throw authError;
+
+      toast({
+        title: "Success",
+        description: "User deleted successfully.",
+      });
+
+      // Refresh the users list
+      fetchUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete user. You may not have sufficient privileges.",
+      });
+    } finally {
+      setDeletingUserId(null);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -144,20 +190,57 @@ export const UserManagement = () => {
                     {new Date(user.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    <Select
-                      value={user.role}
-                      onValueChange={(value: UserRole) => updateUserRole(user.id, value)}
-                    >
-                      <SelectTrigger className="w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="read-only">Read Only</SelectItem>
-                        <SelectItem value="edit">Editor</SelectItem>
-                        <SelectItem value="publish">Publisher</SelectItem>
-                        <SelectItem value="super-admin">Super Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={user.role}
+                        onValueChange={(value: UserRole) => updateUserRole(user.id, value)}
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="read-only">Read Only</SelectItem>
+                          <SelectItem value="edit">Editor</SelectItem>
+                          <SelectItem value="publish">Publisher</SelectItem>
+                          <SelectItem value="super-admin">Super Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={deletingUserId === user.id}
+                          >
+                            {deletingUserId === user.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete {user.name} ({user.email})? 
+                              This action cannot be undone and will permanently remove the user 
+                              from the system.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteUser(user.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete User
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
