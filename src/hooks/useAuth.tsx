@@ -38,14 +38,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .single();
+        .order('role', { ascending: false }); // Get highest privilege role first
 
       if (error) {
         console.error('Error fetching user role:', error);
         return null;
       }
 
-      return data?.role as UserRole || null;
+      // If user has multiple roles, prioritize super-admin > publish > edit > read-only
+      if (data && data.length > 0) {
+        const roleHierarchy: UserRole[] = ['super-admin', 'publish', 'edit', 'read-only'];
+        
+        for (const hierarchyRole of roleHierarchy) {
+          const foundRole = data.find(item => item.role === hierarchyRole);
+          if (foundRole) {
+            return foundRole.role as UserRole;
+          }
+        }
+        
+        // Fallback to first role if none match hierarchy
+        return data[0].role as UserRole;
+      }
+
+      return null;
     } catch (error) {
       console.error('Error fetching user role:', error);
       return null;
