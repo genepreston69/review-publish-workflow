@@ -75,8 +75,8 @@ export function CreatePolicy() {
           // Editors see their own draft policies
           query = query.eq('reviewer', currentUser.email).eq('status', 'draft');
         } else if (canPublish) {
-          // Publishers see policies under review
-          query = query.in('status', ['under-review', 'under review', 'draft']);
+          // Publishers and super-admins see policies that need review
+          query = query.in('status', ['draft', 'under-review', 'under review']);
         }
         
         const { data, error } = await query.order('created_at', { ascending: false });
