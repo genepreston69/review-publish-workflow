@@ -23,11 +23,9 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Redirect all admin users (editors, publishers, and super-admins) to admin dashboard if they're on the root path
-  if (location.pathname === '/' && (userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin')) {
-    const defaultTab = userRole === 'super-admin' ? 'users' : 'create-policy';
-    return <Navigate to={`/admin?tab=${defaultTab}`} replace />;
-  }
+  // Allow all authenticated users to access the main dashboard
+  // Remove the automatic redirect for edit/publish users
+  // They can still access admin dashboard through navigation links
 
   return <>{children}</>;
 };
