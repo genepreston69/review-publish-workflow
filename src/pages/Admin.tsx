@@ -1,6 +1,5 @@
 
 import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import { UserManagement } from '@/components/admin/UserManagement';
@@ -43,64 +42,62 @@ const Admin = () => {
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        {isSuperAdmin ? (
-          <AdminSidebar onTabChange={handleTabChange} activeTab={activeTab} />
-        ) : (
-          <PolicySidebar 
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            isEditor={isEditor}
-            canPublish={canPublish}
-          />
-        )}
+    <div className="min-h-screen flex w-full">
+      {isSuperAdmin ? (
+        <AdminSidebar onTabChange={handleTabChange} activeTab={activeTab} />
+      ) : (
+        <PolicySidebar 
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          isEditor={isEditor}
+          canPublish={canPublish}
+        />
+      )}
+      
+      <div className="flex-1 flex flex-col ml-64">
+        <AdminHeader isSuperAdmin={isSuperAdmin} pageTitle={getPageTitle()} />
         
-        <div className="flex-1 flex flex-col ml-64">
-          <AdminHeader isSuperAdmin={isSuperAdmin} pageTitle={getPageTitle()} />
-          
-          <div className="flex-1 overflow-auto p-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsContent value="create-policy">
-                <CreatePolicy />
-              </TabsContent>
+        <div className="flex-1 overflow-auto p-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsContent value="create-policy">
+              <CreatePolicy />
+            </TabsContent>
 
-              <TabsContent value="draft-policies">
-                <DraftPolicies />
-              </TabsContent>
+            <TabsContent value="draft-policies">
+              <DraftPolicies />
+            </TabsContent>
 
-              <TabsContent value="review-policies">
-                <ReviewPolicies />
-              </TabsContent>
+            <TabsContent value="review-policies">
+              <ReviewPolicies />
+            </TabsContent>
 
-              <TabsContent value="facility-policies">
-                <FacilityPolicies />
-              </TabsContent>
+            <TabsContent value="facility-policies">
+              <FacilityPolicies />
+            </TabsContent>
 
-              {isSuperAdmin && (
-                <>
-                  <TabsContent value="users">
-                    <UserManagement />
-                  </TabsContent>
+            {isSuperAdmin && (
+              <>
+                <TabsContent value="users">
+                  <UserManagement />
+                </TabsContent>
 
-                  <TabsContent value="assignments">
-                    <AssignmentManagement />
-                  </TabsContent>
+                <TabsContent value="assignments">
+                  <AssignmentManagement />
+                </TabsContent>
 
-                  <TabsContent value="analytics">
-                    <SystemAnalytics />
-                  </TabsContent>
+                <TabsContent value="analytics">
+                  <SystemAnalytics />
+                </TabsContent>
 
-                  <TabsContent value="moderation">
-                    <ContentModeration />
-                  </TabsContent>
-                </>
-              )}
-            </Tabs>
-          </div>
+                <TabsContent value="moderation">
+                  <ContentModeration />
+                </TabsContent>
+              </>
+            )}
+          </Tabs>
         </div>
       </div>
-    </SidebarProvider>
+    </div>
   );
 };
 
