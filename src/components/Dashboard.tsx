@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ContentCard } from './ContentCard';
+import { FacilityPolicies } from './admin/FacilityPolicies';
 import { useAuth } from '@/hooks/useAuth';
 import { Content } from '@/types/content';
 import { Plus, Loader2 } from 'lucide-react';
@@ -187,13 +189,18 @@ export const Dashboard = () => {
         )}
       </div>
 
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="policies" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="policies">Facility Policies</TabsTrigger>
           <TabsTrigger value="all">All Content ({contents.length})</TabsTrigger>
           <TabsTrigger value="drafts">Drafts ({draftContents.length})</TabsTrigger>
           <TabsTrigger value="review">Under Review ({reviewContents.length})</TabsTrigger>
           <TabsTrigger value="published">Published ({publishedContents.length})</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="policies" className="mt-6">
+          <FacilityPolicies />
+        </TabsContent>
 
         <TabsContent value="all" className="mt-6">
           {contents.length === 0 ? (

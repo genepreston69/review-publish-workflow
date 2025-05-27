@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
   FileText, 
@@ -14,82 +13,53 @@ import {
   Plus
 } from 'lucide-react';
 
-interface Policy {
-  id: string;
-  name: string | null;
-  policy_number: string | null;
-  policy_text: string | null;
-  procedure: string | null;
-  purpose: string | null;
-  reviewer: string | null;
-  status: string | null;
-  created_at: string;
-}
-
 const stripHtml = (html: string | null): string => {
   if (!html) return '';
   const doc = new DOMParser().parseFromString(html, 'text/html');
   return doc.body.textContent || '';
 };
 
-const getStatusColor = (status: string | null) => {
-  switch (status?.toLowerCase()) {
-    case 'published':
-      return 'bg-green-100 text-green-800';
-    case 'draft':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'under-review':
-    case 'under review':
-      return 'bg-blue-100 text-blue-800';
-    case 'archived':
-      return 'bg-gray-100 text-gray-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
-};
-
 export function ContentSidebar() {
   console.log('=== CONTENT SIDEBAR RENDERING ===');
   
   const { userRole } = useAuth();
-  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [policyCount, setPolicyCount] = useState(0);
   const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
 
   useEffect(() => {
     console.log('=== CONTENT SIDEBAR USEEFFECT RUNNING ===');
     console.log('=== USER ROLE FROM AUTH ===', userRole);
     
-    const fetchPolicies = async () => {
+    const fetchPolicyCount = async () => {
       try {
-        console.log('=== FETCHING POLICIES START ===');
+        console.log('=== FETCHING POLICY COUNT START ===');
         setIsLoadingPolicies(true);
         
-        const { data, error } = await supabase
+        const { count, error } = await supabase
           .from('Policies')
-          .select('*')
-          .eq('status', 'published')
-          .order('policy_number', { ascending: true });
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'published');
 
-        console.log('=== POLICIES RESPONSE ===', { data, error });
+        console.log('=== POLICY COUNT RESPONSE ===', { count, error });
 
         if (error) {
-          console.error('Error fetching policies:', error);
+          console.error('Error fetching policy count:', error);
         } else {
-          console.log('Policies fetched successfully:', data);
-          setPolicies(data || []);
+          console.log('Policy count fetched successfully:', count);
+          setPolicyCount(count || 0);
         }
       } catch (error) {
-        console.error('Error in fetchPolicies:', error);
+        console.error('Error in fetchPolicyCount:', error);
       } finally {
         setIsLoadingPolicies(false);
-        console.log('=== POLICIES LOADING COMPLETE ===');
+        console.log('=== POLICY COUNT LOADING COMPLETE ===');
       }
     };
 
-    fetchPolicies();
+    fetchPolicyCount();
   }, []);
 
-  console.log('=== SIDEBAR RENDER STATE ===', { userRole, policies: policies.length, isLoadingPolicies });
+  console.log('=== SIDEBAR RENDER STATE ===', { userRole, policyCount, isLoadingPolicies });
 
   const canCreateContent = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
   const canCreatePolicies = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
@@ -154,72 +124,25 @@ export function ContentSidebar() {
           </div>
         </div>
 
-        {/* Policies */}
+        {/* Policy Summary */}
         <div className="flex-1 p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <FileText className="w-4 h-4" />
-            <h3 className="text-sm font-medium text-gray-500">Facility Policies</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              <h3 className="text-sm font-medium text-gray-500">Facility Policies</h3>
+            </div>
+            {!isLoadingPolicies && (
+              <Badge variant="secondary" className="text-xs">
+                {policyCount} published
+              </Badge>
+            )}
           </div>
           
-          <div className="max-h-96 overflow-y-auto">
+          <div className="text-center text-sm text-muted-foreground">
             {isLoadingPolicies ? (
-              <div className="p-4 text-center text-sm text-muted-foreground">
-                Loading policies...
-              </div>
-            ) : policies.length === 0 ? (
-              <div className="p-4 text-center text-sm text-muted-foreground">
-                No published policies found
-              </div>
+              <p>Loading policy count...</p>
             ) : (
-              <div className="space-y-3">
-                {policies.map((policy) => (
-                  <Card key={policy.id} className="hover:shadow-sm transition-shadow cursor-pointer">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <CardTitle className="text-sm leading-tight">
-                            {policy.name || 'Untitled Policy'}
-                          </CardTitle>
-                          {policy.policy_number && (
-                            <CardDescription className="font-mono text-xs">
-                              {policy.policy_number}
-                            </CardDescription>
-                          )}
-                        </div>
-                        {policy.status && (
-                          <Badge 
-                            variant="secondary" 
-                            className={`text-xs ${getStatusColor(policy.status)}`}
-                          >
-                            {policy.status}
-                          </Badge>
-                        )}
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent className="pt-0">
-                      {policy.purpose && (
-                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
-                          {stripHtml(policy.purpose)}
-                        </p>
-                      )}
-                      
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        {policy.reviewer && (
-                          <div className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            <span className="truncate">{stripHtml(policy.reviewer)}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>{new Date(policy.created_at).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              <p>View all policies in the main content area</p>
             )}
           </div>
         </div>
