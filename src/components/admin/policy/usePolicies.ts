@@ -32,16 +32,21 @@ export function usePolicies() {
       
       try {
         setIsLoadingPolicies(true);
-        console.log('=== FETCHING POLICIES FOR CREATE PAGE ===', userRole);
+        console.log('=== FETCHING POLICIES FOR CREATE PAGE ===', { userRole, currentUserEmail: currentUser.email });
         
         let query = supabase.from('Policies').select('*');
         
+        // More permissive filtering - don't restrict by reviewer email for editors
+        // This was causing the issue where editors couldn't see their newly created policies
         if (isEditor) {
-          // Editors see their own draft policies
-          query = query.eq('reviewer', currentUser.email).eq('status', 'draft');
+          // Editors see draft and under-review policies (not just their own)
+          query = query.in('status', ['draft', 'under-review']);
         } else if (canPublish) {
           // Publishers and super-admins see policies that need review
           query = query.in('status', ['draft', 'under-review', 'under review']);
+        } else {
+          // Read-only users see published policies
+          query = query.eq('status', 'published');
         }
         
         const { data, error } = await query.order('created_at', { ascending: false });
@@ -124,6 +129,7 @@ export function usePolicies() {
   };
 
   const addPolicy = (newPolicy: Policy) => {
+    console.log('=== ADDING POLICY TO LOCAL STATE ===', newPolicy);
     setPolicies(prev => [newPolicy, ...prev]);
   };
 
