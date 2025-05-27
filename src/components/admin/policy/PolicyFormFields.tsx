@@ -92,29 +92,6 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
 
       <FormField
         control={control}
-        name="procedure"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Procedure</FormLabel>
-            <FormControl>
-              <RichTextEditor 
-                content={field.value}
-                onChange={field.onChange}
-                placeholder="Outline the step-by-step procedure..."
-                className="min-h-[180px]"
-                context="procedure"
-              />
-            </FormControl>
-            <FormDescription>
-              Provide detailed steps on how this policy should be implemented. The AI Assistant can help expand content and improve clarity.
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={control}
         name="policy_text"
         render={({ field }) => (
           <FormItem>
@@ -130,6 +107,29 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
             </FormControl>
             <FormDescription>
               The full text of the policy document with formatting. Use AI tools to convert to proper policy language and ensure professional tone.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name="procedure"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Procedure</FormLabel>
+            <FormControl>
+              <RichTextEditor 
+                content={field.value}
+                onChange={field.onChange}
+                placeholder="Outline the step-by-step procedure..."
+                className="min-h-[180px]"
+                context="procedure"
+              />
+            </FormControl>
+            <FormDescription>
+              Provide detailed steps on how this policy should be implemented. The AI Assistant can help expand content and improve clarity.
             </FormDescription>
             <FormMessage />
           </FormItem>
