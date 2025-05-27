@@ -14,6 +14,7 @@ import { ReviewPolicies } from '@/components/admin/ReviewPolicies';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { PolicySidebar } from '@/components/admin/PolicySidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
+import { AdminTabs } from '@/components/admin/AdminTabs';
 import { useAdminLogic } from '@/hooks/useAdminLogic';
 
 const Admin = () => {
@@ -42,19 +43,65 @@ const Admin = () => {
     return <Navigate to="/" replace />;
   }
 
+  // Super-admin layout with horizontal tabs (no sidebar)
+  if (isSuperAdmin) {
+    return (
+      <div className="min-h-screen flex w-full">
+        <div className="flex-1 flex flex-col">
+          <AdminHeader isSuperAdmin={isSuperAdmin} pageTitle={getPageTitle()} />
+          
+          <div className="flex-1 overflow-auto p-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <AdminTabs />
+              
+              <TabsContent value="create-policy">
+                <CreatePolicy />
+              </TabsContent>
+
+              <TabsContent value="draft-policies">
+                <DraftPolicies />
+              </TabsContent>
+
+              <TabsContent value="review-policies">
+                <ReviewPolicies />
+              </TabsContent>
+
+              <TabsContent value="facility-policies">
+                <FacilityPolicies />
+              </TabsContent>
+
+              <TabsContent value="users">
+                <UserManagement />
+              </TabsContent>
+
+              <TabsContent value="assignments">
+                <AssignmentManagement />
+              </TabsContent>
+
+              <TabsContent value="analytics">
+                <SystemAnalytics />
+              </TabsContent>
+
+              <TabsContent value="moderation">
+                <ContentModeration />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Editor/Publisher layout with sidebar (existing behavior)
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        {isSuperAdmin ? (
-          <AdminSidebar onTabChange={handleTabChange} activeTab={activeTab} />
-        ) : (
-          <PolicySidebar 
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            isEditor={isEditor}
-            canPublish={canPublish}
-          />
-        )}
+        <PolicySidebar 
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          isEditor={isEditor}
+          canPublish={canPublish}
+        />
         
         <div className="flex-1 flex flex-col ml-64">
           <AdminHeader isSuperAdmin={isSuperAdmin} pageTitle={getPageTitle()} />
@@ -76,26 +123,6 @@ const Admin = () => {
               <TabsContent value="facility-policies">
                 <FacilityPolicies />
               </TabsContent>
-
-              {isSuperAdmin && (
-                <>
-                  <TabsContent value="users">
-                    <UserManagement />
-                  </TabsContent>
-
-                  <TabsContent value="assignments">
-                    <AssignmentManagement />
-                  </TabsContent>
-
-                  <TabsContent value="analytics">
-                    <SystemAnalytics />
-                  </TabsContent>
-
-                  <TabsContent value="moderation">
-                    <ContentModeration />
-                  </TabsContent>
-                </>
-              )}
             </Tabs>
           </div>
         </div>
