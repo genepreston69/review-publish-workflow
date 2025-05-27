@@ -65,8 +65,10 @@ export function ContentSidebar() {
   const canCreatePolicies = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
   const handleCreatePolicy = () => {
-    // Open in new tab to avoid changing the current context
-    window.open('/admin?tab=create-policy', '_blank');
+    console.log('=== CREATE POLICY BUTTON CLICKED ===', { currentUserRole: userRole });
+    // Navigate to admin dashboard with create policy tab - don't open in new tab
+    // This was causing issues by opening in a different context
+    window.location.href = '/admin?tab=create-policy';
   };
 
   const navigationItems = [
@@ -153,8 +155,6 @@ export function ContentSidebar() {
         <div className="border-t p-4">
           <a 
             href="/admin" 
-            target="_blank"
-            rel="noopener noreferrer"
             className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
           >
             <Settings className="w-4 h-4" />
