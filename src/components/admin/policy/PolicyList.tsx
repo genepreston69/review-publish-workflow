@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from '@/components/ui/card';
 import { FileText } from 'lucide-react';
 import { PolicyCard } from './PolicyCard';
@@ -21,10 +20,11 @@ interface PolicyListProps {
   isEditor: boolean;
   canPublish: boolean;
   onUpdateStatus: (policyId: string, newStatus: string) => void;
+  onEdit?: (policyId: string) => void;
   onDelete?: (policyId: string) => void;
 }
 
-export function PolicyList({ policies, isLoading, isEditor, canPublish, onUpdateStatus, onDelete }: PolicyListProps) {
+export function PolicyList({ policies, isLoading, isEditor, canPublish, onUpdateStatus, onEdit, onDelete }: PolicyListProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -61,6 +61,7 @@ export function PolicyList({ policies, isLoading, isEditor, canPublish, onUpdate
           policy={policy}
           canPublish={canPublish}
           onUpdateStatus={onUpdateStatus}
+          onEdit={onEdit}
           onDelete={onDelete}
         />
       ))}
