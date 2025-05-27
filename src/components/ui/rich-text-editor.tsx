@@ -3,12 +3,13 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
+import Underline from '@tiptap/extension-underline';
 import { Button } from '@/components/ui/button';
 import { AIWritingAssistant } from '@/components/ui/ai-writing-assistant';
 import { 
   Bold, 
   Italic, 
-  Underline, 
+  Underline as UnderlineIcon, 
   Strikethrough,
   List,
   ListOrdered,
@@ -32,6 +33,7 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
       StarterKit,
       TextStyle,
       Color,
+      Underline,
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -84,6 +86,15 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
             className={editor.isActive('italic') ? 'bg-gray-200' : ''}
           >
             <Italic className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            className={editor.isActive('underline') ? 'bg-gray-200' : ''}
+          >
+            <UnderlineIcon className="h-4 w-4" />
           </Button>
           <Button
             type="button"
