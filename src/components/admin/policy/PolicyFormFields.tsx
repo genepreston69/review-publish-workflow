@@ -79,10 +79,11 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
                 onChange={field.onChange}
                 placeholder="Describe the purpose of this policy..."
                 className="min-h-[150px]"
+                context="purpose"
               />
             </FormControl>
             <FormDescription>
-              Explain why this policy exists and what it aims to achieve.
+              Explain why this policy exists and what it aims to achieve. Use the AI Assistant for professional policy language suggestions.
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -101,10 +102,11 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
                 onChange={field.onChange}
                 placeholder="Outline the step-by-step procedure..."
                 className="min-h-[180px]"
+                context="procedure"
               />
             </FormControl>
             <FormDescription>
-              Provide detailed steps on how this policy should be implemented.
+              Provide detailed steps on how this policy should be implemented. The AI Assistant can help expand content and improve clarity.
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -123,10 +125,11 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
                 onChange={field.onChange}
                 placeholder="Enter the complete policy text..."
                 className="min-h-[250px]"
+                context="policy text"
               />
             </FormControl>
             <FormDescription>
-              The full text of the policy document with formatting.
+              The full text of the policy document with formatting. Use AI tools to convert to proper policy language and ensure professional tone.
             </FormDescription>
             <FormMessage />
           </FormItem>
