@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -53,7 +52,6 @@ export function ContentSidebar() {
   console.log('=== CONTENT SIDEBAR RENDERING ===');
   
   const { userRole } = useAuth();
-  const navigate = useNavigate();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
 
@@ -97,7 +95,8 @@ export function ContentSidebar() {
   const canCreatePolicies = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
   const handleCreatePolicy = () => {
-    navigate('/admin?tab=create-policy');
+    // Open in new tab to avoid changing the current context
+    window.open('/admin?tab=create-policy', '_blank');
   };
 
   const navigationItems = [
@@ -231,6 +230,8 @@ export function ContentSidebar() {
         <div className="border-t p-4">
           <a 
             href="/admin" 
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
           >
             <Settings className="w-4 h-4" />
