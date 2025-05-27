@@ -13,7 +13,6 @@ import { DraftPolicies } from '@/components/admin/DraftPolicies';
 import { ReviewPolicies } from '@/components/admin/ReviewPolicies';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { PolicySidebar } from '@/components/admin/PolicySidebar';
-import { AdminTabs } from '@/components/admin/AdminTabs';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useAdminLogic } from '@/hooks/useAdminLogic';
 
@@ -26,7 +25,6 @@ const Admin = () => {
     canPublish,
     isSuperAdmin,
     getPageTitle,
-    getTabsGridCols,
     handleTabChange
   } = useAdminLogic();
 
@@ -63,13 +61,6 @@ const Admin = () => {
           
           <div className="flex-1 overflow-auto p-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <AdminTabs 
-                isSuperAdmin={isSuperAdmin}
-                isEditor={isEditor}
-                canPublish={canPublish}
-                getTabsGridCols={getTabsGridCols}
-              />
-
               <TabsContent value="create-policy">
                 <CreatePolicy />
               </TabsContent>

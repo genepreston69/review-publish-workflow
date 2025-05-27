@@ -27,17 +27,6 @@ export function useAdminLogic() {
     return 'Dashboard';
   };
 
-  const getTabsGridCols = () => {
-    if (isSuperAdmin) {
-      return 'grid-cols-4';
-    }
-    
-    let cols = 2; // Create Policy + Facility Policies
-    if (isEditor) cols += 1; // Draft Policies
-    if (canPublish && !isEditor) cols += 1; // Review Policies
-    return `grid-cols-${cols}`;
-  };
-
   const handleTabChange = (tabValue: string) => {
     setActiveTab(tabValue);
   };
@@ -49,7 +38,6 @@ export function useAdminLogic() {
     canPublish,
     isSuperAdmin,
     getPageTitle,
-    getTabsGridCols,
     handleTabChange
   };
 }
