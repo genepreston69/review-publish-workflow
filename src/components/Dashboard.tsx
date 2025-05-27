@@ -1,9 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ContentCard } from './ContentCard';
-import { ContentSidebar } from './ContentSidebar';
-import { FacilityPoliciesView } from './FacilityPoliciesView';
+import { FacilityPolicies } from './admin/FacilityPolicies';
 import { useAuth } from '@/hooks/useAuth';
 import { Content } from '@/types/content';
 import { Plus, Loader2 } from 'lucide-react';
@@ -14,7 +14,6 @@ export const Dashboard = () => {
   const { currentUser, userRole } = useAuth();
   const [contents, setContents] = useState<Content[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'content' | 'policies'>('content');
   const { toast } = useToast();
   
   const canCreate = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
@@ -159,14 +158,11 @@ export const Dashboard = () => {
     }
   };
 
-  if (isLoading && activeView === 'content') {
+  if (isLoading) {
     return (
-      <div className="flex min-h-screen w-full">
-        <ContentSidebar activeView={activeView} onViewChange={setActiveView} />
-        <div className="flex-1 p-8">
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
-          </div>
+      <div className="p-8">
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
         </div>
       </div>
     );
@@ -177,123 +173,118 @@ export const Dashboard = () => {
   const publishedContents = contents.filter(c => c.status === 'published');
 
   return (
-    <div className="flex min-h-screen w-full">
-      <ContentSidebar activeView={activeView} onViewChange={setActiveView} />
-      
-      <div className="flex-1">
-        {activeView === 'content' ? (
-          <div className="p-6 space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Content Management</h2>
-                <p className="text-gray-600">
-                  Manage your content across different stages • Role: {userRole}
-                </p>
-              </div>
-              {canCreate && (
-                <Button onClick={handleCreateNew}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create New Content
-                </Button>
-              )}
-            </div>
-
-            <Tabs defaultValue="all" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="all">All Content ({contents.length})</TabsTrigger>
-                <TabsTrigger value="drafts">Drafts ({draftContents.length})</TabsTrigger>
-                <TabsTrigger value="review">Under Review ({reviewContents.length})</TabsTrigger>
-                <TabsTrigger value="published">Published ({publishedContents.length})</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="all" className="mt-6">
-                {contents.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500">
-                      No content found for your role ({userRole}). 
-                      {canCreate && " Create your first piece of content to get started."}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {contents.map((content) => (
-                      <ContentCard
-                        key={content.id}
-                        content={content}
-                        onEdit={handleEdit}
-                        onView={handleView}
-                        onPublish={handlePublish}
-                      />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="drafts" className="mt-6">
-                {draftContents.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500">No draft content found.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {draftContents.map((content) => (
-                      <ContentCard
-                        key={content.id}
-                        content={content}
-                        onEdit={handleEdit}
-                        onView={handleView}
-                        onPublish={handlePublish}
-                      />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="review" className="mt-6">
-                {reviewContents.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500">No content under review.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {reviewContents.map((content) => (
-                      <ContentCard
-                        key={content.id}
-                        content={content}
-                        onEdit={handleEdit}
-                        onView={handleView}
-                        onPublish={handlePublish}
-                      />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="published" className="mt-6">
-                {publishedContents.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500">No published content found.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {publishedContents.map((content) => (
-                      <ContentCard
-                        key={content.id}
-                        content={content}
-                        onEdit={handleEdit}
-                        onView={handleView}
-                        onPublish={handlePublish}
-                      />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </div>
-        ) : (
-          <FacilityPoliciesView />
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Content Management</h2>
+          <p className="text-gray-600">
+            Manage your content across different stages • Role: {userRole}
+          </p>
+        </div>
+        {canCreate && (
+          <Button onClick={handleCreateNew}>
+            <Plus className="w-4 h-4 mr-2" />
+            Create New Content
+          </Button>
         )}
       </div>
+
+      <Tabs defaultValue="policies" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="policies">Facility Policies</TabsTrigger>
+          <TabsTrigger value="all">All Content ({contents.length})</TabsTrigger>
+          <TabsTrigger value="drafts">Drafts ({draftContents.length})</TabsTrigger>
+          <TabsTrigger value="review">Under Review ({reviewContents.length})</TabsTrigger>
+          <TabsTrigger value="published">Published ({publishedContents.length})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="policies" className="mt-6">
+          <FacilityPolicies />
+        </TabsContent>
+
+        <TabsContent value="all" className="mt-6">
+          {contents.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">
+                No content found for your role ({userRole}). 
+                {canCreate && " Create your first piece of content to get started."}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {contents.map((content) => (
+                <ContentCard
+                  key={content.id}
+                  content={content}
+                  onEdit={handleEdit}
+                  onView={handleView}
+                  onPublish={handlePublish}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="drafts" className="mt-6">
+          {draftContents.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No draft content found.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {draftContents.map((content) => (
+                <ContentCard
+                  key={content.id}
+                  content={content}
+                  onEdit={handleEdit}
+                  onView={handleView}
+                  onPublish={handlePublish}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="review" className="mt-6">
+          {reviewContents.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No content under review.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {reviewContents.map((content) => (
+                <ContentCard
+                  key={content.id}
+                  content={content}
+                  onEdit={handleEdit}
+                  onView={handleView}
+                  onPublish={handlePublish}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="published" className="mt-6">
+          {publishedContents.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No published content found.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {publishedContents.map((content) => (
+                <ContentCard
+                  key={content.id}
+                  content={content}
+                  onEdit={handleEdit}
+                  onView={handleView}
+                  onPublish={handlePublish}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
