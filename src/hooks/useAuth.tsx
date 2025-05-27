@@ -31,7 +31,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   const fetchUserRole = async (userId: string): Promise<UserRole> => {
     try {
@@ -78,8 +77,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (error) {
           console.error('=== INITIAL SESSION ERROR ===', error);
           if (isMounted) {
+            setSession(null);
+            setCurrentUser(null);
+            setUserRole(null);
             setIsLoading(false);
-            setIsInitialized(true);
           }
           return;
         }
@@ -97,16 +98,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               setUserRole(role);
               console.log('=== INITIAL ROLE SET ===', role);
             }
+          } else {
+            setUserRole(null);
           }
           
           setIsLoading(false);
-          setIsInitialized(true);
         }
       } catch (error) {
         console.error('=== AUTH INITIALIZATION ERROR ===', error);
         if (isMounted) {
+          setSession(null);
+          setCurrentUser(null);
+          setUserRole(null);
           setIsLoading(false);
-          setIsInitialized(true);
         }
       }
     };
@@ -118,8 +122,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (!isMounted) return;
         
-        // Only handle auth changes after initial setup is complete
-        if (!isInitialized && event !== 'INITIAL_SESSION') {
+        if (event === 'SIGNED_OUT' || !session) {
+          console.log('=== USER SIGNED OUT OR NO SESSION, CLEARING STATE ===');
+          setSession(null);
+          setCurrentUser(null);
+          setUserRole(null);
+          setIsLoading(false);
           return;
         }
         
@@ -140,15 +148,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               setUserRole('read-only');
             }
           }
-        } else if (!session?.user) {
-          console.log('=== NO USER, CLEARING STATE ===');
-          setUserRole(null);
         }
         
-        if (event === 'SIGNED_OUT') {
-          setUserRole(null);
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     );
 
@@ -162,20 +164,33 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const signOut = async () => {
-    console.log('=== SIGNING OUT ===');
+    console.log('=== SIGNING OUT ===', new Date().toISOString());
     setIsLoading(true);
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error signing out:', error);
+    
+    try {
+      // Clear local state immediately
+      setSession(null);
+      setCurrentUser(null);
+      setUserRole(null);
+      
+      // Then sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+      } else {
+        console.log('=== SIGN OUT SUCCESSFUL ===', new Date().toISOString());
+      }
+    } catch (error) {
+      console.error('=== SIGN OUT ERROR ===', error);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   console.log('=== AUTH PROVIDER RENDER ===', { 
     currentUser: !!currentUser, 
     userRole, 
-    isLoading, 
-    isInitialized,
+    isLoading,
     timestamp: new Date().toISOString()
   });
 
