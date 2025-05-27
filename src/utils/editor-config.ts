@@ -4,27 +4,31 @@ import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
+import BulletList from '@tiptap/extension-bullet-list';
+import OrderedList from '@tiptap/extension-ordered-list';
+import ListItem from '@tiptap/extension-list-item';
 
 export const getEditorExtensions = () => [
   StarterKit.configure({
-    bulletList: {
-      keepMarks: true,
-      keepAttributes: false,
-      HTMLAttributes: {
-        class: 'bullet-list',
-      },
+    // Disable the default list extensions from StarterKit
+    bulletList: false,
+    orderedList: false,
+    listItem: false,
+  }),
+  // Add the list extensions separately with proper configuration
+  BulletList.configure({
+    HTMLAttributes: {
+      class: 'bullet-list',
     },
-    orderedList: {
-      keepMarks: true,
-      keepAttributes: false,
-      HTMLAttributes: {
-        class: 'ordered-list',
-      },
+  }),
+  OrderedList.configure({
+    HTMLAttributes: {
+      class: 'ordered-list',
     },
-    listItem: {
-      HTMLAttributes: {
-        class: 'list-item',
-      },
+  }),
+  ListItem.configure({
+    HTMLAttributes: {
+      class: 'list-item',
     },
   }),
   TextStyle,

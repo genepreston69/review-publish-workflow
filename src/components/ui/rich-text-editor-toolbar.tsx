@@ -21,6 +21,32 @@ interface RichTextEditorToolbarProps {
 }
 
 export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
+  const handleBulletList = () => {
+    console.log('Bullet list button clicked');
+    console.log('Is bullet list active before toggle:', editor.isActive('bulletList'));
+    
+    // Force focus and toggle bullet list
+    editor.chain().focus().toggleBulletList().run();
+    
+    // Log state after toggle
+    setTimeout(() => {
+      console.log('Is bullet list active after toggle:', editor.isActive('bulletList'));
+    }, 100);
+  };
+
+  const handleOrderedList = () => {
+    console.log('Ordered list button clicked');
+    console.log('Is ordered list active before toggle:', editor.isActive('orderedList'));
+    
+    // Force focus and toggle ordered list
+    editor.chain().focus().toggleOrderedList().run();
+    
+    // Log state after toggle
+    setTimeout(() => {
+      console.log('Is ordered list active after toggle:', editor.isActive('orderedList'));
+    }, 100);
+  };
+
   return (
     <div className="flex flex-wrap gap-1">
       <Button
@@ -64,11 +90,7 @@ export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
         type="button"
         variant="ghost"
         size="sm"
-        onClick={() => {
-          console.log('Bullet list button clicked');
-          console.log('Is bullet list active:', editor.isActive('bulletList'));
-          editor.chain().focus().toggleBulletList().run();
-        }}
+        onClick={handleBulletList}
         className={editor.isActive('bulletList') ? 'bg-gray-200' : ''}
         title="Bullet List"
       >
@@ -78,11 +100,7 @@ export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
         type="button"
         variant="ghost"
         size="sm"
-        onClick={() => {
-          console.log('Ordered list button clicked');
-          console.log('Is ordered list active:', editor.isActive('orderedList'));
-          editor.chain().focus().toggleOrderedList().run();
-        }}
+        onClick={handleOrderedList}
         className={editor.isActive('orderedList') ? 'bg-gray-200' : ''}
         title="Numbered List"
       >
