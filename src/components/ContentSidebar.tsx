@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,7 +46,7 @@ const stripHtml = (html: string | null): string => {
 
 const getStatusColor = (status: string | null) => {
   switch (status?.toLowerCase()) {
-    case 'active':
+    case 'published':
       return 'bg-green-100 text-green-800';
     case 'draft':
       return 'bg-yellow-100 text-yellow-800';
@@ -81,7 +80,7 @@ export function ContentSidebar() {
         const { data, error } = await supabase
           .from('Policies')
           .select('*')
-          .eq('status', 'active')
+          .eq('status', 'published') // Changed from 'active' to 'published'
           .order('policy_number', { ascending: true });
 
         console.log('=== POLICIES RESPONSE ===', { data, error });
@@ -178,7 +177,7 @@ export function ContentSidebar() {
                 </div>
               ) : policies.length === 0 ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
-                  No active policies found
+                  No published policies found
                 </div>
               ) : (
                 <div className="space-y-3 p-2">
