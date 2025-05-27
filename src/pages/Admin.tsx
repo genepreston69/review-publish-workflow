@@ -59,86 +59,35 @@ const Admin = () => {
     return 'Dashboard';
   };
 
-  // Calculate grid columns based on visible tabs
-  const getTabsGridCols = () => {
-    if (isSuperAdmin) {
-      // For super admin: Create Policy + Users + Assignments + Analytics = 4 tabs
-      return 'grid-cols-4';
-    }
-    
-    let cols = 2; // Create Policy + Facility Policies
-    if (isEditor) cols += 1; // Draft Policies
-    if (canPublish && !isEditor) cols += 1; // Review Policies
-    return `grid-cols-${cols}`;
-  };
+  // Define policy tabs that will be horizontal
+  const policyTabs = [
+    {
+      title: "Create Policy",
+      icon: Plus,
+      tabValue: "create-policy",
+    },
+    ...(isEditor ? [{
+      title: "Draft Policies",
+      icon: FileClock,
+      tabValue: "draft-policies",
+    }] : []),
+    ...(canPublish && !isEditor ? [{
+      title: "Review Policies",
+      icon: FileCheck,
+      tabValue: "review-policies",
+    }] : []),
+    {
+      title: "Facility Policies",
+      icon: FileText,
+      tabValue: "facility-policies",
+    },
+  ];
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        {isSuperAdmin ? (
+        {isSuperAdmin && (
           <AdminSidebar onTabChange={handleTabChange} activeTab={activeTab} />
-        ) : (
-          // Simple sidebar for non-super-admin users
-          <div className="w-64 border-r bg-white">
-            <div className="p-4 border-b">
-              <div className="flex items-center gap-2">
-                <Shield className="w-6 h-6 text-purple-600" />
-                <span className="font-semibold text-lg">Policy Manager</span>
-              </div>
-            </div>
-            <div className="p-4">
-              <div className="space-y-2">
-                <button
-                  onClick={() => setActiveTab('create-policy')}
-                  className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                    activeTab === 'create-policy' 
-                      ? 'bg-purple-100 text-purple-700' 
-                      : 'hover:bg-gray-100'
-                  }`}
-                >
-                  <Plus className="w-4 h-4 inline mr-2" />
-                  Create Policy
-                </button>
-                {isEditor && (
-                  <button
-                    onClick={() => setActiveTab('draft-policies')}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                      activeTab === 'draft-policies' 
-                        ? 'bg-purple-100 text-purple-700' 
-                        : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    <FileClock className="w-4 h-4 inline mr-2" />
-                    Draft Policies
-                  </button>
-                )}
-                {canPublish && !isEditor && (
-                  <button
-                    onClick={() => setActiveTab('review-policies')}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                      activeTab === 'review-policies' 
-                        ? 'bg-purple-100 text-purple-700' 
-                        : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    <FileCheck className="w-4 h-4 inline mr-2" />
-                    Review Policies
-                  </button>
-                )}
-                <button
-                  onClick={() => setActiveTab('facility-policies')}
-                  className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                    activeTab === 'facility-policies' 
-                      ? 'bg-purple-100 text-purple-700' 
-                      : 'hover:bg-gray-100'
-                  }`}
-                >
-                  <FileText className="w-4 h-4 inline mr-2" />
-                  Facility Policies
-                </button>
-              </div>
-            </div>
-          </div>
         )}
         
         <SidebarInset className="flex-1">
@@ -153,85 +102,86 @@ const Admin = () => {
           
           <div className="flex-1 p-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              {isSuperAdmin ? (
-                <TabsList className={`grid w-full ${getTabsGridCols()} mb-8`}>
-                  <TabsTrigger value="create-policy" className="flex items-center gap-2">
-                    <Plus className="w-4 h-4" />
-                    Create Policy
-                  </TabsTrigger>
-                  <TabsTrigger value="users" className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    User Management
-                  </TabsTrigger>
-                  <TabsTrigger value="assignments" className="flex items-center gap-2">
-                    <Link className="w-4 h-4" />
-                    Assignments
-                  </TabsTrigger>
-                  <TabsTrigger value="analytics" className="flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4" />
-                    Analytics
-                  </TabsTrigger>
-                </TabsList>
-              ) : (
-                <TabsList className={`grid w-full ${getTabsGridCols()} mb-8`}>
-                  <TabsTrigger value="create-policy" className="flex items-center gap-2">
-                    <Plus className="w-4 h-4" />
-                    Create Policy
-                  </TabsTrigger>
-                  {isEditor && (
-                    <TabsTrigger value="draft-policies" className="flex items-center gap-2">
-                      <FileClock className="w-4 h-4" />
-                      Draft Policies
+              {/* Policy tabs - always horizontal */}
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold mb-4">Policy Management</h2>
+                <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 h-auto p-1">
+                  {policyTabs.map((tab) => (
+                    <TabsTrigger 
+                      key={tab.tabValue}
+                      value={tab.tabValue} 
+                      className="flex items-center gap-2 h-10"
+                    >
+                      <tab.icon className="w-4 h-4" />
+                      <span className="hidden sm:inline">{tab.title}</span>
                     </TabsTrigger>
-                  )}
-                  {canPublish && !isEditor && (
-                    <TabsTrigger value="review-policies" className="flex items-center gap-2">
-                      <FileCheck className="w-4 h-4" />
-                      Review Policies
-                    </TabsTrigger>
-                  )}
-                  <TabsTrigger value="facility-policies" className="flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
-                    Facility Policies
-                  </TabsTrigger>
+                  ))}
                 </TabsList>
-              )}
+              </div>
 
-              <TabsContent value="create-policy">
-                <CreatePolicy />
-              </TabsContent>
-
-              <TabsContent value="draft-policies">
-                <DraftPolicies />
-              </TabsContent>
-
-              <TabsContent value="review-policies">
-                <ReviewPolicies />
-              </TabsContent>
-
-              <TabsContent value="facility-policies">
-                <FacilityPolicies />
-              </TabsContent>
-
+              {/* Super admin tabs - only show if super admin */}
               {isSuperAdmin && (
-                <>
-                  <TabsContent value="users">
-                    <UserManagement />
-                  </TabsContent>
-
-                  <TabsContent value="assignments">
-                    <AssignmentManagement />
-                  </TabsContent>
-
-                  <TabsContent value="analytics">
-                    <SystemAnalytics />
-                  </TabsContent>
-
-                  <TabsContent value="moderation">
-                    <ContentModeration />
-                  </TabsContent>
-                </>
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold mb-4">Administration</h2>
+                  <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 h-auto p-1">
+                    <TabsTrigger value="users" className="flex items-center gap-2 h-10">
+                      <Users className="w-4 h-4" />
+                      <span className="hidden sm:inline">User Management</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="assignments" className="flex items-center gap-2 h-10">
+                      <Link className="w-4 h-4" />
+                      <span className="hidden sm:inline">Assignments</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="analytics" className="flex items-center gap-2 h-10">
+                      <BarChart3 className="w-4 h-4" />
+                      <span className="hidden sm:inline">Analytics</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="moderation" className="flex items-center gap-2 h-10">
+                      <FileText className="w-4 h-4" />
+                      <span className="hidden sm:inline">Moderation</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
               )}
+
+              {/* Tab Contents */}
+              <div className="mt-6">
+                <TabsContent value="create-policy">
+                  <CreatePolicy />
+                </TabsContent>
+
+                <TabsContent value="draft-policies">
+                  <DraftPolicies />
+                </TabsContent>
+
+                <TabsContent value="review-policies">
+                  <ReviewPolicies />
+                </TabsContent>
+
+                <TabsContent value="facility-policies">
+                  <FacilityPolicies />
+                </TabsContent>
+
+                {isSuperAdmin && (
+                  <>
+                    <TabsContent value="users">
+                      <UserManagement />
+                    </TabsContent>
+
+                    <TabsContent value="assignments">
+                      <AssignmentManagement />
+                    </TabsContent>
+
+                    <TabsContent value="analytics">
+                      <SystemAnalytics />
+                    </TabsContent>
+
+                    <TabsContent value="moderation">
+                      <ContentModeration />
+                    </TabsContent>
+                  </>
+                )}
+              </div>
             </Tabs>
           </div>
         </SidebarInset>

@@ -11,7 +11,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Shield, Users, Link, BarChart3, Settings, Plus, FileText, FileClock, FileCheck } from 'lucide-react';
+import { Shield, Users, Link, BarChart3, Settings, FileText } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const adminItems = [
@@ -45,32 +45,7 @@ interface AdminSidebarProps {
 export function AdminSidebar({ onTabChange, activeTab }: AdminSidebarProps) {
   const { userRole } = useAuth();
 
-  const isEditor = userRole === 'edit';
-  const canPublish = userRole === 'publish' || userRole === 'super-admin';
   const isSuperAdmin = userRole === 'super-admin';
-
-  const policyItems = [
-    {
-      title: "Create Policy",
-      icon: Plus,
-      tabValue: "create-policy",
-    },
-    ...(isEditor ? [{
-      title: "Draft Policies",
-      icon: FileClock,
-      tabValue: "draft-policies",
-    }] : []),
-    ...(canPublish && !isEditor ? [{
-      title: "Review Policies",
-      icon: FileCheck,
-      tabValue: "review-policies",
-    }] : []),
-    {
-      title: "Facility Policies",
-      icon: FileText,
-      tabValue: "facility-policies",
-    },
-  ];
 
   return (
     <Sidebar>
@@ -83,10 +58,10 @@ export function AdminSidebar({ onTabChange, activeTab }: AdminSidebarProps) {
       
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Policies</SidebarGroupLabel>
+          <SidebarGroupLabel>Administration</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {policyItems.map((item) => (
+              {adminItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     onClick={() => onTabChange(item.tabValue)}
@@ -101,38 +76,12 @@ export function AdminSidebar({ onTabChange, activeTab }: AdminSidebarProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {isSuperAdmin && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Administration</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {adminItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                      onClick={() => onTabChange(item.tabValue)}
-                      isActive={activeTab === item.tabValue}
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <item.icon className="w-4 h-4" />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t p-4">
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <Settings className="w-4 h-4" />
-          <span>
-            {isSuperAdmin && "Super Admin Dashboard"}
-            {canPublish && !isSuperAdmin && "Publisher Dashboard"}
-            {isEditor && "Editor Dashboard"}
-          </span>
+          <span>Super Admin Dashboard</span>
         </div>
       </SidebarFooter>
     </Sidebar>
