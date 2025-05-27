@@ -1,4 +1,16 @@
 
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarHeader,
+  SidebarFooter,
+} from "@/components/ui/sidebar";
 import { Shield, Users, Link, BarChart3, Settings, Plus, FileText, FileClock, FileCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -61,61 +73,59 @@ export function AdminSidebar({ onTabChange, activeTab }: AdminSidebarProps) {
   ];
 
   return (
-    <div className="fixed left-0 top-0 h-screen w-64 border-r bg-white z-20 overflow-y-auto">
-      <div className="p-4 border-b">
+    <Sidebar>
+      <SidebarHeader className="border-b p-4">
         <div className="flex items-center gap-2">
           <Shield className="w-6 h-6 text-purple-600" />
           <span className="font-semibold text-lg">Admin Panel</span>
         </div>
-      </div>
+      </SidebarHeader>
       
-      <div className="p-4">
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Policies</h3>
-            <div className="space-y-2">
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Policies</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
               {policyItems.map((item) => (
-                <button
-                  key={item.title}
-                  onClick={() => onTabChange(item.tabValue)}
-                  className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                    activeTab === item.tabValue 
-                      ? 'bg-purple-100 text-purple-700' 
-                      : 'hover:bg-gray-100'
-                  }`}
-                >
-                  <item.icon className="w-4 h-4 inline mr-2" />
-                  {item.title}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {isSuperAdmin && (
-            <div>
-              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Administration</h3>
-              <div className="space-y-2">
-                {adminItems.map((item) => (
-                  <button
-                    key={item.title}
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
                     onClick={() => onTabChange(item.tabValue)}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                      activeTab === item.tabValue 
-                        ? 'bg-purple-100 text-purple-700' 
-                        : 'hover:bg-gray-100'
-                    }`}
+                    isActive={activeTab === item.tabValue}
+                    className="flex items-center gap-2 cursor-pointer"
                   >
-                    <item.icon className="w-4 h-4 inline mr-2" />
-                    {item.title}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+                    <item.icon className="w-4 h-4" />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
-      <div className="absolute bottom-0 left-0 right-0 border-t bg-white p-4">
+        {isSuperAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administration</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      onClick={() => onTabChange(item.tabValue)}
+                      isActive={activeTab === item.tabValue}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+      </SidebarContent>
+
+      <SidebarFooter className="border-t p-4">
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <Settings className="w-4 h-4" />
           <span>
@@ -124,7 +134,7 @@ export function AdminSidebar({ onTabChange, activeTab }: AdminSidebarProps) {
             {isEditor && "Editor Dashboard"}
           </span>
         </div>
-      </div>
-    </div>
+      </SidebarFooter>
+    </Sidebar>
   );
 }
