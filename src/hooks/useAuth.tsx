@@ -36,12 +36,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       console.log('=== FETCHING ROLE FOR USER ===', userId, new Date().toISOString());
       
-      const { data, error } = await supabase
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Role fetch timeout')), 10000); // 10 second timeout
+      });
+
+      const queryPromise = supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .order('role', { ascending: false })
         .limit(1);
+
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
 
       if (error) {
         console.error('=== ERROR FETCHING USER ROLE ===', error);
@@ -71,7 +78,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     const initializeAuth = async () => {
       try {
-        // Get initial session
+        console.log('=== GETTING INITIAL SESSION ===');
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -116,7 +123,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (isMounted) {
           setSession(null);
           setCurrentUser(null);
-          setUserRole(null);
+          setUserRole('read-only'); // Set default role instead of null
           setIsLoading(false);
         }
       }
@@ -157,7 +164,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }
         }
         
-        setIsLoading(false);
+        // Always ensure loading is false after handling auth state change
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     );
 
