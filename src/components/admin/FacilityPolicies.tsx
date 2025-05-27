@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,7 +45,6 @@ export function FacilityPolicies() {
       const { data, error } = await supabase
         .from('Policies')
         .select('*')
-        .eq('status', 'active') // Only show published policies
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -173,7 +173,7 @@ export function FacilityPolicies() {
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Facility Policies</h2>
           <p className="text-muted-foreground">
-            View published facility policies and procedures
+            Manage and review facility policies and procedures
           </p>
         </div>
       </div>
@@ -183,8 +183,8 @@ export function FacilityPolicies() {
           <CardContent className="flex items-center justify-center py-12">
             <div className="text-center">
               <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-4 text-lg font-medium">No published policies found</h3>
-              <p className="text-gray-500">No facility policies have been published yet.</p>
+              <h3 className="mt-4 text-lg font-medium">No policies found</h3>
+              <p className="text-gray-500">No facility policies have been created yet.</p>
             </div>
           </CardContent>
         </Card>
@@ -247,9 +247,33 @@ export function FacilityPolicies() {
                     </div>
                   </div>
 
-                  {/* Super Admin Delete Action for published policies */}
-                  {isSuperAdmin && (
-                    <div className="pt-3 border-t">
+                  {/* Action buttons */}
+                  <div className="pt-3 border-t space-y-2">
+                    {/* Publisher Actions */}
+                    {canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') && (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => updatePolicyStatus(policy.id, 'active')}
+                          className="flex-1 bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Publish
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updatePolicyStatus(policy.id, 'archived')}
+                          className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                        >
+                          <XCircle className="w-3 h-3 mr-1" />
+                          Reject
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Super Admin Delete Action */}
+                    {isSuperAdmin && (
                       <Button
                         size="sm"
                         variant="destructive"
@@ -259,8 +283,8 @@ export function FacilityPolicies() {
                         <Trash2 className="w-3 h-3 mr-1" />
                         Delete Policy
                       </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
