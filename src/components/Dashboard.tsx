@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -189,18 +188,13 @@ export const Dashboard = () => {
         )}
       </div>
 
-      <Tabs defaultValue="policies" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="policies">Facility Policies</TabsTrigger>
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="all">All Content ({contents.length})</TabsTrigger>
           <TabsTrigger value="drafts">Drafts ({draftContents.length})</TabsTrigger>
           <TabsTrigger value="review">Under Review ({reviewContents.length})</TabsTrigger>
           <TabsTrigger value="published">Published ({publishedContents.length})</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="policies" className="mt-6">
-          <FacilityPolicies />
-        </TabsContent>
 
         <TabsContent value="all" className="mt-6">
           {contents.length === 0 ? (

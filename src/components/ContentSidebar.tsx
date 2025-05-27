@@ -19,12 +19,56 @@ const stripHtml = (html: string | null): string => {
   return doc.body.textContent || '';
 };
 
+interface Policy {
+  id: string;
+  name: string | null;
+  policy_number: string | null;
+  policy_text: string | null;
+  procedure: string | null;
+  purpose: string | null;
+  reviewer: string | null;
+  status: string | null;
+  created_at: string;
+}
+
 export function ContentSidebar() {
   console.log('=== CONTENT SIDEBAR RENDERING ===');
   
   const { userRole } = useAuth();
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
 
-  console.log('=== SIDEBAR RENDER STATE ===', { userRole });
+  useEffect(() => {
+    const fetchPolicies = async () => {
+      try {
+        console.log('=== FETCHING FACILITY POLICIES FOR SIDEBAR ===');
+        setIsLoadingPolicies(true);
+        
+        const { data, error } = await supabase
+          .from('Policies')
+          .select('*')
+          .eq('status', 'published')
+          .order('policy_number', { ascending: true })
+          .limit(10); // Limit to avoid overcrowding sidebar
+
+        console.log('=== FACILITY POLICIES SIDEBAR RESPONSE ===', { data, error });
+
+        if (error) {
+          console.error('Error fetching policies:', error);
+        } else {
+          setPolicies(data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching policies:', error);
+      } finally {
+        setIsLoadingPolicies(false);
+      }
+    };
+
+    fetchPolicies();
+  }, []);
+
+  console.log('=== SIDEBAR RENDER STATE ===', { userRole, policiesCount: policies.length });
 
   const canCreateContent = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
   const canCreatePolicies = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
@@ -87,6 +131,46 @@ export function ContentSidebar() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Facility Policies */}
+        <div className="flex-1 p-4 overflow-hidden">
+          <div className="flex items-center gap-2 mb-3">
+            <FileText className="w-4 h-4" />
+            <h3 className="text-sm font-medium text-gray-500">Facility Policies</h3>
+          </div>
+          
+          {isLoadingPolicies ? (
+            <div className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+            </div>
+          ) : policies.length === 0 ? (
+            <p className="text-xs text-gray-500">No published policies found</p>
+          ) : (
+            <div className="space-y-2 overflow-y-auto max-h-64">
+              {policies.map((policy) => (
+                <div key={policy.id} className="bg-gray-50 p-2 rounded-md">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs font-medium text-gray-900 truncate">
+                        {policy.name || 'Untitled Policy'}
+                      </h4>
+                      {policy.policy_number && (
+                        <p className="text-xs text-gray-500 font-mono">
+                          {policy.policy_number}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {policy.purpose && (
+                    <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                      {stripHtml(policy.purpose)}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
