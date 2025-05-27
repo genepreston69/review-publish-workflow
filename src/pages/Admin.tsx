@@ -75,70 +75,9 @@ const Admin = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        {isSuperAdmin ? (
+        {/* Only show sidebar for super-admin */}
+        {isSuperAdmin && (
           <AdminSidebar onTabChange={handleTabChange} activeTab={activeTab} />
-        ) : (
-          // Simple sidebar for non-super-admin users
-          <div className="w-64 border-r bg-white">
-            <div className="p-4 border-b">
-              <div className="flex items-center gap-2">
-                <Shield className="w-6 h-6 text-purple-600" />
-                <span className="font-semibold text-lg">Policy Manager</span>
-              </div>
-            </div>
-            <div className="p-4">
-              <div className="space-y-2">
-                <button
-                  onClick={() => setActiveTab('create-policy')}
-                  className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                    activeTab === 'create-policy' 
-                      ? 'bg-purple-100 text-purple-700' 
-                      : 'hover:bg-gray-100'
-                  }`}
-                >
-                  <Plus className="w-4 h-4 inline mr-2" />
-                  Create Policy
-                </button>
-                {isEditor && (
-                  <button
-                    onClick={() => setActiveTab('draft-policies')}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                      activeTab === 'draft-policies' 
-                        ? 'bg-purple-100 text-purple-700' 
-                        : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    <FileClock className="w-4 h-4 inline mr-2" />
-                    Draft Policies
-                  </button>
-                )}
-                {canPublish && !isEditor && (
-                  <button
-                    onClick={() => setActiveTab('review-policies')}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                      activeTab === 'review-policies' 
-                        ? 'bg-purple-100 text-purple-700' 
-                        : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    <FileCheck className="w-4 h-4 inline mr-2" />
-                    Review Policies
-                  </button>
-                )}
-                <button
-                  onClick={() => setActiveTab('facility-policies')}
-                  className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                    activeTab === 'facility-policies' 
-                      ? 'bg-purple-100 text-purple-700' 
-                      : 'hover:bg-gray-100'
-                  }`}
-                >
-                  <FileText className="w-4 h-4 inline mr-2" />
-                  Facility Policies
-                </button>
-              </div>
-            </div>
-          </div>
         )}
         
         <SidebarInset className="flex-1">
