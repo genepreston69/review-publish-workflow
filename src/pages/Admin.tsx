@@ -141,17 +141,19 @@ const Admin = () => {
           </div>
         )}
         
-        <SidebarInset className="flex-1">
-          <Header />
-          <div className="flex items-center gap-2 px-4 py-2 border-b">
-            {isSuperAdmin && <SidebarTrigger />}
-            <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-purple-600" />
-              <h1 className="text-lg font-semibold">{getPageTitle()}</h1>
+        <SidebarInset className="flex-1 flex flex-col">
+          <div className="sticky top-0 z-10 bg-white border-b">
+            <Header />
+            <div className="flex items-center gap-2 px-4 py-2 border-b">
+              {isSuperAdmin && <SidebarTrigger />}
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-purple-600" />
+                <h1 className="text-lg font-semibold">{getPageTitle()}</h1>
+              </div>
             </div>
           </div>
           
-          <div className="flex-1 p-6">
+          <div className="flex-1 overflow-auto p-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               {isSuperAdmin ? (
                 <TabsList className={`grid w-full ${getTabsGridCols()} mb-8`}>
