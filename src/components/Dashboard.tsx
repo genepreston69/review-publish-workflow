@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { DashboardTabs } from './DashboardTabs';
 import { ContentCard } from './ContentCard';
 import { useAuth } from '@/hooks/useAuth';
 import { Content } from '@/types/content';
@@ -188,12 +189,7 @@ export const Dashboard = () => {
       </div>
 
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="all">All Content ({contents.length})</TabsTrigger>
-          <TabsTrigger value="drafts">Drafts ({draftContents.length})</TabsTrigger>
-          <TabsTrigger value="review">Under Review ({reviewContents.length})</TabsTrigger>
-          <TabsTrigger value="published">Published ({publishedContents.length})</TabsTrigger>
-        </TabsList>
+        <DashboardTabs />
 
         <TabsContent value="all" className="mt-6">
           {contents.length === 0 ? (
