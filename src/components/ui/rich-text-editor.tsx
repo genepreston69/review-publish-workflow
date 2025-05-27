@@ -1,9 +1,9 @@
-
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import Underline from '@tiptap/extension-underline';
+import TextAlign from '@tiptap/extension-text-align';
 import { Button } from '@/components/ui/button';
 import { AIWritingAssistant } from '@/components/ui/ai-writing-assistant';
 import { 
@@ -46,6 +46,9 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
       TextStyle,
       Color,
       Underline,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
     ],
     content,
     onUpdate: ({ editor }) => {
