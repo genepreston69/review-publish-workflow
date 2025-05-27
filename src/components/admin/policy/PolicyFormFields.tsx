@@ -95,7 +95,7 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
         name="policy_text"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Policy Text</FormLabel>
+            <FormLabel>Policy</FormLabel>
             <FormControl>
               <RichTextEditor 
                 content={field.value}
