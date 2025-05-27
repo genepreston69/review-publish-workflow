@@ -41,11 +41,14 @@ export function FacilityPolicies() {
 
   const fetchPolicies = async () => {
     try {
+      console.log('=== FETCHING FACILITY POLICIES ===');
       const { data, error } = await supabase
         .from('Policies')
         .select('*')
-        .eq('status', 'active') // Only show published policies
+        .eq('status', 'published') // Changed from 'active' to 'published'
         .order('created_at', { ascending: false });
+
+      console.log('=== FACILITY POLICIES RESPONSE ===', { data, error });
 
       if (error) {
         console.error('Error fetching policies:', error);
@@ -68,6 +71,7 @@ export function FacilityPolicies() {
           return a.policy_number.localeCompare(b.policy_number);
         });
         
+        console.log('=== SORTED FACILITY POLICIES ===', sortedPolicies);
         setPolicies(sortedPolicies);
       }
     } catch (error) {
@@ -93,7 +97,7 @@ export function FacilityPolicies() {
 
       toast({
         title: "Success",
-        description: `Policy ${newStatus === 'active' ? 'published' : 'rejected'} successfully.`,
+        description: `Policy ${newStatus === 'published' ? 'published' : 'rejected'} successfully.`,
       });
 
       // Refresh policies
@@ -145,7 +149,7 @@ export function FacilityPolicies() {
 
   const getStatusColor = (status: string | null) => {
     switch (status?.toLowerCase()) {
-      case 'active':
+      case 'published':
         return 'bg-green-100 text-green-800';
       case 'draft':
         return 'bg-yellow-100 text-yellow-800';
