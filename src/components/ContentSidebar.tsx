@@ -23,43 +23,8 @@ export function ContentSidebar() {
   console.log('=== CONTENT SIDEBAR RENDERING ===');
   
   const { userRole } = useAuth();
-  const [policyCount, setPolicyCount] = useState(0);
-  const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
 
-  useEffect(() => {
-    console.log('=== CONTENT SIDEBAR USEEFFECT RUNNING ===');
-    console.log('=== USER ROLE FROM AUTH ===', userRole);
-    
-    const fetchPolicyCount = async () => {
-      try {
-        console.log('=== FETCHING POLICY COUNT START ===');
-        setIsLoadingPolicies(true);
-        
-        const { count, error } = await supabase
-          .from('Policies')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'published');
-
-        console.log('=== POLICY COUNT RESPONSE ===', { count, error });
-
-        if (error) {
-          console.error('Error fetching policy count:', error);
-        } else {
-          console.log('Policy count fetched successfully:', count);
-          setPolicyCount(count || 0);
-        }
-      } catch (error) {
-        console.error('Error in fetchPolicyCount:', error);
-      } finally {
-        setIsLoadingPolicies(false);
-        console.log('=== POLICY COUNT LOADING COMPLETE ===');
-      }
-    };
-
-    fetchPolicyCount();
-  }, []);
-
-  console.log('=== SIDEBAR RENDER STATE ===', { userRole, policyCount, isLoadingPolicies });
+  console.log('=== SIDEBAR RENDER STATE ===', { userRole });
 
   const canCreateContent = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
   const canCreatePolicies = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
@@ -121,29 +86,6 @@ export function ContentSidebar() {
                 <span>{item.title}</span>
               </button>
             ))}
-          </div>
-        </div>
-
-        {/* Policy Summary */}
-        <div className="flex-1 p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              <h3 className="text-sm font-medium text-gray-500">Facility Policies</h3>
-            </div>
-            {!isLoadingPolicies && (
-              <Badge variant="secondary" className="text-xs">
-                {policyCount} published
-              </Badge>
-            )}
-          </div>
-          
-          <div className="text-center text-sm text-muted-foreground">
-            {isLoadingPolicies ? (
-              <p>Loading policy count...</p>
-            ) : (
-              <p>View all policies in the main content area</p>
-            )}
           </div>
         </div>
       </div>
