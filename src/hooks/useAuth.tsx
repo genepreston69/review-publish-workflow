@@ -93,10 +93,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           
           if (initialSession?.user) {
             console.log('=== FETCHING INITIAL ROLE ===', initialSession.user.id);
-            const role = await fetchUserRole(initialSession.user.id);
-            if (isMounted) {
-              setUserRole(role);
-              console.log('=== INITIAL ROLE SET ===', role);
+            try {
+              const role = await fetchUserRole(initialSession.user.id);
+              if (isMounted) {
+                setUserRole(role);
+                console.log('=== INITIAL ROLE SET ===', role);
+              }
+            } catch (roleError) {
+              console.error('=== ERROR FETCHING INITIAL ROLE ===', roleError);
+              if (isMounted) {
+                setUserRole('read-only');
+              }
             }
           } else {
             setUserRole(null);
@@ -134,16 +141,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setSession(session);
         setCurrentUser(session?.user ?? null);
         
-        if (session?.user && event === 'SIGNED_IN') {
-          console.log('=== USER SIGNED IN, FETCHING ROLE ===');
+        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+          console.log('=== USER SIGNED IN OR TOKEN REFRESHED, FETCHING ROLE ===');
           try {
             const role = await fetchUserRole(session.user.id);
             if (isMounted) {
               setUserRole(role);
-              console.log('=== SIGN IN ROLE SET ===', role);
+              console.log('=== ROLE SET FROM AUTH STATE CHANGE ===', role);
             }
           } catch (error) {
-            console.error('=== ERROR FETCHING ROLE ON SIGN IN ===', error);
+            console.error('=== ERROR FETCHING ROLE ON AUTH STATE CHANGE ===', error);
             if (isMounted) {
               setUserRole('read-only');
             }
