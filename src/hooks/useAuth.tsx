@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isFetchingRole, setIsFetchingRole] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const fetchUserRole = async (userId: string): Promise<UserRole> => {
     try {
@@ -65,109 +65,117 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const updateUserRole = async (userId: string) => {
-    // Prevent concurrent role fetches
-    if (isFetchingRole) {
-      console.log('=== ROLE FETCH ALREADY IN PROGRESS, SKIPPING ===');
-      return;
-    }
-
-    try {
-      setIsFetchingRole(true);
-      console.log('=== STARTING ROLE FETCH ===', userId, new Date().toISOString());
-      
-      const role = await fetchUserRole(userId);
-      console.log('=== ROLE FETCH COMPLETE ===', role, new Date().toISOString());
-      setUserRole(role);
-    } catch (error) {
-      console.error('=== ROLE FETCH FAILED ===', error);
-      setUserRole('read-only');
-    } finally {
-      setIsFetchingRole(false);
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    console.log('=== AUTH PROVIDER USEEFFECT STARTING ===', new Date().toISOString());
+    console.log('=== AUTH PROVIDER INITIALIZATION ===', new Date().toISOString());
     
-    let initialSessionProcessed = false;
+    let isMounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        // Get initial session
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('=== INITIAL SESSION ERROR ===', error);
+          if (isMounted) {
+            setIsLoading(false);
+            setIsInitialized(true);
+          }
+          return;
+        }
+
+        console.log('=== INITIAL SESSION ===', initialSession?.user?.email, new Date().toISOString());
+        
+        if (isMounted) {
+          setSession(initialSession);
+          setCurrentUser(initialSession?.user ?? null);
+          
+          if (initialSession?.user) {
+            console.log('=== FETCHING INITIAL ROLE ===', initialSession.user.id);
+            const role = await fetchUserRole(initialSession.user.id);
+            if (isMounted) {
+              setUserRole(role);
+              console.log('=== INITIAL ROLE SET ===', role);
+            }
+          }
+          
+          setIsLoading(false);
+          setIsInitialized(true);
+        }
+      } catch (error) {
+        console.error('=== AUTH INITIALIZATION ERROR ===', error);
+        if (isMounted) {
+          setIsLoading(false);
+          setIsInitialized(true);
+        }
+      }
+    };
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('=== AUTH STATE CHANGED ===', event, session?.user?.email, new Date().toISOString());
         
+        if (!isMounted) return;
+        
+        // Only handle auth changes after initial setup is complete
+        if (!isInitialized && event !== 'INITIAL_SESSION') {
+          return;
+        }
+        
         setSession(session);
         setCurrentUser(session?.user ?? null);
         
-        if (session?.user) {
-          // Only fetch role if we haven't processed the initial session yet
-          // or if this is a new session (sign in event)
-          if (!initialSessionProcessed || event === 'SIGNED_IN') {
-            console.log('=== USER FOUND, UPDATING ROLE ===', event);
-            await updateUserRole(session.user.id);
-            initialSessionProcessed = true;
+        if (session?.user && event === 'SIGNED_IN') {
+          console.log('=== USER SIGNED IN, FETCHING ROLE ===');
+          try {
+            const role = await fetchUserRole(session.user.id);
+            if (isMounted) {
+              setUserRole(role);
+              console.log('=== SIGN IN ROLE SET ===', role);
+            }
+          } catch (error) {
+            console.error('=== ERROR FETCHING ROLE ON SIGN IN ===', error);
+            if (isMounted) {
+              setUserRole('read-only');
+            }
           }
-        } else {
+        } else if (!session?.user) {
           console.log('=== NO USER, CLEARING STATE ===');
           setUserRole(null);
+        }
+        
+        if (event === 'SIGNED_OUT') {
+          setUserRole(null);
           setIsLoading(false);
-          setIsFetchingRole(false);
         }
       }
     );
 
-    // Get initial session
-    const initAuth = async () => {
-      try {
-        console.log('=== GETTING INITIAL SESSION ===', new Date().toISOString());
-        
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('=== INITIAL SESSION ERROR ===', error);
-          setIsLoading(false);
-          return;
-        }
-        
-        console.log('=== INITIAL SESSION ===', session?.user?.email, new Date().toISOString());
-        setSession(session);
-        setCurrentUser(session?.user ?? null);
-        
-        if (session?.user) {
-          await updateUserRole(session.user.id);
-          initialSessionProcessed = true;
-        } else {
-          setIsLoading(false);
-        }
-      } catch (error) {
-        console.error('=== INITIAL AUTH ERROR ===', error);
-        setIsLoading(false);
-      }
-    };
-
-    initAuth();
+    // Initialize auth
+    initializeAuth();
 
     return () => {
-      console.log('=== CLEANING UP AUTH SUBSCRIPTION ===');
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
   const signOut = async () => {
     console.log('=== SIGNING OUT ===');
+    setIsLoading(true);
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Error signing out:', error);
     }
+    setIsLoading(false);
   };
 
   console.log('=== AUTH PROVIDER RENDER ===', { 
     currentUser: !!currentUser, 
     userRole, 
     isLoading, 
-    isFetchingRole,
+    isInitialized,
     timestamp: new Date().toISOString()
   });
 
@@ -176,7 +184,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       currentUser, 
       session, 
       userRole, 
-      isLoading: isLoading || isFetchingRole, 
+      isLoading, 
       signOut 
     }}>
       {children}

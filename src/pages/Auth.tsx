@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -22,26 +21,38 @@ const Auth = () => {
 
   // Redirect if user is already authenticated
   useEffect(() => {
-    console.log('=== AUTH PAGE - USER STATE ===', { currentUser, authLoading });
+    console.log('=== AUTH PAGE - USER STATE ===', { 
+      currentUser: !!currentUser, 
+      authLoading,
+      timestamp: new Date().toISOString()
+    });
+    
     if (!authLoading && currentUser) {
       console.log('=== REDIRECTING TO MAIN PAGE ===');
-      navigate('/');
+      navigate('/', { replace: true });
     }
   }, [currentUser, authLoading, navigate]);
 
   // Show loading spinner while checking auth state
   if (authLoading) {
+    console.log('=== AUTH PAGE: SHOWING LOADING ===');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
+          <span className="text-gray-600">Checking authentication...</span>
+        </div>
       </div>
     );
   }
 
   // Don't render auth form if user is authenticated
   if (currentUser) {
+    console.log('=== AUTH PAGE: USER AUTHENTICATED, NOT RENDERING FORM ===');
     return null;
   }
+
+  console.log('=== AUTH PAGE: RENDERING AUTH FORM ===');
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,22 +97,25 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
+      console.log('=== ATTEMPTING SIGN IN ===', email);
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error('=== SIGN IN ERROR ===', error);
         toast({
           variant: "destructive",
           title: "Sign in failed",
           description: error.message,
         });
       } else {
-        // Don't manually navigate here - let the useEffect handle it
         console.log('=== SIGN IN SUCCESSFUL ===');
+        // Navigation will be handled by the useEffect above
       }
     } catch (error) {
+      console.error('=== SIGN IN EXCEPTION ===', error);
       toast({
         variant: "destructive",
         title: "Error",
