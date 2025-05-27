@@ -1,7 +1,8 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, User, CheckCircle, XCircle, Trash2, Edit } from 'lucide-react';
+import { Calendar, User, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface Policy {
@@ -20,7 +21,6 @@ interface PolicyCardProps {
   policy: Policy;
   canPublish: boolean;
   onUpdateStatus: (policyId: string, newStatus: string) => void;
-  onEdit?: (policyId: string) => void;
   onDelete?: (policyId: string) => void;
 }
 
@@ -47,10 +47,9 @@ const getStatusColor = (status: string | null) => {
   }
 };
 
-export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onDelete }: PolicyCardProps) {
+export function PolicyCard({ policy, canPublish, onUpdateStatus, onDelete }: PolicyCardProps) {
   const { userRole } = useAuth();
   const isSuperAdmin = userRole === 'super-admin';
-  const isEditor = userRole === 'edit';
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -102,22 +101,6 @@ export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onDelet
 
           {/* Action buttons */}
           <div className="pt-3 border-t space-y-2">
-            {/* Edit Button - Show for editors on their drafts, and publishers on review policies */}
-            {onEdit && (
-              (isEditor && policy.status === 'draft') ||
-              (canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review'))
-            ) && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onEdit(policy.id)}
-                className="w-full text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
-              >
-                <Edit className="w-3 h-3 mr-1" />
-                Edit Policy
-              </Button>
-            )}
-
             {/* Publisher Actions */}
             {canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') && (
               <div className="flex gap-2">

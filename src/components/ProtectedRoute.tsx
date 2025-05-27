@@ -11,31 +11,23 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { currentUser, userRole, isLoading } = useAuth();
   const location = useLocation();
 
-  console.log('=== PROTECTED ROUTE CHECK ===', {
-    currentUser: !!currentUser,
-    userRole,
-    isLoading,
-    pathname: location.pathname,
-    timestamp: new Date().toISOString()
-  });
-
   if (isLoading) {
-    console.log('=== PROTECTED ROUTE: SHOWING LOADING ===');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
-          <span className="text-gray-600">Loading...</span>
-        </div>
+        <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
       </div>
     );
   }
 
   if (!currentUser) {
-    console.log('=== PROTECTED ROUTE: NO USER, REDIRECTING TO AUTH ===');
     return <Navigate to="/auth" replace />;
   }
 
-  console.log('=== PROTECTED ROUTE: USER AUTHENTICATED, SHOWING CONTENT ===');
+  // Redirect all admin users (editors, publishers, and super-admins) to admin dashboard if they're on the root path
+  if (location.pathname === '/' && (userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin')) {
+    const defaultTab = userRole === 'super-admin' ? 'users' : 'create-policy';
+    return <Navigate to={`/admin?tab=${defaultTab}`} replace />;
+  }
+
   return <>{children}</>;
 };

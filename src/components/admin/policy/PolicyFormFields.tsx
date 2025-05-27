@@ -92,29 +92,6 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
 
       <FormField
         control={control}
-        name="policy_text"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Policy</FormLabel>
-            <FormControl>
-              <RichTextEditor 
-                content={field.value}
-                onChange={field.onChange}
-                placeholder="Enter the complete policy text..."
-                className="min-h-[250px]"
-                context="policy text"
-              />
-            </FormControl>
-            <FormDescription>
-              The full text of the policy document with formatting. Use AI tools to convert to proper policy language and ensure professional tone.
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={control}
         name="procedure"
         render={({ field }) => (
           <FormItem>
@@ -130,6 +107,29 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
             </FormControl>
             <FormDescription>
               Provide detailed steps on how this policy should be implemented. The AI Assistant can help expand content and improve clarity.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name="policy_text"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Policy Text</FormLabel>
+            <FormControl>
+              <RichTextEditor 
+                content={field.value}
+                onChange={field.onChange}
+                placeholder="Enter the complete policy text..."
+                className="min-h-[250px]"
+                context="policy text"
+              />
+            </FormControl>
+            <FormDescription>
+              The full text of the policy document with formatting. Use AI tools to convert to proper policy language and ensure professional tone.
             </FormDescription>
             <FormMessage />
           </FormItem>

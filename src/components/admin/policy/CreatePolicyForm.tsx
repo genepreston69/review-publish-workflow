@@ -31,7 +31,7 @@ interface CreatePolicyFormProps {
 }
 
 export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
-  const { currentUser, userRole, isLoading } = useAuth();
+  const { currentUser, userRole } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -46,8 +46,6 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
     },
   });
 
-  console.log('=== CREATE POLICY FORM ===', { currentUser: !!currentUser, userRole, isLoading });
-
   // Check if user has edit access
   const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
@@ -55,45 +53,19 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
   const selectedPolicyType = form.watch('policy_type');
   const generatedPolicyNumber = usePolicyNumberGeneration(selectedPolicyType);
 
-  // Show loading state while auth is loading
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <Loader2 className="mx-auto h-8 w-8 animate-spin text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium">Loading...</h3>
-            <p className="text-gray-500">Checking permissions...</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   const onSubmit = async (data: PolicyFormValues) => {
     console.log('=== FORM SUBMISSION STARTED ===');
     console.log('Form data:', data);
     console.log('Current user:', currentUser);
     console.log('User role:', userRole);
     console.log('Generated policy number:', generatedPolicyNumber);
-    console.log('Has edit access:', hasEditAccess);
 
-    if (!currentUser) {
-      console.log('=== NO CURRENT USER ===');
-      toast({
-        variant: "destructive",
-        title: "Authentication Error",
-        description: "You must be logged in to create policies.",
-      });
-      return;
-    }
-
-    if (!hasEditAccess) {
+    if (!currentUser || !hasEditAccess) {
       console.log('=== ACCESS DENIED ===');
       toast({
         variant: "destructive",
         title: "Access Denied",
-        description: `You don't have permission to create policies. Current role: ${userRole || 'unknown'}`,
+        description: "You don't have permission to create policies.",
       });
       return;
     }
@@ -169,9 +141,7 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
           <div className="text-center">
             <Plus className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-4 text-lg font-medium">Access Denied</h3>
-            <p className="text-gray-500">
-              You need edit access or higher to create policies. Current role: {userRole || 'unknown'}
-            </p>
+            <p className="text-gray-500">You need edit access or higher to create policies.</p>
           </div>
         </CardContent>
       </Card>

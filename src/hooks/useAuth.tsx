@@ -34,36 +34,30 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const fetchUserRole = async (userId: string): Promise<UserRole> => {
     try {
-      console.log('=== FETCHING ROLE FOR USER ===', userId, new Date().toISOString());
+      console.log('=== FETCHING ROLE FOR USER ===', userId);
       
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Role fetch timeout')), 10000); // 10 second timeout
-      });
-
-      const queryPromise = supabase
+      const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .order('role', { ascending: false })
         .limit(1);
 
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
-
       if (error) {
         console.error('=== ERROR FETCHING USER ROLE ===', error);
+        // If there's a database error, default to read-only
         return 'read-only';
       }
 
-      console.log('=== USER ROLES DATA ===', data, new Date().toISOString());
+      console.log('=== USER ROLES DATA ===', data);
 
       if (data && data.length > 0) {
         const role = data[0].role as UserRole;
-        console.log('=== FOUND ROLE ===', role, new Date().toISOString());
+        console.log('=== FOUND ROLE ===', role);
         return role;
       }
 
-      console.log('=== NO ROLE FOUND, DEFAULTING TO READ-ONLY ===', new Date().toISOString());
+      console.log('=== NO ROLE FOUND, DEFAULTING TO READ-ONLY ===');
       return 'read-only';
     } catch (error) {
       console.error('=== ERROR IN FETCH USER ROLE ===', error);
@@ -72,144 +66,99 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   useEffect(() => {
-    console.log('=== AUTH PROVIDER INITIALIZATION ===', new Date().toISOString());
+    console.log('=== AUTH PROVIDER USEEFFECT STARTING ===');
     
-    let isMounted = true;
-
-    const initializeAuth = async () => {
-      try {
-        console.log('=== GETTING INITIAL SESSION ===');
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('=== INITIAL SESSION ERROR ===', error);
-          if (isMounted) {
-            setSession(null);
-            setCurrentUser(null);
-            setUserRole(null);
-            setIsLoading(false);
-          }
-          return;
-        }
-
-        console.log('=== INITIAL SESSION ===', initialSession?.user?.email, new Date().toISOString());
-        
-        if (isMounted) {
-          setSession(initialSession);
-          setCurrentUser(initialSession?.user ?? null);
-          
-          if (initialSession?.user) {
-            console.log('=== FETCHING INITIAL ROLE ===', initialSession.user.id);
-            try {
-              const role = await fetchUserRole(initialSession.user.id);
-              if (isMounted) {
-                setUserRole(role);
-                console.log('=== INITIAL ROLE SET ===', role);
-              }
-            } catch (roleError) {
-              console.error('=== ERROR FETCHING INITIAL ROLE ===', roleError);
-              if (isMounted) {
-                setUserRole('read-only');
-              }
-            }
-          } else {
-            setUserRole(null);
-          }
-          
-          setIsLoading(false);
-        }
-      } catch (error) {
-        console.error('=== AUTH INITIALIZATION ERROR ===', error);
-        if (isMounted) {
-          setSession(null);
-          setCurrentUser(null);
-          setUserRole('read-only'); // Set default role instead of null
-          setIsLoading(false);
-        }
-      }
-    };
-
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('=== AUTH STATE CHANGED ===', event, session?.user?.email, new Date().toISOString());
-        
-        if (!isMounted) return;
-        
-        if (event === 'SIGNED_OUT' || !session) {
-          console.log('=== USER SIGNED OUT OR NO SESSION, CLEARING STATE ===');
-          setSession(null);
-          setCurrentUser(null);
-          setUserRole(null);
-          setIsLoading(false);
-          return;
-        }
-        
+        console.log('=== AUTH STATE CHANGED ===', event, session?.user?.email);
         setSession(session);
         setCurrentUser(session?.user ?? null);
         
-        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-          console.log('=== USER SIGNED IN OR TOKEN REFRESHED, FETCHING ROLE ===');
+        if (session?.user) {
+          console.log('=== USER FOUND, FETCHING ROLE ===');
           try {
-            const role = await fetchUserRole(session.user.id);
-            if (isMounted) {
-              setUserRole(role);
-              console.log('=== ROLE SET FROM AUTH STATE CHANGE ===', role);
-            }
+            // Reduced timeout and better error handling
+            const rolePromise = fetchUserRole(session.user.id);
+            const timeoutPromise = new Promise<UserRole>((_, reject) => {
+              setTimeout(() => reject(new Error('Role fetch timeout')), 10000); // Increased to 10 seconds
+            });
+
+            const role = await Promise.race([rolePromise, timeoutPromise]);
+            console.log('=== ROLE FETCHED ===', role);
+            setUserRole(role);
           } catch (error) {
-            console.error('=== ERROR FETCHING ROLE ON AUTH STATE CHANGE ===', error);
-            if (isMounted) {
-              setUserRole('read-only');
-            }
+            console.error('=== ROLE FETCH FAILED ===', error);
+            // Always set a fallback role so the app doesn't stay in loading state
+            setUserRole('read-only');
+          } finally {
+            setIsLoading(false);
           }
-        }
-        
-        // Always ensure loading is false after handling auth state change
-        if (isMounted) {
+        } else {
+          console.log('=== NO USER, CLEARING STATE ===');
+          setUserRole(null);
           setIsLoading(false);
         }
       }
     );
 
-    // Initialize auth
-    initializeAuth();
+    // Get initial session
+    const initAuth = async () => {
+      try {
+        console.log('=== GETTING INITIAL SESSION ===');
+        
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('=== INITIAL SESSION ERROR ===', error);
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log('=== INITIAL SESSION ===', session?.user?.email);
+        setSession(session);
+        setCurrentUser(session?.user ?? null);
+        
+        if (session?.user) {
+          try {
+            // Use timeout for initial role fetch as well
+            const rolePromise = fetchUserRole(session.user.id);
+            const timeoutPromise = new Promise<UserRole>((_, reject) => {
+              setTimeout(() => reject(new Error('Initial role fetch timeout')), 10000);
+            });
+
+            const role = await Promise.race([rolePromise, timeoutPromise]);
+            console.log('=== INITIAL ROLE FETCHED ===', role);
+            setUserRole(role);
+          } catch (error) {
+            console.error('=== INITIAL ROLE FETCH FAILED ===', error);
+            setUserRole('read-only');
+          }
+        }
+      } catch (error) {
+        console.error('=== INITIAL AUTH ERROR ===', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initAuth();
 
     return () => {
-      isMounted = false;
+      console.log('=== CLEANING UP AUTH SUBSCRIPTION ===');
       subscription.unsubscribe();
     };
   }, []);
 
   const signOut = async () => {
-    console.log('=== SIGNING OUT ===', new Date().toISOString());
-    setIsLoading(true);
-    
-    try {
-      // Clear local state immediately
-      setSession(null);
-      setCurrentUser(null);
-      setUserRole(null);
-      
-      // Then sign out from Supabase
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Error signing out:', error);
-      } else {
-        console.log('=== SIGN OUT SUCCESSFUL ===', new Date().toISOString());
-      }
-    } catch (error) {
-      console.error('=== SIGN OUT ERROR ===', error);
-    } finally {
-      setIsLoading(false);
+    console.log('=== SIGNING OUT ===');
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error);
     }
   };
 
-  console.log('=== AUTH PROVIDER RENDER ===', { 
-    currentUser: !!currentUser, 
-    userRole, 
-    isLoading,
-    timestamp: new Date().toISOString()
-  });
+  console.log('=== AUTH PROVIDER RENDER ===', { currentUser: !!currentUser, userRole, isLoading });
 
   return (
     <AuthContext.Provider value={{ 

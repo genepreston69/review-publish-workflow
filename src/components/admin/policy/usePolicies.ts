@@ -17,7 +17,7 @@ interface Policy {
 }
 
 export function usePolicies() {
-  const { currentUser, userRole, isLoading: authLoading } = useAuth();
+  const { currentUser, userRole } = useAuth();
   const { toast } = useToast();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
@@ -28,33 +28,20 @@ export function usePolicies() {
 
   useEffect(() => {
     async function fetchPolicies() {
-      // Don't fetch if auth is still loading or we don't have user/role yet
-      if (authLoading || !currentUser || !userRole) {
-        console.log('=== SKIPPING POLICY FETCH - AUTH NOT READY ===', { authLoading, currentUser: !!currentUser, userRole });
-        return;
-      }
+      if (!currentUser || !userRole) return;
       
       try {
         setIsLoadingPolicies(true);
-        console.log('=== FETCHING POLICIES FOR CREATE PAGE ===', { 
-          userRole, 
-          currentUserEmail: currentUser.email,
-          timestamp: new Date().toISOString()
-        });
+        console.log('=== FETCHING POLICIES FOR CREATE PAGE ===', userRole);
         
         let query = supabase.from('Policies').select('*');
         
-        // More permissive filtering - don't restrict by reviewer email for editors
-        // This was causing the issue where editors couldn't see their newly created policies
         if (isEditor) {
-          // Editors see draft and under-review policies (not just their own)
-          query = query.in('status', ['draft', 'under-review']);
+          // Editors see their own draft policies
+          query = query.eq('reviewer', currentUser.email).eq('status', 'draft');
         } else if (canPublish) {
           // Publishers and super-admins see policies that need review
           query = query.in('status', ['draft', 'under-review', 'under review']);
-        } else {
-          // Read-only users see published policies
-          query = query.eq('status', 'published');
         }
         
         const { data, error } = await query.order('created_at', { ascending: false });
@@ -62,7 +49,7 @@ export function usePolicies() {
         if (error) {
           console.error('Error fetching policies:', error);
         } else {
-          console.log('=== POLICIES FOR CREATE PAGE ===', data, new Date().toISOString());
+          console.log('=== POLICIES FOR CREATE PAGE ===', data);
           setPolicies(data || []);
         }
       } catch (error) {
@@ -72,14 +59,8 @@ export function usePolicies() {
       }
     }
 
-    // Wait for auth to be ready before fetching policies
-    if (!authLoading && currentUser && userRole) {
-      fetchPolicies();
-    } else if (!authLoading && !currentUser) {
-      // Auth is loaded but no user - clear loading state
-      setIsLoadingPolicies(false);
-    }
-  }, [currentUser, userRole, authLoading, isEditor, canPublish]);
+    fetchPolicies();
+  }, [currentUser, userRole, isEditor, canPublish]);
 
   const updatePolicyStatus = async (policyId: string, newStatus: string) => {
     try {
@@ -143,13 +124,12 @@ export function usePolicies() {
   };
 
   const addPolicy = (newPolicy: Policy) => {
-    console.log('=== ADDING POLICY TO LOCAL STATE ===', newPolicy);
     setPolicies(prev => [newPolicy, ...prev]);
   };
 
   return {
     policies,
-    isLoadingPolicies: isLoadingPolicies || authLoading,
+    isLoadingPolicies,
     updatePolicyStatus,
     deletePolicy,
     addPolicy,

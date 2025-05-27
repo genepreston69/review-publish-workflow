@@ -23,22 +23,17 @@ import {
 
 interface AIWritingAssistantProps {
   text: string;
-  onSuggestionReady: (suggestion: {
-    originalText: string;
-    suggestedText: string;
-    operationType: string;
-    operationDescription: string;
-  }) => void;
+  onChange: (text: string) => void;
   context?: string;
   className?: string;
 }
 
-export function AIWritingAssistant({ text, onSuggestionReady, context, className }: AIWritingAssistantProps) {
+export function AIWritingAssistant({ text, onChange, context, className }: AIWritingAssistantProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingOperation, setLoadingOperation] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const callAIAssistant = async (operation: string, operationName: string, operationDescription: string) => {
+  const callAIAssistant = async (operation: string, operationName: string) => {
     if (!text.trim()) {
       toast({
         variant: "destructive",
@@ -64,14 +59,12 @@ export function AIWritingAssistant({ text, onSuggestionReady, context, className
       }
 
       if (data?.improvedText) {
-        // Instead of directly applying changes, show suggestion preview
-        onSuggestionReady({
-          originalText: text,
-          suggestedText: data.improvedText,
-          operationType: operationName,
-          operationDescription,
+        onChange(data.improvedText);
+        toast({
+          title: "AI Assistance Complete",
+          description: `Text ${operationName.toLowerCase()} completed successfully.`,
         });
-        console.log(`AI Writing Assistant - ${operationName} suggestion ready`);
+        console.log(`AI Writing Assistant - ${operationName} completed`);
       } else {
         throw new Error('No improved text received');
       }
@@ -167,7 +160,7 @@ export function AIWritingAssistant({ text, onSuggestionReady, context, className
           return (
             <DropdownMenuItem
               key={operation.key}
-              onClick={() => callAIAssistant(operation.key, operation.label, operation.description)}
+              onClick={() => callAIAssistant(operation.key, operation.label)}
               disabled={isLoading}
             >
               <Icon className="w-4 h-4 mr-2" />
@@ -184,7 +177,7 @@ export function AIWritingAssistant({ text, onSuggestionReady, context, className
           return (
             <DropdownMenuItem
               key={operation.key}
-              onClick={() => callAIAssistant(operation.key, operation.label, operation.description)}
+              onClick={() => callAIAssistant(operation.key, operation.label)}
               disabled={isLoading}
             >
               <Icon className="w-4 h-4 mr-2" />
