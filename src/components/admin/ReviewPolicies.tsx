@@ -1,12 +1,26 @@
+
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { PolicyList } from './policy/PolicyList';
+import { PolicyEditForm } from './policy/PolicyEditForm';
 import { usePolicies } from './policy/usePolicies';
-import { useToast } from '@/hooks/use-toast';
+
+interface Policy {
+  id: string;
+  name: string | null;
+  policy_number: string | null;
+  policy_text: string | null;
+  procedure: string | null;
+  purpose: string | null;
+  reviewer: string | null;
+  status: string | null;
+  created_at: string;
+}
 
 export function ReviewPolicies() {
   const { userRole } = useAuth();
   const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, isSuperAdmin } = usePolicies();
-  const { toast } = useToast();
+  const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
 
   // Filter to show policies that need review
   const reviewPolicies = policies.filter(policy => 
@@ -18,12 +32,18 @@ export function ReviewPolicies() {
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
 
   const handleEditPolicy = (policyId: string) => {
-    // For now, show a toast indicating edit functionality
-    toast({
-      title: "Edit Policy",
-      description: "Policy editing functionality will be implemented next.",
-    });
     console.log('Edit policy:', policyId);
+    setEditingPolicyId(policyId);
+  };
+
+  const handlePolicyUpdated = (updatedPolicy: Policy) => {
+    console.log('Policy updated:', updatedPolicy);
+    setEditingPolicyId(null);
+    // The policy list will automatically refresh from the database
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPolicyId(null);
   };
 
   if (!canPublish) {
@@ -35,6 +55,26 @@ export function ReviewPolicies() {
             You need publish access or higher to review policies.
           </p>
         </div>
+      </div>
+    );
+  }
+
+  // Show edit form if editing a policy
+  if (editingPolicyId) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Edit Policy</h2>
+          <p className="text-muted-foreground">
+            Make changes to the policy and save when ready.
+          </p>
+        </div>
+
+        <PolicyEditForm
+          policyId={editingPolicyId}
+          onPolicyUpdated={handlePolicyUpdated}
+          onCancel={handleCancelEdit}
+        />
       </div>
     );
   }

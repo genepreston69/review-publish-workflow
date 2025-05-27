@@ -50,6 +50,7 @@ const getStatusColor = (status: string | null) => {
 export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onDelete }: PolicyCardProps) {
   const { userRole } = useAuth();
   const isSuperAdmin = userRole === 'super-admin';
+  const isEditor = userRole === 'edit';
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -101,8 +102,11 @@ export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onDelet
 
           {/* Action buttons */}
           <div className="pt-3 border-t space-y-2">
-            {/* Edit Button - Show for publishers when policy is in review */}
-            {canPublish && onEdit && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') && (
+            {/* Edit Button - Show for editors on their drafts, and publishers on review policies */}
+            {onEdit && (
+              (isEditor && policy.status === 'draft') ||
+              (canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review'))
+            ) && (
               <Button
                 size="sm"
                 variant="outline"
