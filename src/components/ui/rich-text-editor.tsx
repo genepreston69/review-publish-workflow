@@ -1,3 +1,4 @@
+
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -37,10 +38,21 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
         bulletList: {
           keepMarks: true,
           keepAttributes: false,
+          HTMLAttributes: {
+            class: 'bullet-list',
+          },
         },
         orderedList: {
           keepMarks: true,
           keepAttributes: false,
+          HTMLAttributes: {
+            class: 'ordered-list',
+          },
+        },
+        listItem: {
+          HTMLAttributes: {
+            class: 'list-item',
+          },
         },
       }),
       TextStyle,
@@ -126,7 +138,11 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            onClick={() => {
+              console.log('Bullet list button clicked');
+              console.log('Is bullet list active:', editor.isActive('bulletList'));
+              editor.chain().focus().toggleBulletList().run();
+            }}
             className={editor.isActive('bulletList') ? 'bg-gray-200' : ''}
             title="Bullet List"
           >
@@ -136,7 +152,11 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            onClick={() => {
+              console.log('Ordered list button clicked');
+              console.log('Is ordered list active:', editor.isActive('orderedList'));
+              editor.chain().focus().toggleOrderedList().run();
+            }}
             className={editor.isActive('orderedList') ? 'bg-gray-200' : ''}
             title="Numbered List"
           >
