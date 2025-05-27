@@ -1,19 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarHeader,
-  SidebarFooter,
-} from '@/components/ui/sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -80,7 +69,7 @@ export function ContentSidebar() {
         const { data, error } = await supabase
           .from('Policies')
           .select('*')
-          .eq('status', 'published') // Changed from 'active' to 'published'
+          .eq('status', 'published')
           .order('policy_number', { ascending: true });
 
         console.log('=== POLICIES RESPONSE ===', { data, error });
@@ -108,7 +97,6 @@ export function ContentSidebar() {
   const canCreatePolicies = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
   const handleCreatePolicy = () => {
-    // Navigate to admin page with create-policy tab for editors and publishers
     navigate('/admin?tab=create-policy');
   };
 
@@ -132,8 +120,9 @@ export function ContentSidebar() {
   ];
 
   return (
-    <Sidebar className="border-r">
-      <SidebarHeader className="border-b p-4">
+    <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+      {/* Header */}
+      <div className="border-b p-4">
         <div className="flex items-center gap-2">
           <FileText className="w-6 h-6 text-blue-600" />
           <div>
@@ -141,114 +130,114 @@ export function ContentSidebar() {
             <p className="text-sm text-muted-foreground">Manage content & policies</p>
           </div>
         </div>
-      </SidebarHeader>
+      </div>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    isActive={item.isActive}
-                    onClick={item.onClick}
-                    className={item.onClick ? "cursor-pointer" : ""}
-                  >
-                    <item.icon className="w-4 h-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      {/* Content */}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {/* Navigation */}
+        <div className="p-4">
+          <h3 className="text-sm font-medium text-gray-500 mb-2">Navigation</h3>
+          <div className="space-y-1">
+            {navigationItems.map((item) => (
+              <button
+                key={item.title}
+                onClick={item.onClick}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
+                  item.isActive 
+                    ? 'bg-blue-50 text-blue-700' 
+                    : 'text-gray-700 hover:bg-gray-100'
+                } ${item.onClick ? 'cursor-pointer' : ''}`}
+              >
+                <item.icon className="w-4 h-4" />
+                <span>{item.title}</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
-        <SidebarGroup className="flex-1">
-          <SidebarGroupLabel className="flex items-center gap-2">
+        {/* Policies */}
+        <div className="flex-1 p-4">
+          <div className="flex items-center gap-2 mb-4">
             <FileText className="w-4 h-4" />
-            Facility Policies
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <div className="max-h-96 overflow-y-auto">
-              {isLoadingPolicies ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  Loading policies...
-                </div>
-              ) : policies.length === 0 ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  No published policies found
-                </div>
-              ) : (
-                <div className="space-y-3 p-2">
-                  {policies.map((policy) => (
-                    <Card key={policy.id} className="hover:shadow-sm transition-shadow cursor-pointer">
-                      <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <CardTitle className="text-sm leading-tight">
-                              {policy.name || 'Untitled Policy'}
-                            </CardTitle>
-                            {policy.policy_number && (
-                              <CardDescription className="font-mono text-xs">
-                                {policy.policy_number}
-                              </CardDescription>
-                            )}
-                          </div>
-                          {policy.status && (
-                            <Badge 
-                              variant="secondary" 
-                              className={`text-xs ${getStatusColor(policy.status)}`}
-                            >
-                              {policy.status}
-                            </Badge>
+            <h3 className="text-sm font-medium text-gray-500">Facility Policies</h3>
+          </div>
+          
+          <div className="max-h-96 overflow-y-auto">
+            {isLoadingPolicies ? (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                Loading policies...
+              </div>
+            ) : policies.length === 0 ? (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                No published policies found
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {policies.map((policy) => (
+                  <Card key={policy.id} className="hover:shadow-sm transition-shadow cursor-pointer">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-sm leading-tight">
+                            {policy.name || 'Untitled Policy'}
+                          </CardTitle>
+                          {policy.policy_number && (
+                            <CardDescription className="font-mono text-xs">
+                              {policy.policy_number}
+                            </CardDescription>
                           )}
                         </div>
-                      </CardHeader>
-                      
-                      <CardContent className="pt-0">
-                        {policy.purpose && (
-                          <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
-                            {stripHtml(policy.purpose)}
-                          </p>
+                        {policy.status && (
+                          <Badge 
+                            variant="secondary" 
+                            className={`text-xs ${getStatusColor(policy.status)}`}
+                          >
+                            {policy.status}
+                          </Badge>
                         )}
-                        
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          {policy.reviewer && (
-                            <div className="flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              <span className="truncate">{stripHtml(policy.reviewer)}</span>
-                            </div>
-                          )}
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent className="pt-0">
+                      {policy.purpose && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                          {stripHtml(policy.purpose)}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        {policy.reviewer && (
                           <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            <span>{new Date(policy.created_at).toLocaleDateString()}</span>
+                            <User className="h-3 w-3" />
+                            <span className="truncate">{stripHtml(policy.reviewer)}</span>
                           </div>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>{new Date(policy.created_at).toLocaleDateString()}</span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-      <SidebarFooter className="border-t p-4">
-        {userRole === 'super-admin' && (
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="/admin" className="flex items-center gap-2">
-                  <Settings className="w-4 h-4" />
-                  <span>Admin Dashboard</span>
-                </a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        )}
-      </SidebarFooter>
-    </Sidebar>
+      {/* Footer */}
+      {userRole === 'super-admin' && (
+        <div className="border-t p-4">
+          <a 
+            href="/admin" 
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+          >
+            <Settings className="w-4 h-4" />
+            <span>Admin Dashboard</span>
+          </a>
+        </div>
+      )}
+    </div>
   );
 }
