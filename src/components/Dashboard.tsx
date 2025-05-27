@@ -1,8 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ContentCard } from './ContentCard';
-import { FacilityPolicies } from './admin/FacilityPolicies';
 import { useAuth } from '@/hooks/useAuth';
 import { Content } from '@/types/content';
 import { Plus, Loader2 } from 'lucide-react';
