@@ -76,10 +76,12 @@ const Admin = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         {isSuperAdmin ? (
-          <AdminSidebar onTabChange={handleTabChange} activeTab={activeTab} />
+          <div className="fixed left-0 top-0 h-screen z-20">
+            <AdminSidebar onTabChange={handleTabChange} activeTab={activeTab} />
+          </div>
         ) : (
-          // Simple sidebar for non-super-admin users
-          <div className="w-64 border-r bg-white">
+          // Simple sidebar for non-super-admin users - make it fixed
+          <div className="fixed left-0 top-0 h-screen w-64 border-r bg-white z-20 overflow-y-auto">
             <div className="p-4 border-b">
               <div className="flex items-center gap-2">
                 <Shield className="w-6 h-6 text-purple-600" />
@@ -141,7 +143,7 @@ const Admin = () => {
           </div>
         )}
         
-        <SidebarInset className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col ml-64">
           <div className="sticky top-0 z-10 bg-white border-b">
             <Header />
             <div className="flex items-center gap-2 px-4 py-2 border-b">
@@ -236,7 +238,7 @@ const Admin = () => {
               )}
             </Tabs>
           </div>
-        </SidebarInset>
+        </div>
       </div>
     </SidebarProvider>
   );

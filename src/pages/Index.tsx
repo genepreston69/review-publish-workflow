@@ -12,7 +12,7 @@ const Index = () => {
       <SidebarProvider>
         <div className="min-h-screen flex w-full bg-gray-50">
           <ContentSidebar />
-          <SidebarInset className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col ml-64">
             <div className="sticky top-0 z-10 bg-white border-b">
               <Header />
               <div className="flex items-center gap-2 px-4 py-2 border-b">
@@ -23,7 +23,7 @@ const Index = () => {
             <div className="flex-1 overflow-auto">
               <Dashboard />
             </div>
-          </SidebarInset>
+          </div>
         </div>
       </SidebarProvider>
     </div>
