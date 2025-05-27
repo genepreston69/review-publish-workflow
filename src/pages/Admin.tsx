@@ -14,7 +14,7 @@ import { CreatePolicy } from '@/components/admin/CreatePolicy';
 import { DraftPolicies } from '@/components/admin/DraftPolicies';
 import { ReviewPolicies } from '@/components/admin/ReviewPolicies';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
-import { Shield, Users, Link, BarChart3, FileText, Plus, FileClock, FileCheck } from 'lucide-react';
+import { Shield, Users, Link, BarChart3, FileText, Plus, FileClock, FileCheck, Loader2 } from 'lucide-react';
 
 const Admin = () => {
   const { userRole, isLoading } = useAuth();
@@ -29,21 +29,37 @@ const Admin = () => {
     }
   }, [tabFromUrl]);
 
+  console.log('=== ADMIN PAGE RENDER ===', { 
+    userRole, 
+    isLoading, 
+    activeTab, 
+    tabFromUrl,
+    timestamp: new Date().toISOString()
+  });
+
+  // Show loading state while checking auth - improved with timestamp
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
+          <span className="text-gray-600">Loading admin dashboard...</span>
+        </div>
       </div>
     );
   }
 
   // Allow editors, publishers, and super-admins to access this page
   const hasAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
+  
+  console.log('=== ADMIN ACCESS CHECK ===', { userRole, hasAccess });
+  
   if (!hasAccess) {
     return <Navigate to="/" replace />;
   }
 
   const handleTabChange = (tabValue: string) => {
+    console.log('=== ADMIN TAB CHANGE ===', { from: activeTab, to: tabValue });
     setActiveTab(tabValue);
   };
 

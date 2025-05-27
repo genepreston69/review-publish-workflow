@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export const Dashboard = () => {
-  const { currentUser, userRole } = useAuth();
+  const { currentUser, userRole, isLoading: authLoading } = useAuth();
   const [contents, setContents] = useState<Content[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -19,32 +18,34 @@ export const Dashboard = () => {
   const canCreate = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
   const fetchContents = async () => {
+    // Don't fetch if auth is still loading or we don't have user/role yet
+    if (authLoading || !currentUser || !userRole) {
+      console.log('=== SKIPPING CONTENT FETCH - AUTH NOT READY ===', { authLoading, currentUser: !!currentUser, userRole });
+      return;
+    }
+    
     try {
-      console.log('=== FETCHING CONTENTS FOR ROLE ===', userRole);
+      console.log('=== FETCHING CONTENTS FOR ROLE ===', userRole, new Date().toISOString());
       setIsLoading(true);
       
       let query = supabase.from('content').select('*');
       
       // Different access levels based on role
       if (userRole === 'super-admin') {
-        // Super admin can see all content
         console.log('=== SUPER ADMIN: FETCHING ALL CONTENT ===');
       } else if (userRole === 'publish') {
-        // Publishers can see all content
         console.log('=== PUBLISHER: FETCHING ALL CONTENT ===');
       } else if (userRole === 'edit') {
-        // Editors can see their own content and content assigned to them
         console.log('=== EDITOR: FETCHING OWN AND ASSIGNED CONTENT ===');
         query = query.or(`author_id.eq.${currentUser?.id},assigned_publisher_id.eq.${currentUser?.id}`);
       } else {
-        // Read-only users can only see published content
         console.log('=== READ-ONLY: FETCHING PUBLISHED CONTENT ===');
         query = query.eq('status', 'published');
       }
       
       const { data, error } = await query.order('created_at', { ascending: false });
 
-      console.log('=== CONTENT QUERY RESULT ===', { data, error, userRole });
+      console.log('=== CONTENT QUERY RESULT ===', { data, error, userRole, timestamp: new Date().toISOString() });
 
       if (error) {
         console.error('Error fetching content:', error);
@@ -69,7 +70,7 @@ export const Dashboard = () => {
         publishedAt: item.published_at ? new Date(item.published_at) : undefined,
       }));
 
-      console.log('=== MAPPED CONTENTS ===', mappedContents);
+      console.log('=== MAPPED CONTENTS ===', mappedContents, new Date().toISOString());
       setContents(mappedContents);
     } catch (error) {
       console.error('Error fetching content:', error);
@@ -84,11 +85,22 @@ export const Dashboard = () => {
   };
 
   useEffect(() => {
-    if (currentUser && userRole) {
-      console.log('=== DASHBOARD USEEFFECT: FETCHING CONTENT ===', { currentUser: !!currentUser, userRole });
+    console.log('=== DASHBOARD USEEFFECT: AUTH STATE ===', { 
+      currentUser: !!currentUser, 
+      userRole, 
+      authLoading,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Wait for auth to be fully loaded and stable before fetching content
+    if (!authLoading && currentUser && userRole) {
+      console.log('=== AUTH READY, FETCHING CONTENT ===');
       fetchContents();
+    } else if (!authLoading && !currentUser) {
+      // Auth is loaded but no user - clear loading state
+      setIsLoading(false);
     }
-  }, [currentUser, userRole]);
+  }, [currentUser, userRole, authLoading]);
 
   const handleCreateNew = () => {
     console.log('Create new content');
@@ -158,11 +170,15 @@ export const Dashboard = () => {
     }
   };
 
-  if (isLoading) {
+  // Show loading state while auth is loading or content is loading
+  if (authLoading || isLoading) {
     return (
       <div className="p-8">
         <div className="flex justify-center items-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
+          <span className="ml-2">
+            {authLoading ? 'Loading authentication...' : 'Loading content...'}
+          </span>
         </div>
       </div>
     );

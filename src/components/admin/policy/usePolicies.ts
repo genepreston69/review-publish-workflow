@@ -17,7 +17,7 @@ interface Policy {
 }
 
 export function usePolicies() {
-  const { currentUser, userRole } = useAuth();
+  const { currentUser, userRole, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
@@ -28,11 +28,19 @@ export function usePolicies() {
 
   useEffect(() => {
     async function fetchPolicies() {
-      if (!currentUser || !userRole) return;
+      // Don't fetch if auth is still loading or we don't have user/role yet
+      if (authLoading || !currentUser || !userRole) {
+        console.log('=== SKIPPING POLICY FETCH - AUTH NOT READY ===', { authLoading, currentUser: !!currentUser, userRole });
+        return;
+      }
       
       try {
         setIsLoadingPolicies(true);
-        console.log('=== FETCHING POLICIES FOR CREATE PAGE ===', { userRole, currentUserEmail: currentUser.email });
+        console.log('=== FETCHING POLICIES FOR CREATE PAGE ===', { 
+          userRole, 
+          currentUserEmail: currentUser.email,
+          timestamp: new Date().toISOString()
+        });
         
         let query = supabase.from('Policies').select('*');
         
@@ -54,7 +62,7 @@ export function usePolicies() {
         if (error) {
           console.error('Error fetching policies:', error);
         } else {
-          console.log('=== POLICIES FOR CREATE PAGE ===', data);
+          console.log('=== POLICIES FOR CREATE PAGE ===', data, new Date().toISOString());
           setPolicies(data || []);
         }
       } catch (error) {
@@ -64,8 +72,14 @@ export function usePolicies() {
       }
     }
 
-    fetchPolicies();
-  }, [currentUser, userRole, isEditor, canPublish]);
+    // Wait for auth to be ready before fetching policies
+    if (!authLoading && currentUser && userRole) {
+      fetchPolicies();
+    } else if (!authLoading && !currentUser) {
+      // Auth is loaded but no user - clear loading state
+      setIsLoadingPolicies(false);
+    }
+  }, [currentUser, userRole, authLoading, isEditor, canPublish]);
 
   const updatePolicyStatus = async (policyId: string, newStatus: string) => {
     try {
@@ -135,7 +149,7 @@ export function usePolicies() {
 
   return {
     policies,
-    isLoadingPolicies,
+    isLoadingPolicies: isLoadingPolicies || authLoading,
     updatePolicyStatus,
     deletePolicy,
     addPolicy,
