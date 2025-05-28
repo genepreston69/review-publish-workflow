@@ -122,9 +122,7 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
       
       tocRows += `
         <tr class="toc-row">
-          <td class="toc-number">
-            <a href="#policy-${policy.id}" class="toc-link">${policyNumber}</a>
-          </td>
+          <td class="toc-number">${policyNumber}</td>
           <td class="toc-title">
             <a href="#policy-${policy.id}" class="toc-link">${policyTitle}</a>
           </td>
@@ -387,35 +385,40 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
             
             .toc-table th {
               background-color: #f8f9fa;
-              padding: 16px 12px;
+              padding: 12px 16px;
               text-align: left;
               font-weight: bold;
               border: 1px solid #dee2e6;
               color: #1565c0;
               font-size: 12pt;
+              white-space: nowrap;
             }
 
             .toc-table th:first-child {
-              width: 20%;
+              width: 120px;
               text-align: left;
             }
 
             .toc-table th:nth-child(2) {
-              width: 65%;
+              width: auto;
               text-align: left;
             }
 
             .toc-table th:last-child {
-              width: 15%;
+              width: 80px;
               text-align: right;
             }
             
             .toc-table td {
-              padding: 12px;
+              padding: 10px 16px;
               border: 1px solid #dee2e6;
               vertical-align: top;
-              word-wrap: break-word;
-              overflow-wrap: break-word;
+              font-size: 11pt;
+              line-height: 1.3;
+            }
+
+            .toc-row {
+              background-color: white;
             }
 
             .toc-row:nth-child(even) {
@@ -423,26 +426,26 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
             }
             
             .toc-number {
-              width: 20%;
               font-weight: bold;
               color: #1565c0;
               font-family: 'Courier New', monospace;
               text-align: left;
-              padding-left: 12px;
+              white-space: nowrap;
             }
             
             .toc-title {
-              width: 65%;
               text-align: left;
-              padding-left: 12px;
-              padding-right: 12px;
+              color: #333;
+              word-wrap: break-word;
+              overflow-wrap: break-word;
+              hyphens: auto;
             }
             
             .toc-page {
-              width: 15%;
               text-align: right;
               font-weight: bold;
-              padding-right: 12px;
+              color: #1565c0;
+              white-space: nowrap;
             }
             
             .toc-link {
