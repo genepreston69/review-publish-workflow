@@ -39,9 +39,9 @@ export const ReadOnlyDashboard = () => {
         return;
       }
 
-      // Fetch policies
+      // Fetch policies - corrected table name from 'policies' to 'Policies'
       const { data: policyData, error: policyError } = await supabase
-        .from('policies')
+        .from('Policies')
         .select('*')
         .eq('status', 'published')
         .order('created_at', { ascending: false });
