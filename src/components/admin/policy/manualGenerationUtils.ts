@@ -144,8 +144,11 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
             
             .policy-page, .cover-page, .toc-page {
               page-break-before: always;
+              page-break-after: always;
               position: relative;
               min-height: 9.5in;
+              max-height: 9.5in;
+              overflow: hidden;
             }
             
             .cover-page {
@@ -191,6 +194,19 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
               color: inherit !important;
               text-decoration: none !important;
             }
+
+            /* Ensure clean page separation */
+            .cover-page::after {
+              content: "";
+              display: block;
+              page-break-after: always;
+            }
+
+            .toc-page::before {
+              content: "";
+              display: block;
+              clear: both;
+            }
           }
           
           * {
@@ -215,6 +231,8 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
             height: 100vh;
             text-align: center;
             padding: 2in 1in;
+            position: relative;
+            isolation: isolate;
           }
           
           .cover-logo {
@@ -263,6 +281,9 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
             padding: 0;
             position: relative;
             min-height: 9.5in;
+            max-height: 9.5in;
+            isolation: isolate;
+            background: white;
           }
           
           .toc-main-title {
@@ -277,33 +298,47 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
             border-bottom: 3px solid #1565c0;
           }
           
-          /* Page Header Styles */
-          .page-header {
+          /* Page Header Styles - Only for Policy Pages */
+          .policy-page .page-header {
             border-bottom: 1px solid #ddd;
             padding-bottom: 12px;
             margin-bottom: 24px;
           }
 
-          .header-content {
+          .policy-page .header-content {
             display: flex;
             align-items: center;
             justify-content: flex-start;
             gap: 15px;
           }
 
-          .header-logo {
+          .policy-page .header-logo {
             height: 30px;
             width: auto;
           }
 
-          .header-text {
+          .policy-page .header-text {
             font-size: 10pt;
             font-weight: 600;
             color: #1565c0;
           }
 
-          /* Page Footer Styles */
-          .page-footer {
+          /* Page Footer Styles - Different for each page type */
+          .cover-page .page-footer {
+            display: none;
+          }
+
+          .toc-page .page-footer {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 100%;
+            text-align: right;
+            background: white;
+            z-index: 10;
+          }
+
+          .policy-page .page-footer {
             position: absolute;
             bottom: 0.75in;
             right: 0;
@@ -324,6 +359,7 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
             font-size: 11pt;
             border: 2px solid #1565c0;
             margin-bottom: 1in;
+            clear: both;
           }
           
           .toc-table th {
