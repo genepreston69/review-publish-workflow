@@ -15,11 +15,20 @@ export const filterPolicies = (policies: any[], searchTerm: string): any[] => {
   );
 };
 
+const stripHtml = (html: string): string => {
+  if (!html) return '';
+  // Create a temporary div element to parse HTML
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+  // Return the text content without HTML tags
+  return tempDiv.textContent || tempDiv.innerText || '';
+};
+
 export const convertPoliciesToContent = (policies: any[]): Content[] => {
   return policies.map(policy => ({
     id: policy.id,
     title: policy.name || 'Untitled Policy',
-    body: policy.policy_text || '',
+    body: stripHtml(policy.policy_text || ''),
     status: 'published' as const,
     authorId: '',
     createdAt: new Date(policy.created_at),
