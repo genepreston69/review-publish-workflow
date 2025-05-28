@@ -146,9 +146,10 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
               page-break-before: always;
               page-break-after: always;
               position: relative;
-              min-height: 9.5in;
-              max-height: 9.5in;
+              min-height: 8.5in;
+              max-height: 8.5in;
               overflow: hidden;
+              padding-bottom: 1in;
             }
             
             .cover-page {
@@ -278,10 +279,10 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
 
           /* Table of Contents Page Styles */
           .toc-page {
-            padding: 0;
+            padding: 0 0 1in 0;
             position: relative;
-            min-height: 9.5in;
-            max-height: 9.5in;
+            min-height: 8.5in;
+            max-height: 8.5in;
             isolation: isolate;
             background: white;
           }
@@ -330,20 +331,24 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
 
           .toc-page .page-footer {
             position: absolute;
-            bottom: 0;
+            bottom: 0.25in;
             right: 0;
             width: 100%;
             text-align: right;
             background: white;
             z-index: 10;
+            padding: 0.25in 0;
           }
 
           .policy-page .page-footer {
             position: absolute;
-            bottom: 0.75in;
+            bottom: 0.25in;
             right: 0;
             width: 100%;
             text-align: right;
+            background: white;
+            z-index: 10;
+            padding: 0.25in 0;
           }
           
           .page-number {
@@ -443,11 +448,13 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
           .policy-page {
             padding: 0;
             position: relative;
-            min-height: 9.5in;
+            min-height: 8.5in;
           }
           
           .policy-content {
-            margin-bottom: 80px; /* Space for footer */
+            margin-bottom: 1.5in; /* Increased space for footer */
+            max-height: 7in; /* Ensure content doesn't overflow */
+            overflow: hidden;
           }
           
           .policy-title-section {
@@ -576,6 +583,7 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
             
             .policy-content {
               margin-bottom: 20px;
+              max-height: none;
             }
           }
         </style>
