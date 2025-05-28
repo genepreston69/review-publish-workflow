@@ -136,8 +136,8 @@ const Admin = () => {
           </div>
         </div>
       </div>
-    );
-  }
+    </SidebarProvider>
+  );
 };
 
 export default Admin;
