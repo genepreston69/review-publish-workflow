@@ -1,12 +1,27 @@
-
 import { Header } from '@/components/Header';
 import { Dashboard } from '@/components/Dashboard';
+import { ReadOnlyDashboard } from '@/components/ReadOnlyDashboard';
 import { ContentSidebar } from '@/components/ContentSidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
+  const { userRole } = useAuth();
   console.log('=== INDEX PAGE RENDERING ===');
   
+  // For read-only users, show the modernized dashboard without sidebar
+  if (userRole === 'read-only') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <ReadOnlyDashboard />
+        </div>
+      </div>
+    );
+  }
+
+  // For other users (edit, publish, super-admin), keep the existing layout
   return (
     <div className="min-h-screen">
       <SidebarProvider>
