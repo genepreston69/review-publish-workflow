@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, User, Trash2, Eye, RotateCcw } from 'lucide-react';
+import { Calendar, User, Trash2, Eye, RotateCcw, Printer } from 'lucide-react';
 
 interface Policy {
   id: string;
@@ -47,6 +47,144 @@ const getStatusColor = (status: string | null) => {
     default:
       return 'bg-gray-100 text-gray-800';
   }
+};
+
+const handlePrintPolicy = (policy: Policy) => {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
+
+  const printContent = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>${policy.name || 'Policy'}</title>
+        <style>
+          @media print {
+            @page {
+              margin: 1in;
+              size: letter;
+            }
+          }
+          
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 8.5in;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          
+          .header {
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+          }
+          
+          .policy-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+          }
+          
+          .policy-number {
+            font-family: monospace;
+            background: #f5f5f5;
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 10px;
+          }
+          
+          .metadata {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            color: #666;
+          }
+          
+          .section {
+            margin-bottom: 30px;
+          }
+          
+          .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+          }
+          
+          .section-content {
+            margin-left: 0;
+          }
+          
+          .section-content p {
+            margin-bottom: 10px;
+          }
+          
+          .section-content ul, .section-content ol {
+            margin-left: 20px;
+            margin-bottom: 10px;
+          }
+          
+          .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 12px;
+            color: #666;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="policy-title">${policy.name || 'Untitled Policy'}</div>
+          ${policy.policy_number ? `<div class="policy-number">${policy.policy_number}</div>` : ''}
+          <div class="metadata">
+            ${policy.reviewer ? `<span>Reviewer: ${stripHtml(policy.reviewer)}</span>` : ''}
+            <span>Created: ${new Date(policy.created_at).toLocaleDateString()}</span>
+            ${policy.status ? `<span>Status: ${policy.status}</span>` : ''}
+          </div>
+        </div>
+        
+        ${policy.purpose ? `
+          <div class="section">
+            <div class="section-title">Purpose</div>
+            <div class="section-content">${policy.purpose}</div>
+          </div>
+        ` : ''}
+        
+        ${policy.policy_text ? `
+          <div class="section">
+            <div class="section-title">Policy</div>
+            <div class="section-content">${policy.policy_text}</div>
+          </div>
+        ` : ''}
+        
+        ${policy.procedure ? `
+          <div class="section">
+            <div class="section-title">Procedure</div>
+            <div class="section-content">${policy.procedure}</div>
+          </div>
+        ` : ''}
+        
+        <div class="footer">
+          This document was printed on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}
+        </div>
+      </body>
+    </html>
+  `;
+
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+  
+  // Wait for content to load then print
+  printWindow.onload = () => {
+    printWindow.print();
+    printWindow.close();
+  };
 };
 
 export function FacilityPolicyCard({ 
@@ -130,6 +268,17 @@ export function FacilityPolicyCard({
           >
             <Eye className="w-3 h-3 mr-1" />
             View Policy
+          </Button>
+
+          {/* Print Policy Button - Available for all policies */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handlePrintPolicy(policy)}
+            className="w-full text-xs border-gray-300 text-gray-600 hover:bg-gray-50"
+          >
+            <Printer className="w-3 h-3 mr-1" />
+            Print Policy
           </Button>
 
           {/* Update Policy Button - Show for users with edit/publish permissions */}
