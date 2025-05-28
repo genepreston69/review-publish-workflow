@@ -121,14 +121,10 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
       const policyNumber = policy.policy_number || 'N/A';
       
       tocRows += `
-        <tr class="toc-row">
+        <tr class="toc-row" onclick="window.location.href='#policy-${policy.id}'" style="cursor: pointer;">
           <td class="toc-number">${policyNumber}</td>
-          <td class="toc-title">
-            <a href="#policy-${policy.id}" class="toc-link">${policyTitle}</a>
-          </td>
-          <td class="toc-page">
-            <a href="#policy-${policy.id}" class="toc-link">${currentPage}</a>
-          </td>
+          <td class="toc-title">${policyTitle}</td>
+          <td class="toc-page">${currentPage}</td>
         </tr>
       `;
       currentPage++;
@@ -369,7 +365,7 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               font-size: 24pt;
               font-weight: bold;
               text-align: center;
-              margin: 0 0 1in 0;
+              margin: 0 0 0.75in 0;
               color: #1565c0;
               text-transform: uppercase;
               letter-spacing: 1px;
@@ -380,49 +376,60 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               border-collapse: collapse;
               margin-bottom: 1in;
               font-size: 12pt;
-              table-layout: fixed;
+              border: 1px solid #dee2e6;
             }
             
             .toc-table th {
               background-color: #f8f9fa;
-              padding: 12px 16px;
+              padding: 10px 12px;
               text-align: left;
               font-weight: bold;
-              border: 1px solid #dee2e6;
+              border-bottom: 2px solid #1565c0;
+              border-right: 1px solid #dee2e6;
               color: #1565c0;
               font-size: 12pt;
-              white-space: nowrap;
             }
 
             .toc-table th:first-child {
-              width: 120px;
+              width: 15%;
               text-align: left;
             }
 
             .toc-table th:nth-child(2) {
-              width: auto;
+              width: 70%;
               text-align: left;
             }
 
             .toc-table th:last-child {
-              width: 80px;
+              width: 15%;
               text-align: right;
+              border-right: none;
             }
             
             .toc-table td {
-              padding: 10px 16px;
-              border: 1px solid #dee2e6;
+              padding: 8px 12px;
+              border-bottom: 1px solid #dee2e6;
+              border-right: 1px solid #dee2e6;
               vertical-align: top;
               font-size: 11pt;
               line-height: 1.3;
             }
 
+            .toc-table td:last-child {
+              border-right: none;
+            }
+
             .toc-row {
               background-color: white;
+              transition: background-color 0.2s;
             }
 
             .toc-row:nth-child(even) {
               background-color: #f8f9fa;
+            }
+
+            .toc-row:hover {
+              background-color: #e3f2fd;
             }
             
             .toc-number {
@@ -436,9 +443,7 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
             .toc-title {
               text-align: left;
               color: #333;
-              word-wrap: break-word;
-              overflow-wrap: break-word;
-              hyphens: auto;
+              font-weight: normal;
             }
             
             .toc-page {
@@ -446,18 +451,6 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               font-weight: bold;
               color: #1565c0;
               white-space: nowrap;
-            }
-            
-            .toc-link {
-              text-decoration: none;
-              color: inherit;
-              display: block;
-              width: 100%;
-            }
-            
-            .toc-link:hover {
-              color: #1565c0;
-              text-decoration: underline;
             }
             
             /* Policy Page Styles */
