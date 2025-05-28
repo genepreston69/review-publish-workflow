@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -64,7 +63,7 @@ const handlePrintPolicy = (policy: Policy) => {
         <style>
           @media print {
             @page {
-              margin: 0.75in;
+              margin: 1in;
               size: letter;
             }
             
@@ -81,192 +80,160 @@ const handlePrintPolicy = (policy: Policy) => {
           body {
             font-family: 'Arial', 'Helvetica', sans-serif;
             font-size: 11pt;
-            line-height: 1.4;
+            line-height: 1.3;
             color: #333;
             margin: 0;
             padding: 0;
             background: white;
           }
           
-          .header {
-            text-align: center;
-            padding-bottom: 20px;
-            margin-bottom: 25px;
+          .compact-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
             border-bottom: 2px solid #2563eb;
+            page-break-inside: avoid;
+          }
+          
+          .logo-section {
+            flex-shrink: 0;
           }
           
           .logo {
-            max-width: 300px;
-            max-height: 80px;
-            margin: 0 auto 15px auto;
+            max-width: 120px;
+            max-height: 60px;
             display: block;
           }
           
           .company-name {
-            font-size: 18pt;
+            font-size: 14pt;
             font-weight: bold;
             color: #2563eb;
-            margin: 0 0 10px 0;
+            margin: 5px 0 0 0;
             text-align: center;
           }
           
-          .divider-line {
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(to right, #2563eb, #60a5fa, #2563eb);
-            margin: 15px 0;
+          .header-content {
+            flex: 1;
+            min-width: 0;
           }
           
           .policy-title {
-            font-size: 22pt;
+            font-size: 18pt;
             font-weight: bold;
-            margin: 25px 0 20px 0;
+            margin: 0 0 10px 0;
             color: #333;
-            text-align: center;
             text-transform: uppercase;
             letter-spacing: 0.5px;
           }
           
-          .metadata-table {
-            width: 100%;
-            margin: 20px 0 35px 0;
-            border-collapse: collapse;
-            background: #f8f9fa;
-            border: 2px solid #2563eb;
-            border-radius: 8px;
-            overflow: hidden;
+          .metadata-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 20px;
+            font-size: 10pt;
+            margin-top: 10px;
           }
           
-          .metadata-table td {
-            padding: 12px 16px;
-            border-right: 1px solid #dee2e6;
-            font-size: 11pt;
-            vertical-align: top;
-          }
-          
-          .metadata-table tr:first-child td {
-            border-bottom: 1px solid #dee2e6;
-          }
-          
-          .metadata-table td:last-child {
-            border-right: none;
+          .metadata-item {
+            display: flex;
+            align-items: center;
           }
           
           .metadata-label {
             font-weight: bold;
-            background: #e3f2fd;
-            width: 50%;
             color: #1565c0;
+            margin-right: 8px;
+            min-width: 80px;
           }
           
           .metadata-value {
-            background: white;
-            width: 50%;
+            color: #333;
           }
           
           .section {
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             page-break-inside: avoid;
           }
           
           .section-title {
-            font-size: 14pt;
+            font-size: 13pt;
             font-weight: bold;
-            margin: 30px 0 15px 0;
+            margin: 20px 0 8px 0;
             color: #1565c0;
             text-transform: uppercase;
             letter-spacing: 1px;
-            border-bottom: 2px solid #2563eb;
-            padding-bottom: 5px;
-            position: relative;
-          }
-          
-          .section-title::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 50px;
-            height: 2px;
-            background: #60a5fa;
+            border-bottom: 1px solid #2563eb;
+            padding-bottom: 3px;
           }
           
           .section-content {
-            margin-left: 0;
-            line-height: 1.6;
-            margin-top: 15px;
+            margin-top: 8px;
+            line-height: 1.3;
           }
           
           .section-content p {
-            margin-bottom: 14px;
+            margin-bottom: 8px;
             text-align: justify;
           }
           
           .section-content ul, .section-content ol {
-            margin-left: 25px;
-            margin-bottom: 14px;
+            margin: 8px 0 8px 25px;
+            padding: 0;
           }
           
           .section-content li {
-            margin-bottom: 8px;
-            line-height: 1.5;
+            margin-bottom: 4px;
+            line-height: 1.4;
           }
           
           .section-content h1, .section-content h2, .section-content h3 {
             color: #1565c0;
-            margin-top: 25px;
-            margin-bottom: 12px;
+            margin: 15px 0 8px 0;
             font-weight: bold;
           }
           
           .section-content h1 {
-            font-size: 14pt;
+            font-size: 12pt;
           }
           
           .section-content h2 {
-            font-size: 13pt;
+            font-size: 11.5pt;
           }
           
           .section-content h3 {
-            font-size: 12pt;
+            font-size: 11pt;
           }
           
           .footer {
             position: fixed;
             bottom: 0.5in;
-            left: 0;
-            right: 0;
-            height: 40px;
+            left: 1in;
+            right: 1in;
+            height: 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-size: 9pt;
             color: #666;
             border-top: 1px solid #dee2e6;
-            padding-top: 10px;
+            padding-top: 8px;
             background: white;
           }
           
           .footer-left {
             font-weight: bold;
             color: #dc3545;
-            flex: 1;
           }
           
           .footer-center {
             font-weight: bold;
-            text-align: center;
-            flex: 1;
           }
           
           .footer-right {
             font-style: italic;
-            text-align: right;
-            flex: 1;
-          }
-          
-          .page-break {
-            page-break-before: always;
           }
           
           @media print {
@@ -276,7 +243,7 @@ const handlePrintPolicy = (policy: Policy) => {
             }
             
             body {
-              padding-bottom: 60px;
+              padding-bottom: 50px;
             }
           }
           
@@ -291,32 +258,35 @@ const handlePrintPolicy = (policy: Policy) => {
         </style>
       </head>
       <body>
-        <div class="header">
-          <img src="/lovable-uploads/acf8d05c-3cb0-46eb-841c-b50ed425544d.png" alt="Recovery Point West Virginia Logo" class="logo" />
-          <h1 class="company-name">Recovery Point West Virginia</h1>
-          <div class="divider-line"></div>
+        <div class="compact-header">
+          <div class="logo-section">
+            <img src="/lovable-uploads/acf8d05c-3cb0-46eb-841c-b50ed425544d.png" alt="Recovery Point West Virginia Logo" class="logo" />
+            <div class="company-name">Recovery Point West Virginia</div>
+          </div>
+          
+          <div class="header-content">
+            <div class="policy-title">${policy.name || 'Untitled Policy'}</div>
+            
+            <div class="metadata-grid">
+              <div class="metadata-item">
+                <span class="metadata-label">Policy Number:</span>
+                <span class="metadata-value">${policy.policy_number || 'Not Assigned'}</span>
+              </div>
+              <div class="metadata-item">
+                <span class="metadata-label">Status:</span>
+                <span class="metadata-value">${policy.status || 'Draft'}</span>
+              </div>
+              <div class="metadata-item">
+                <span class="metadata-label">Reviewer:</span>
+                <span class="metadata-value">${policy.reviewer ? stripHtml(policy.reviewer) : 'Not Assigned'}</span>
+              </div>
+              <div class="metadata-item">
+                <span class="metadata-label">Created Date:</span>
+                <span class="metadata-value">${new Date(policy.created_at).toLocaleDateString()}</span>
+              </div>
+            </div>
+          </div>
         </div>
-        
-        <div class="policy-title">${policy.name || 'Untitled Policy'}</div>
-        
-        <table class="metadata-table">
-          <tr>
-            <td class="metadata-label">Policy Number:</td>
-            <td class="metadata-value">${policy.policy_number || 'Not Assigned'}</td>
-          </tr>
-          <tr>
-            <td class="metadata-label">Status:</td>
-            <td class="metadata-value">${policy.status || 'Draft'}</td>
-          </tr>
-          <tr>
-            <td class="metadata-label">Reviewer:</td>
-            <td class="metadata-value">${policy.reviewer ? stripHtml(policy.reviewer) : 'Not Assigned'}</td>
-          </tr>
-          <tr>
-            <td class="metadata-label">Created Date:</td>
-            <td class="metadata-value">${new Date(policy.created_at).toLocaleDateString()}</td>
-          </tr>
-        </table>
         
         ${policy.purpose ? `
           <div class="section">
