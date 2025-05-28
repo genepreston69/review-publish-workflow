@@ -71,6 +71,10 @@ const Admin = () => {
                 <FacilityPolicies />
               </TabsContent>
 
+              <TabsContent value="policy-manuals">
+                <PolicyManualGenerator />
+              </TabsContent>
+
               <TabsContent value="users">
                 <UserManagement />
               </TabsContent>
@@ -124,12 +128,16 @@ const Admin = () => {
               <TabsContent value="facility-policies">
                 <FacilityPolicies />
               </TabsContent>
+
+              <TabsContent value="policy-manuals">
+                <PolicyManualGenerator />
+              </TabsContent>
             </Tabs>
           </div>
         </div>
       </div>
-    </SidebarProvider>
-  );
+    );
+  }
 };
 
 export default Admin;
