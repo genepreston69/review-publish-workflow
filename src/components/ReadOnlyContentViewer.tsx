@@ -39,7 +39,7 @@ export const ReadOnlyContentViewer = ({ content, isOpen, onClose }: ReadOnlyCont
           </div>
           
           <div className="prose max-w-none">
-            <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+            <div className="whitespace-pre-wrap text-gray-700 leading-relaxed text-sm">
               {content.body}
             </div>
           </div>

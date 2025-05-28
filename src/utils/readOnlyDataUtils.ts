@@ -25,14 +25,17 @@ const stripHtml = (html: string): string => {
 };
 
 export const convertPoliciesToContent = (policies: any[]): Content[] => {
-  return policies.map(policy => ({
-    id: policy.id,
-    title: policy.name || 'Untitled Policy',
-    body: stripHtml(policy.policy_text || ''),
-    status: 'published' as const,
-    authorId: '',
-    createdAt: new Date(policy.created_at),
-    updatedAt: new Date(policy.created_at),
-    publishedAt: new Date(policy.created_at),
-  }));
+  return policies.map(policy => {
+    const fullPolicyText = stripHtml(policy.policy_text || '');
+    return {
+      id: policy.id,
+      title: policy.name || 'Untitled Policy',
+      body: fullPolicyText, // Use the complete stripped HTML text
+      status: 'published' as const,
+      authorId: '',
+      createdAt: new Date(policy.created_at),
+      updatedAt: new Date(policy.created_at),
+      publishedAt: new Date(policy.created_at),
+    };
+  });
 };
