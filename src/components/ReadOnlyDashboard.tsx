@@ -4,22 +4,26 @@ import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { ReadOnlyTabs } from './ReadOnlyTabs';
 import { ReadOnlyDashboardHeader } from './ReadOnlyDashboardHeader';
 import { ReadOnlyContentGrid } from './ReadOnlyContentGrid';
+import { ReadOnlyContentViewer } from './ReadOnlyContentViewer';
 import { useReadOnlyData } from '@/hooks/useReadOnlyData';
 import { Content } from '@/types/content';
 import { Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { filterContents, filterPolicies, convertPoliciesToContent } from '@/utils/readOnlyDataUtils';
 
 export const ReadOnlyDashboard = () => {
   const { contents, policies, isLoading } = useReadOnlyData();
   const [searchTerm, setSearchTerm] = useState('');
-  const { toast } = useToast();
+  const [selectedContent, setSelectedContent] = useState<Content | null>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   const handleView = (content: Content) => {
-    toast({
-      title: "Feature coming soon",
-      description: "Content viewing will be implemented next.",
-    });
+    setSelectedContent(content);
+    setIsViewerOpen(true);
+  };
+
+  const handleCloseViewer = () => {
+    setIsViewerOpen(false);
+    setSelectedContent(null);
   };
 
   const filteredContents = filterContents(contents, searchTerm);
@@ -79,6 +83,12 @@ export const ReadOnlyDashboard = () => {
           />
         </TabsContent>
       </Tabs>
+
+      <ReadOnlyContentViewer
+        content={selectedContent}
+        isOpen={isViewerOpen}
+        onClose={handleCloseViewer}
+      />
     </div>
   );
 };
