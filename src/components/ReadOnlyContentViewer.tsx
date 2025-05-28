@@ -15,7 +15,7 @@ export const ReadOnlyContentViewer = ({ content, isOpen, onClose }: ReadOnlyCont
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex justify-between items-start mb-4">
             <DialogTitle className="text-2xl font-bold leading-tight pr-4">
@@ -25,7 +25,7 @@ export const ReadOnlyContentViewer = ({ content, isOpen, onClose }: ReadOnlyCont
           </div>
         </DialogHeader>
         
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div className="flex items-center gap-4 text-sm text-gray-500 border-b pb-4">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -38,9 +38,17 @@ export const ReadOnlyContentViewer = ({ content, isOpen, onClose }: ReadOnlyCont
             </div>
           </div>
           
-          <div className="prose max-w-none">
-            <div className="whitespace-pre-wrap text-gray-700 leading-relaxed text-sm">
-              {content.body}
+          <div className="prose prose-sm max-w-none print:prose-print">
+            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed text-sm space-y-4">
+              {content.body.split('\n').map((paragraph, index) => (
+                paragraph.trim() ? (
+                  <p key={index} className="mb-4">
+                    {paragraph.trim()}
+                  </p>
+                ) : (
+                  <div key={index} className="h-4"></div>
+                )
+              ))}
             </div>
           </div>
         </div>
