@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Policy {
@@ -143,7 +142,7 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
               page-break-before: always;
             }
             
-            .policy-page, .cover-page {
+            .policy-page, .cover-page, .toc-page {
               page-break-before: always;
               position: relative;
               min-height: 9.5in;
@@ -162,11 +161,6 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
             }
             
             /* TOC Table Print Styles - Board Standard */
-            .toc-page {
-              page-break-before: always;
-              page-break-after: always;
-            }
-            
             .toc-table {
               page-break-inside: avoid;
               break-inside: avoid;
@@ -263,6 +257,25 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
             color: #666;
             line-height: 1.4;
           }
+
+          /* Table of Contents Page Styles */
+          .toc-page {
+            padding: 0;
+            position: relative;
+            min-height: 9.5in;
+          }
+          
+          .toc-main-title {
+            font-size: 28pt;
+            font-weight: bold;
+            text-align: center;
+            margin: 0 0 0.6in 0;
+            color: #1565c0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding-bottom: 0.2in;
+            border-bottom: 3px solid #1565c0;
+          }
           
           /* Page Header Styles */
           .page-header {
@@ -304,38 +317,22 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
             font-weight: 500;
           }
           
-          /* Table of Contents Styles - Board Standard */
-          .toc-page {
-            padding: 0;
-            position: relative;
-            min-height: 9.5in;
-          }
-          
-          .toc-title {
-            font-size: 22pt;
-            font-weight: bold;
-            text-align: center;
-            margin: 0 0 0.4in 0;
-            color: #1565c0;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-          }
-          
+          /* TOC Table Styles - Board Standard */
           .toc-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 11pt;
-            border: 1px solid #333;
+            border: 2px solid #1565c0;
             margin-bottom: 1in;
           }
           
           .toc-table th {
             background-color: #1565c0;
             color: white;
-            padding: 8px 12px;
+            padding: 12px 15px;
             font-weight: bold;
-            border-bottom: 1px solid #333;
             font-size: 12pt;
+            border-bottom: 2px solid #1565c0;
           }
 
           .toc-table th:first-child {
@@ -354,11 +351,11 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
           }
           
           .toc-table td {
-            padding: 4px 12px;
-            border-bottom: 1px solid #ddd;
+            padding: 8px 15px;
+            border-bottom: 1px solid #e0e0e0;
             vertical-align: top;
             font-size: 11pt;
-            line-height: 1.2;
+            line-height: 1.3;
           }
 
           .toc-row {
@@ -567,14 +564,7 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
 
         <!-- Table of Contents -->
         <div class="toc-page">
-          <div class="page-header">
-            <div class="header-content">
-              <img src="/lovable-uploads/07b7c8f7-302d-4fa4-add8-69e1b84285ac.png" alt="Recovery Point West Virginia Logo" class="header-logo">
-              <span class="header-text">Recovery Point West Virginia ${type} Policy Manual</span>
-            </div>
-          </div>
-          
-          <h2 class="toc-title">Table of Contents</h2>
+          <h1 class="toc-main-title">Table of Contents</h1>
           <table class="toc-table">
             <thead>
               <tr>
