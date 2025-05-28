@@ -11,6 +11,7 @@ import { FacilityPolicies } from '@/components/admin/FacilityPolicies';
 import { CreatePolicy } from '@/components/admin/CreatePolicy';
 import { DraftPolicies } from '@/components/admin/DraftPolicies';
 import { ReviewPolicies } from '@/components/admin/ReviewPolicies';
+import { PolicyManualGenerator } from '@/components/admin/policy/PolicyManualGenerator';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { PolicySidebar } from '@/components/admin/PolicySidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';

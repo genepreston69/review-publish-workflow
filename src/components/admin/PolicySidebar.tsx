@@ -1,5 +1,5 @@
 
-import { Shield, Plus, FileClock, FileCheck, FileText } from 'lucide-react';
+import { Shield, Plus, FileClock, FileCheck, FileText, BookOpen } from 'lucide-react';
 
 interface PolicySidebarProps {
   activeTab: string;
@@ -66,6 +66,17 @@ export function PolicySidebar({ activeTab, setActiveTab, isEditor, canPublish }:
           >
             <FileText className="w-4 h-4 inline mr-2" />
             Facility Policies
+          </button>
+          <button
+            onClick={() => setActiveTab('policy-manuals')}
+            className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+              activeTab === 'policy-manuals' 
+                ? 'bg-purple-100 text-purple-700' 
+                : 'hover:bg-gray-100'
+            }`}
+          >
+            <BookOpen className="w-4 h-4 inline mr-2" />
+            Policy Manuals
           </button>
         </div>
       </div>

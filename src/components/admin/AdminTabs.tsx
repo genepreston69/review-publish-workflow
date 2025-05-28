@@ -1,6 +1,6 @@
 
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, Link, BarChart3, FileText, Plus, FileClock, FileCheck } from 'lucide-react';
+import { Shield, Users, Link, BarChart3, FileText, Plus, FileClock, FileCheck, BookOpen } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 export function AdminTabs() {
@@ -30,6 +30,11 @@ export function AdminTabs() {
       title: "Facility Policies",
       icon: FileText,
       value: "facility-policies",
+    },
+    {
+      title: "Policy Manuals",
+      icon: BookOpen,
+      value: "policy-manuals",
     },
   ];
 
