@@ -112,20 +112,25 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
     const manualTitle = `Recovery Point West Virginia ${type} Policy Manual`;
     const totalPages = 2 + policies.length; // Cover + TOC + policies
     
-    // Generate Table of Contents
-    let tocEntries = '';
+    // Generate Table of Contents entries
+    let tocRows = '';
     let currentPage = 3; // Start after cover page and TOC
     
     policies.forEach((policy) => {
-      tocEntries += `
+      const policyTitle = policy.name || 'Untitled Policy';
+      const policyNumber = policy.policy_number || 'N/A';
+      
+      tocRows += `
         <tr class="toc-row">
-          <td class="toc-number">${policy.policy_number || 'N/A'}</td>
-          <td class="toc-title">
-            <a href="#policy-${policy.id}" class="toc-link">
-              ${policy.name || 'Untitled Policy'}
-            </a>
+          <td class="toc-number">
+            <a href="#policy-${policy.id}" class="toc-link">${policyNumber}</a>
           </td>
-          <td class="toc-page">${currentPage}</td>
+          <td class="toc-title">
+            <a href="#policy-${policy.id}" class="toc-link">${policyTitle}</a>
+          </td>
+          <td class="toc-page">
+            <a href="#policy-${policy.id}" class="toc-link">${currentPage}</a>
+          </td>
         </tr>
       `;
       currentPage++;
@@ -138,8 +143,10 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
       policyContent += `
         <div class="policy-page" id="policy-${policy.id}">
           <div class="page-header">
-            <img src="/lovable-uploads/07b7c8f7-302d-4fa4-add8-69e1b84285ac.png" alt="Recovery Point West Virginia Logo" class="header-logo">
-            <div class="header-text">Recovery Point West Virginia ${type} Policy Manual</div>
+            <div class="header-content">
+              <img src="/lovable-uploads/07b7c8f7-302d-4fa4-add8-69e1b84285ac.png" alt="Recovery Point West Virginia Logo" class="header-logo">
+              <span class="header-text">Recovery Point West Virginia ${type} Policy Manual</span>
+            </div>
           </div>
           
           <div class="policy-content">
@@ -240,6 +247,10 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               }
               
               .toc-table {
+                page-break-inside: auto;
+              }
+
+              .toc-row {
                 page-break-inside: avoid;
               }
             }
@@ -311,12 +322,16 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
             
             /* Page Header Styles */
             .page-header {
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
+              border-bottom: 1px solid #ddd;
               padding-bottom: 12px;
               margin-bottom: 24px;
-              border-bottom: 1px solid #ddd;
+            }
+
+            .header-content {
+              display: flex;
+              align-items: center;
+              justify-content: flex-start;
+              gap: 15px;
             }
 
             .header-logo {
@@ -378,16 +393,29 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               border: 1px solid #dee2e6;
               color: #1565c0;
               font-size: 12pt;
-              white-space: nowrap;
+            }
+
+            .toc-table th:first-child {
+              width: 20%;
+              text-align: left;
+            }
+
+            .toc-table th:nth-child(2) {
+              width: 65%;
+              text-align: left;
+            }
+
+            .toc-table th:last-child {
+              width: 15%;
+              text-align: right;
             }
             
             .toc-table td {
               padding: 12px;
               border: 1px solid #dee2e6;
               vertical-align: top;
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
+              word-wrap: break-word;
+              overflow-wrap: break-word;
             }
 
             .toc-row:nth-child(even) {
@@ -399,24 +427,27 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               font-weight: bold;
               color: #1565c0;
               font-family: 'Courier New', monospace;
-              text-align: center;
+              text-align: left;
+              padding-left: 12px;
             }
             
             .toc-title {
               width: 65%;
-              white-space: normal;
-              word-wrap: break-word;
+              text-align: left;
+              padding-left: 12px;
+              padding-right: 12px;
             }
             
             .toc-page {
               width: 15%;
-              text-align: center;
+              text-align: right;
               font-weight: bold;
+              padding-right: 12px;
             }
             
             .toc-link {
               text-decoration: none;
-              color: #333;
+              color: inherit;
               display: block;
               width: 100%;
             }
@@ -588,8 +619,10 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
           <!-- Table of Contents -->
           <div class="toc-page">
             <div class="page-header">
-              <img src="/lovable-uploads/07b7c8f7-302d-4fa4-add8-69e1b84285ac.png" alt="Recovery Point West Virginia Logo" class="header-logo">
-              <div class="header-text">Recovery Point West Virginia ${type} Policy Manual</div>
+              <div class="header-content">
+                <img src="/lovable-uploads/07b7c8f7-302d-4fa4-add8-69e1b84285ac.png" alt="Recovery Point West Virginia Logo" class="header-logo">
+                <span class="header-text">Recovery Point West Virginia ${type} Policy Manual</span>
+              </div>
             </div>
             
             <h2 class="toc-title">Table of Contents</h2>
@@ -602,7 +635,7 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
                 </tr>
               </thead>
               <tbody>
-                ${tocEntries}
+                ${tocRows}
               </tbody>
             </table>
 
