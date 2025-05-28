@@ -1,7 +1,8 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, User, CheckCircle, XCircle, Trash2, Edit } from 'lucide-react';
+import { Calendar, User, CheckCircle, XCircle, Trash2, Edit, Eye } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface Policy {
@@ -21,6 +22,7 @@ interface PolicyCardProps {
   canPublish: boolean;
   onUpdateStatus: (policyId: string, newStatus: string) => void;
   onEdit?: (policyId: string) => void;
+  onView?: (policyId: string) => void;
   onDelete?: (policyId: string) => void;
 }
 
@@ -34,6 +36,7 @@ const stripHtml = (html: string | null): string => {
 const getStatusColor = (status: string | null) => {
   switch (status?.toLowerCase()) {
     case 'active':
+    case 'published':
       return 'bg-green-100 text-green-800';
     case 'draft':
       return 'bg-yellow-100 text-yellow-800';
@@ -47,7 +50,7 @@ const getStatusColor = (status: string | null) => {
   }
 };
 
-export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onDelete }: PolicyCardProps) {
+export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onView, onDelete }: PolicyCardProps) {
   const { userRole } = useAuth();
   const isSuperAdmin = userRole === 'super-admin';
   const isEditor = userRole === 'edit';
@@ -102,6 +105,19 @@ export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onDelet
 
           {/* Action buttons */}
           <div className="pt-3 border-t space-y-2">
+            {/* View Button - Show for all users */}
+            {onView && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onView(policy.id)}
+                className="w-full text-xs border-gray-300 text-gray-600 hover:bg-gray-50"
+              >
+                <Eye className="w-3 h-3 mr-1" />
+                View Policy
+              </Button>
+            )}
+
             {/* Edit Button - Show for editors on their drafts, and publishers on review policies */}
             {onEdit && (
               (isEditor && policy.status === 'draft') ||
@@ -123,7 +139,7 @@ export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onDelet
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  onClick={() => onUpdateStatus(policy.id, 'active')}
+                  onClick={() => onUpdateStatus(policy.id, 'published')}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-xs"
                 >
                   <CheckCircle className="w-3 h-3 mr-1" />

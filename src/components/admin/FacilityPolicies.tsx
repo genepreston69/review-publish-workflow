@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { FileText, Calendar, User, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { FileText, Calendar, User, CheckCircle, XCircle, Trash2, Eye } from 'lucide-react';
+import { PolicyViewModal } from './policy/PolicyViewModal';
 
 interface Policy {
   id: string;
@@ -29,6 +31,7 @@ const stripHtml = (html: string | null): string => {
 export function FacilityPolicies() {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
   const { userRole } = useAuth();
   const { toast } = useToast();
 
@@ -45,7 +48,7 @@ export function FacilityPolicies() {
       const { data, error } = await supabase
         .from('Policies')
         .select('*')
-        .eq('status', 'published') // Changed from 'active' to 'published'
+        .eq('status', 'published')
         .order('created_at', { ascending: false });
 
       console.log('=== FACILITY POLICIES RESPONSE ===', { data, error });
@@ -84,6 +87,14 @@ export function FacilityPolicies() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleViewPolicy = (policyId: string) => {
+    setViewingPolicyId(policyId);
+  };
+
+  const handleCloseView = () => {
+    setViewingPolicyId(null);
   };
 
   const updatePolicyStatus = async (policyId: string, newStatus: string) => {
@@ -251,25 +262,44 @@ export function FacilityPolicies() {
                     </div>
                   </div>
 
-                  {/* Super Admin Delete Action for published policies */}
-                  {isSuperAdmin && (
-                    <div className="pt-3 border-t">
+                  {/* Action buttons */}
+                  <div className="pt-3 border-t space-y-2">
+                    {/* View Button for all published policies */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleViewPolicy(policy.id)}
+                      className="w-full text-xs border-gray-300 text-gray-600 hover:bg-gray-50"
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      View Policy
+                    </Button>
+
+                    {/* Super Admin Delete Action for published policies */}
+                    {isSuperAdmin && (
                       <Button
                         size="sm"
                         variant="destructive"
                         onClick={() => deletePolicy(policy.id)}
-                        className="w-full"
+                        className="w-full text-xs"
                       >
                         <Trash2 className="w-3 h-3 mr-1" />
                         Delete Policy
                       </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
+      )}
+
+      {viewingPolicyId && (
+        <PolicyViewModal
+          policyId={viewingPolicyId}
+          onClose={handleCloseView}
+        />
       )}
     </div>
   );

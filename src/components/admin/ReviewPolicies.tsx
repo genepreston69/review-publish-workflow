@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { PolicyList } from './policy/PolicyList';
 import { PolicyEditForm } from './policy/PolicyEditForm';
+import { PolicyViewModal } from './policy/PolicyViewModal';
 import { usePolicies } from './policy/usePolicies';
 
 interface Policy {
@@ -21,6 +22,7 @@ export function ReviewPolicies() {
   const { userRole } = useAuth();
   const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, isSuperAdmin } = usePolicies();
   const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
+  const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
 
   // Filter to show policies that need review
   const reviewPolicies = policies.filter(policy => 
@@ -34,6 +36,13 @@ export function ReviewPolicies() {
   const handleEditPolicy = (policyId: string) => {
     console.log('Edit policy:', policyId);
     setEditingPolicyId(policyId);
+    setViewingPolicyId(null);
+  };
+
+  const handleViewPolicy = (policyId: string) => {
+    console.log('View policy:', policyId);
+    setViewingPolicyId(policyId);
+    setEditingPolicyId(null);
   };
 
   const handlePolicyUpdated = (updatedPolicy: Policy) => {
@@ -44,6 +53,10 @@ export function ReviewPolicies() {
 
   const handleCancelEdit = () => {
     setEditingPolicyId(null);
+  };
+
+  const handleCloseView = () => {
+    setViewingPolicyId(null);
   };
 
   if (!canPublish) {
@@ -95,8 +108,16 @@ export function ReviewPolicies() {
         canPublish={true}
         onUpdateStatus={updatePolicyStatus}
         onEdit={handleEditPolicy}
+        onView={handleViewPolicy}
         onDelete={isSuperAdmin ? deletePolicy : undefined}
       />
+
+      {viewingPolicyId && (
+        <PolicyViewModal
+          policyId={viewingPolicyId}
+          onClose={handleCloseView}
+        />
+      )}
     </div>
   );
 }
