@@ -1,5 +1,5 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, User, CheckCircle, XCircle, Trash2, Edit, Eye, RotateCcw } from 'lucide-react';
@@ -56,7 +56,7 @@ export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onView,
   const isEditor = userRole === 'edit';
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow flex flex-col">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -79,7 +79,8 @@ export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onView,
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      
+      <CardContent className="flex-1">
         <div className="space-y-3">
           {policy.purpose && (
             <div>
@@ -102,49 +103,25 @@ export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onView,
               <span>{new Date(policy.created_at).toLocaleDateString()}</span>
             </div>
           </div>
+        </div>
+      </CardContent>
 
-          {/* Action buttons */}
-          <div className="pt-3 border-t space-y-2">
-            {/* View Button - Show for all users */}
+      <CardFooter className="pt-3 border-t">
+        <div className="w-full space-y-2">
+          {/* Primary Actions Row - View and Edit buttons */}
+          <div className="flex gap-2">
             {onView && (
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => onView(policy.id)}
-                className="w-full text-xs border-gray-300 text-gray-600 hover:bg-gray-50"
+                className="flex-1 text-xs border-gray-300 text-gray-600 hover:bg-gray-50"
               >
                 <Eye className="w-3 h-3 mr-1" />
-                View Policy
+                View
               </Button>
             )}
 
-            {/* Return to Draft Button - Show prominently for publishers on under-review policies */}
-            {canPublish && (policy.status === 'under-review' || policy.status === 'under review') && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onUpdateStatus(policy.id, 'draft')}
-                className="w-full text-xs border-orange-300 text-orange-600 hover:bg-orange-50 bg-orange-50"
-              >
-                <RotateCcw className="w-3 h-3 mr-1" />
-                Return to Draft
-              </Button>
-            )}
-
-            {/* Update Policy Button - Show for published policies for users with edit/publish permissions */}
-            {policy.status === 'published' && (isEditor || canPublish) && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onUpdateStatus(policy.id, 'draft')}
-                className="w-full text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
-              >
-                <RotateCcw className="w-3 h-3 mr-1" />
-                Update Policy
-              </Button>
-            )}
-
-            {/* Edit Button - Show for editors on their drafts, and publishers on review policies */}
             {onEdit && (
               (isEditor && policy.status === 'draft') ||
               (canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review'))
@@ -153,51 +130,78 @@ export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onView,
                 size="sm"
                 variant="outline"
                 onClick={() => onEdit(policy.id)}
-                className="w-full text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
+                className="flex-1 text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
               >
                 <Edit className="w-3 h-3 mr-1" />
-                Edit Policy
-              </Button>
-            )}
-
-            {/* Publisher Actions */}
-            {canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') && (
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => onUpdateStatus(policy.id, 'published')}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-xs"
-                >
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Publish
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onUpdateStatus(policy.id, 'archived')}
-                  className="flex-1 border-red-300 text-red-600 hover:bg-red-50 text-xs"
-                >
-                  <XCircle className="w-3 h-3 mr-1" />
-                  Reject
-                </Button>
-              </div>
-            )}
-
-            {/* Super Admin Delete Action */}
-            {isSuperAdmin && onDelete && (
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => onDelete(policy.id)}
-                className="w-full text-xs"
-              >
-                <Trash2 className="w-3 h-3 mr-1" />
-                Delete Policy
+                Edit
               </Button>
             )}
           </div>
+
+          {/* Status Change Actions */}
+          {/* Return to Draft Button - Show prominently for publishers on under-review policies */}
+          {canPublish && (policy.status === 'under-review' || policy.status === 'under review') && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onUpdateStatus(policy.id, 'draft')}
+              className="w-full text-xs border-orange-300 text-orange-600 hover:bg-orange-50 bg-orange-50"
+            >
+              <RotateCcw className="w-3 h-3 mr-1" />
+              Return to Draft
+            </Button>
+          )}
+
+          {/* Update Policy Button - Show for published policies for users with edit/publish permissions */}
+          {policy.status === 'published' && (isEditor || canPublish) && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onUpdateStatus(policy.id, 'draft')}
+              className="w-full text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
+            >
+              <RotateCcw className="w-3 h-3 mr-1" />
+              Update Policy
+            </Button>
+          )}
+
+          {/* Publisher Actions - Publish/Reject buttons */}
+          {canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') && (
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={() => onUpdateStatus(policy.id, 'published')}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-xs"
+              >
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Publish
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onUpdateStatus(policy.id, 'archived')}
+                className="flex-1 border-red-300 text-red-600 hover:bg-red-50 text-xs"
+              >
+                <XCircle className="w-3 h-3 mr-1" />
+                Reject
+              </Button>
+            </div>
+          )}
+
+          {/* Destructive Actions - Delete button */}
+          {isSuperAdmin && onDelete && (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => onDelete(policy.id)}
+              className="w-full text-xs"
+            >
+              <Trash2 className="w-3 h-3 mr-1" />
+              Delete Policy
+            </Button>
+          )}
         </div>
-      </CardContent>
+      </CardFooter>
     </Card>
   );
 }
