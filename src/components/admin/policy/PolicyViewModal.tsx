@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, X, FileText, Calendar, User } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Loader2, X, FileText, Calendar, User, RotateCcw, Edit } from 'lucide-react';
 
 interface Policy {
   id: string;
@@ -22,6 +23,8 @@ interface Policy {
 interface PolicyViewModalProps {
   policyId: string;
   onClose: () => void;
+  onEdit?: (policyId: string) => void;
+  onUpdateStatus?: (policyId: string, newStatus: string) => void;
 }
 
 // Function to strip HTML tags from text but preserve structure
@@ -31,10 +34,14 @@ const stripHtml = (html: string | null): string => {
   return doc.body.textContent || '';
 };
 
-export function PolicyViewModal({ policyId, onClose }: PolicyViewModalProps) {
+export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus }: PolicyViewModalProps) {
   const { toast } = useToast();
+  const { userRole } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [policy, setPolicy] = useState<Policy | null>(null);
+
+  const canPublish = userRole === 'publish' || userRole === 'super-admin';
+  const isEditor = userRole === 'edit';
 
   useEffect(() => {
     const loadPolicy = async () => {
@@ -78,6 +85,26 @@ export function PolicyViewModal({ policyId, onClose }: PolicyViewModalProps) {
       loadPolicy();
     }
   }, [policyId, toast, onClose]);
+
+  const handleReturnToDraft = async () => {
+    if (!policy || !onUpdateStatus) return;
+
+    try {
+      await onUpdateStatus(policy.id, 'draft');
+      toast({
+        title: "Success",
+        description: "Policy returned to draft status.",
+      });
+      onClose();
+    } catch (error) {
+      console.error('Error returning policy to draft:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to return policy to draft status.",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -197,7 +224,28 @@ export function PolicyViewModal({ policyId, onClose }: PolicyViewModalProps) {
           )}
         </div>
 
-        <div className="flex justify-end mt-6 pt-4 border-t">
+        <div className="flex justify-between mt-6 pt-4 border-t">
+          <div className="flex gap-2">
+            {/* Edit Button */}
+            {onEdit && (
+              (isEditor && policy.status === 'draft') ||
+              (canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review'))
+            ) && (
+              <Button variant="outline" onClick={() => onEdit(policy.id)}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Policy
+              </Button>
+            )}
+
+            {/* Return to Draft Button */}
+            {canPublish && onUpdateStatus && (policy.status === 'under-review' || policy.status === 'under review') && (
+              <Button variant="outline" onClick={handleReturnToDraft}>
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Return to Draft
+              </Button>
+            )}
+          </div>
+
           <Button onClick={onClose}>
             Close
           </Button>

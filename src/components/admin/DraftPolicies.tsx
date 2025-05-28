@@ -112,6 +112,8 @@ export function DraftPolicies() {
         <PolicyViewModal
           policyId={viewingPolicyId}
           onClose={handleCloseView}
+          onEdit={handleEditPolicy}
+          onUpdateStatus={updatePolicyStatus}
         />
       )}
     </div>

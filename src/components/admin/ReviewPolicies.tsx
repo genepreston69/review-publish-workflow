@@ -116,6 +116,8 @@ export function ReviewPolicies() {
         <PolicyViewModal
           policyId={viewingPolicyId}
           onClose={handleCloseView}
+          onEdit={handleEditPolicy}
+          onUpdateStatus={updatePolicyStatus}
         />
       )}
     </div>

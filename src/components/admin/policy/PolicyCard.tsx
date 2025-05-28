@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, User, CheckCircle, XCircle, Trash2, Edit, Eye } from 'lucide-react';
+import { Calendar, User, CheckCircle, XCircle, Trash2, Edit, Eye, RotateCcw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface Policy {
@@ -131,6 +131,19 @@ export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onView,
               >
                 <Edit className="w-3 h-3 mr-1" />
                 Edit Policy
+              </Button>
+            )}
+
+            {/* Return to Draft Button - Show for publishers on under-review policies */}
+            {canPublish && (policy.status === 'under-review' || policy.status === 'under review') && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onUpdateStatus(policy.id, 'draft')}
+                className="w-full text-xs border-orange-300 text-orange-600 hover:bg-orange-50"
+              >
+                <RotateCcw className="w-3 h-3 mr-1" />
+                Return to Draft
               </Button>
             )}
 
