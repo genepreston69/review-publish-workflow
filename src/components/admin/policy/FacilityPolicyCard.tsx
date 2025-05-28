@@ -59,7 +59,7 @@ export function FacilityPolicyCard({
   onDelete 
 }: FacilityPolicyCardProps) {
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow flex flex-col h-full">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -83,8 +83,8 @@ export function FacilityPolicyCard({
         </div>
       </CardHeader>
       
-      <CardContent>
-        <div className="space-y-3">
+      <CardContent className="flex flex-col flex-grow">
+        <div className="space-y-3 flex-grow">
           {policy.purpose && (
             <div>
               <h4 className="font-medium text-sm text-gray-700">Purpose</h4>
@@ -115,46 +115,46 @@ export function FacilityPolicyCard({
               <span>{new Date(policy.created_at).toLocaleDateString()}</span>
             </div>
           </div>
+        </div>
 
-          {/* Action buttons */}
-          <div className="pt-3 border-t space-y-2">
-            {/* View Button for all published policies */}
+        {/* Action buttons - anchored to bottom with margin-top: auto */}
+        <div className="pt-3 border-t space-y-2 mt-auto">
+          {/* View Button for all published policies */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onView(policy.id)}
+            className="w-full text-xs border-gray-300 text-gray-600 hover:bg-gray-50"
+          >
+            <Eye className="w-3 h-3 mr-1" />
+            View Policy
+          </Button>
+
+          {/* Update Policy Button - Show for users with edit/publish permissions */}
+          {(isEditor || canPublish) && (
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onView(policy.id)}
-              className="w-full text-xs border-gray-300 text-gray-600 hover:bg-gray-50"
+              onClick={() => onUpdateStatus(policy.id, 'draft')}
+              className="w-full text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
             >
-              <Eye className="w-3 h-3 mr-1" />
-              View Policy
+              <RotateCcw className="w-3 h-3 mr-1" />
+              Update Policy
             </Button>
+          )}
 
-            {/* Update Policy Button - Show for users with edit/publish permissions */}
-            {(isEditor || canPublish) && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onUpdateStatus(policy.id, 'draft')}
-                className="w-full text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
-              >
-                <RotateCcw className="w-3 h-3 mr-1" />
-                Update Policy
-              </Button>
-            )}
-
-            {/* Super Admin Delete Action for published policies */}
-            {isSuperAdmin && (
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => onDelete(policy.id)}
-                className="w-full text-xs"
-              >
-                <Trash2 className="w-3 h-3 mr-1" />
-                Delete Policy
-              </Button>
-            )}
-          </div>
+          {/* Super Admin Delete Action for published policies */}
+          {isSuperAdmin && (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => onDelete(policy.id)}
+              className="w-full text-xs"
+            >
+              <Trash2 className="w-3 h-3 mr-1" />
+              Delete Policy
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
