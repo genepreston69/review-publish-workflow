@@ -31,17 +31,31 @@ export const generateCoverPage = (type: ManualType, compilationDate: string, tot
 };
 
 export const generateTableOfContents = (policies: Policy[], totalPages: number): string => {
-  // Generate TOC rows - single continuous table
+  console.log('Generating TOC for policies:', policies.length, 'policies');
+  console.log('Policy IDs:', policies.map(p => ({ id: p.id, number: p.policy_number, name: p.name })));
+  
+  // Generate TOC rows - single continuous table for ALL policies
   let tocRows = '';
   let currentPage = 3; // Start after cover page and TOC
   
-  policies.forEach((policy) => {
+  // Ensure we process ALL policies passed to this function
+  policies.forEach((policy, index) => {
     const policyTitle = policy.name || 'Untitled Policy';
     const policyNumber = policy.policy_number || 'N/A';
     
-    tocRows += `<tr class="toc-row"><td class="toc-policy-number">${policyNumber}</td><td class="toc-policy-title"><a href="#policy-${policy.id}" class="toc-link">${policyTitle}</a></td><td class="toc-page-number">${currentPage}</td></tr>`;
+    console.log(`TOC Entry ${index + 1}: ${policyNumber} - ${policyTitle} (Page ${currentPage})`);
+    
+    tocRows += `<tr class="toc-row">
+      <td class="toc-policy-number">${policyNumber}</td>
+      <td class="toc-policy-title">
+        <a href="#policy-${policy.id}" class="toc-link">${policyTitle}</a>
+      </td>
+      <td class="toc-page-number">${currentPage}</td>
+    </tr>`;
     currentPage++;
   });
+
+  console.log('Total TOC rows generated:', policies.length);
 
   return `
     <!-- Table of Contents -->
@@ -71,10 +85,15 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number):
 };
 
 export const generatePolicyContent = (type: ManualType, policies: Policy[], totalPages: number): string => {
+  console.log('Generating policy content for policies:', policies.length, 'policies');
+  
   let policyContent = '';
   let pageNumber = 3;
   
-  policies.forEach((policy) => {
+  // Ensure we process ALL policies passed to this function
+  policies.forEach((policy, index) => {
+    console.log(`Policy Content ${index + 1}: ${policy.policy_number} - ${policy.name} (Page ${pageNumber})`);
+    
     policyContent += `
       <div class="policy-page" id="policy-${policy.id}">
         <div class="page-header">
@@ -141,5 +160,6 @@ export const generatePolicyContent = (type: ManualType, policies: Policy[], tota
     pageNumber++;
   });
 
+  console.log('Total policy pages generated:', policies.length);
   return policyContent;
 };
