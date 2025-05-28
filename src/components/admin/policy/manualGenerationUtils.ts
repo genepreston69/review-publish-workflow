@@ -228,25 +228,36 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
           .cover-page {
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: center;
+            align-items: center;
             height: 100vh;
             text-align: center;
             padding: 2in 1in;
             position: relative;
             isolation: isolate;
+            background: white;
+          }
+          
+          .cover-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 6in;
           }
           
           .cover-logo {
-            width: 300px;
+            width: 250px;
             height: auto;
-            margin: 0 auto 1.5in auto;
+            margin-bottom: 1in;
             max-width: 100%;
           }
           
           .cover-title {
-            font-size: 32pt;
+            font-size: 28pt;
             font-weight: bold;
-            margin-bottom: 0.5in;
+            margin-bottom: 0.3in;
             color: #1565c0;
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -254,27 +265,34 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
           }
           
           .cover-subtitle {
-            font-size: 18pt;
-            margin-bottom: 1.5in;
+            font-size: 16pt;
+            margin-bottom: 1in;
             color: #333;
             font-weight: 500;
-          }
-          
-          .cover-bottom {
-            margin-top: auto;
           }
           
           .compilation-date {
             font-size: 14pt;
             color: #666;
             font-weight: bold;
-            margin-bottom: 0.3in;
+            margin-bottom: 0.5in;
           }
 
           .organization-info {
             font-size: 12pt;
             color: #666;
             line-height: 1.4;
+          }
+
+          .cover-page .page-footer {
+            position: absolute;
+            bottom: 0.25in;
+            right: 0;
+            width: 100%;
+            text-align: right;
+            background: white;
+            z-index: 10;
+            padding: 0.25in 0;
           }
 
           /* Table of Contents Page Styles */
@@ -325,10 +343,6 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
           }
 
           /* Page Footer Styles - Different for each page type */
-          .cover-page .page-footer {
-            display: none;
-          }
-
           .toc-page .page-footer {
             position: absolute;
             bottom: 0.25in;
@@ -591,18 +605,19 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
       <body>
         <!-- Cover Page -->
         <div class="cover-page">
-          <div>
+          <div class="cover-content">
             <img src="/lovable-uploads/07b7c8f7-302d-4fa4-add8-69e1b84285ac.png" alt="Recovery Point West Virginia Logo" class="cover-logo">
             <h1 class="cover-title">${manualTitle}</h1>
             <p class="cover-subtitle">Comprehensive Policy Collection</p>
-          </div>
-          <div class="cover-bottom">
             <p class="compilation-date">Compiled on ${compilationDate}</p>
             <div class="organization-info">
               Recovery Point West Virginia<br>
               1007 Washington Street East, Charleston, WV 25301<br>
               www.recoverypointwv.com
             </div>
+          </div>
+          <div class="page-footer">
+            <span class="page-number">Page 1 of ${totalPages}</span>
           </div>
         </div>
 
