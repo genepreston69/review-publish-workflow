@@ -89,6 +89,7 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus }: P
   const handleReturnToDraft = async () => {
     if (!policy || !onUpdateStatus) return;
 
+    console.log('=== RETURNING POLICY TO DRAFT ===', policy.id);
     try {
       await onUpdateStatus(policy.id, 'draft');
       toast({
@@ -139,6 +140,14 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus }: P
       </Dialog>
     );
   }
+
+  console.log('PolicyViewModal debug:', {
+    policyId: policy.id,
+    status: policy.status,
+    canPublish,
+    userRole,
+    showReturnToDraft: canPublish && (policy.status === 'under-review' || policy.status === 'under review')
+  });
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -226,6 +235,18 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus }: P
 
         <div className="flex justify-between mt-6 pt-4 border-t">
           <div className="flex gap-2">
+            {/* Return to Draft Button - Show prominently for publishers on under-review policies */}
+            {canPublish && onUpdateStatus && (policy.status === 'under-review' || policy.status === 'under review') && (
+              <Button 
+                variant="outline" 
+                onClick={handleReturnToDraft}
+                className="border-orange-300 text-orange-600 hover:bg-orange-50 bg-orange-50"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Return to Draft
+              </Button>
+            )}
+
             {/* Edit Button */}
             {onEdit && (
               (isEditor && policy.status === 'draft') ||
@@ -234,14 +255,6 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus }: P
               <Button variant="outline" onClick={() => onEdit(policy.id)}>
                 <Edit className="w-4 h-4 mr-2" />
                 Edit Policy
-              </Button>
-            )}
-
-            {/* Return to Draft Button */}
-            {canPublish && onUpdateStatus && (policy.status === 'under-review' || policy.status === 'under review') && (
-              <Button variant="outline" onClick={handleReturnToDraft}>
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Return to Draft
               </Button>
             )}
           </div>

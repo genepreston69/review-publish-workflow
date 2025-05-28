@@ -55,6 +55,14 @@ export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onView,
   const isSuperAdmin = userRole === 'super-admin';
   const isEditor = userRole === 'edit';
 
+  console.log('PolicyCard debug:', {
+    policyId: policy.id,
+    status: policy.status,
+    canPublish,
+    userRole,
+    showReturnToDraft: canPublish && (policy.status === 'under-review' || policy.status === 'under review')
+  });
+
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader>
@@ -118,6 +126,19 @@ export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onView,
               </Button>
             )}
 
+            {/* Return to Draft Button - Show prominently for publishers on under-review policies */}
+            {canPublish && (policy.status === 'under-review' || policy.status === 'under review') && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onUpdateStatus(policy.id, 'draft')}
+                className="w-full text-xs border-orange-300 text-orange-600 hover:bg-orange-50 bg-orange-50"
+              >
+                <RotateCcw className="w-3 h-3 mr-1" />
+                Return to Draft
+              </Button>
+            )}
+
             {/* Edit Button - Show for editors on their drafts, and publishers on review policies */}
             {onEdit && (
               (isEditor && policy.status === 'draft') ||
@@ -131,19 +152,6 @@ export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onView,
               >
                 <Edit className="w-3 h-3 mr-1" />
                 Edit Policy
-              </Button>
-            )}
-
-            {/* Return to Draft Button - Show for publishers on under-review policies */}
-            {canPublish && (policy.status === 'under-review' || policy.status === 'under review') && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onUpdateStatus(policy.id, 'draft')}
-                className="w-full text-xs border-orange-300 text-orange-600 hover:bg-orange-50"
-              >
-                <RotateCcw className="w-3 h-3 mr-1" />
-                Return to Draft
               </Button>
             )}
 
