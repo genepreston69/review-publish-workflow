@@ -39,7 +39,7 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
   const manualTitle = `Recovery Point West Virginia ${type} Policy Manual`;
   const totalPages = 2 + policies.length; // Cover + TOC + policies
   
-  // Generate Table of Contents entries - NO LINE BREAKS
+  // Generate TOC rows - single continuous table
   let tocRows = '';
   let currentPage = 3; // Start after cover page and TOC
   
@@ -47,8 +47,7 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
     const policyTitle = policy.name || 'Untitled Policy';
     const policyNumber = policy.policy_number || 'N/A';
     
-    // Generate each row as a single line of HTML without line breaks
-    tocRows += `<tr class="toc-row"><td class="toc-number">${policyNumber}</td><td class="toc-title">${policyTitle}</td><td class="toc-page">${currentPage}</td></tr>`;
+    tocRows += `<tr class="toc-row"><td class="toc-policy-number">${policyNumber}</td><td class="toc-policy-title"><a href="#policy-${policy.id}" class="toc-link">${policyTitle}</a></td><td class="toc-page-number">${currentPage}</td></tr>`;
     currentPage++;
   });
 
@@ -131,7 +130,7 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
           /* Print-optimized styles */
           @media print {
             @page {
-              margin: 1in;
+              margin: 0.75in;
               size: letter;
             }
             
@@ -162,23 +161,17 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
               page-break-inside: avoid;
             }
             
-            /* TOC Table Print Styles - CRITICAL FIXES */
+            /* TOC Table Print Styles - Board Standard */
             .toc-page {
               page-break-before: always;
               page-break-after: always;
-              page-break-inside: avoid;
-            }
-            
-            .toc-table-container {
-              page-break-inside: avoid;
-              break-inside: avoid;
             }
             
             .toc-table {
               page-break-inside: avoid;
               break-inside: avoid;
               border-collapse: collapse;
-              table-layout: fixed;
+              width: 100%;
             }
 
             .toc-table thead {
@@ -192,13 +185,17 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
             .toc-row {
               page-break-inside: avoid;
               break-inside: avoid;
-              page-break-after: avoid;
-              break-after: avoid;
             }
 
-            .toc-table td {
+            .toc-table td, .toc-table th {
               page-break-inside: avoid;
               break-inside: avoid;
+            }
+
+            /* Hide links for print */
+            .toc-link {
+              color: inherit !important;
+              text-decoration: none !important;
             }
           }
           
@@ -307,7 +304,7 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
             font-weight: 500;
           }
           
-          /* Table of Contents Styles */
+          /* Table of Contents Styles - Board Standard */
           .toc-page {
             padding: 0;
             position: relative;
@@ -318,67 +315,54 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
             font-size: 22pt;
             font-weight: bold;
             text-align: center;
-            margin: 0 0 0.5in 0;
+            margin: 0 0 0.4in 0;
             color: #1565c0;
             text-transform: uppercase;
             letter-spacing: 1px;
-          }
-          
-          .toc-table-container {
-            width: 100%;
-            margin-bottom: 1in;
           }
           
           .toc-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 11pt;
-            border: 2px solid #1565c0;
-            table-layout: fixed;
+            border: 1px solid #333;
+            margin-bottom: 1in;
           }
           
           .toc-table th {
             background-color: #1565c0;
             color: white;
             padding: 8px 12px;
-            text-align: left;
             font-weight: bold;
-            border-right: 1px solid white;
-            font-size: 11pt;
+            border-bottom: 1px solid #333;
+            font-size: 12pt;
           }
 
           .toc-table th:first-child {
-            width: 20%;
+            width: 18%;
             text-align: left;
           }
 
           .toc-table th:nth-child(2) {
-            width: 65%;
+            width: 67%;
             text-align: left;
           }
 
           .toc-table th:last-child {
             width: 15%;
             text-align: right;
-            border-right: none;
           }
           
           .toc-table td {
-            padding: 6px 12px;
+            padding: 4px 12px;
             border-bottom: 1px solid #ddd;
-            border-right: 1px solid #ddd;
             vertical-align: top;
             font-size: 11pt;
-            line-height: 1.3;
-          }
-
-          .toc-table td:last-child {
-            border-right: none;
+            line-height: 1.2;
           }
 
           .toc-row {
             background-color: white;
-            transition: background-color 0.2s;
           }
 
           .toc-row:nth-child(even) {
@@ -389,7 +373,7 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
             background-color: #e3f2fd;
           }
           
-          .toc-number {
+          .toc-policy-number {
             font-weight: bold;
             color: #1565c0;
             font-family: 'Courier New', monospace;
@@ -397,17 +381,29 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
             white-space: nowrap;
           }
           
-          .toc-title {
+          .toc-policy-title {
             text-align: left;
             color: #333;
             font-weight: normal;
+            word-wrap: break-word;
           }
           
-          .toc-page {
+          .toc-page-number {
             text-align: right;
             font-weight: bold;
             color: #1565c0;
             white-space: nowrap;
+          }
+
+          .toc-link {
+            color: inherit;
+            text-decoration: none;
+            cursor: pointer;
+          }
+
+          .toc-link:hover {
+            text-decoration: underline;
+            color: #1565c0;
           }
           
           /* Policy Page Styles */
@@ -579,20 +575,18 @@ export const generateManualHTML = (type: 'HR' | 'Facility', policies: Policy[], 
           </div>
           
           <h2 class="toc-title">Table of Contents</h2>
-          <div class="toc-table-container">
-            <table class="toc-table">
-              <thead>
-                <tr>
-                  <th>Policy Number</th>
-                  <th>Policy Title</th>
-                  <th>Page</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${tocRows}
-              </tbody>
-            </table>
-          </div>
+          <table class="toc-table">
+            <thead>
+              <tr>
+                <th>Policy Number</th>
+                <th>Policy Title</th>
+                <th>Page</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tocRows}
+            </tbody>
+          </table>
 
           <div class="page-footer">
             <span class="page-number">Page 2 of ${totalPages}</span>
