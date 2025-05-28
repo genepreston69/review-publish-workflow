@@ -397,55 +397,63 @@ export function FacilityPolicyCard({
           </div>
         </div>
 
-        {/* Action buttons - anchored to bottom with border separator */}
-        <div className="pt-3 border-t space-y-2 mt-auto">
-          {/* View Button for all published policies */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onView(policy.id)}
-            className="w-full text-xs border-gray-300 text-gray-600 hover:bg-gray-50"
-          >
-            <Eye className="w-3 h-3 mr-1" />
-            View Policy
-          </Button>
-
-          {/* Print Policy Button - Available for all policies */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => handlePrintPolicy(policy)}
-            className="w-full text-xs border-gray-300 text-gray-600 hover:bg-gray-50"
-          >
-            <Printer className="w-3 h-3 mr-1" />
-            Print Policy
-          </Button>
-
-          {/* Update Policy Button - Show for users with edit/publish permissions */}
-          {(isEditor || canPublish) && (
+        {/* Action buttons - arranged in 2x2 grid */}
+        <div className="pt-3 border-t mt-auto">
+          {/* First row: View and Print buttons */}
+          <div className="grid grid-cols-2 gap-2 mb-2">
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onUpdateStatus(policy.id, 'draft')}
-              className="w-full text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
+              onClick={() => onView(policy.id)}
+              className="text-xs border-gray-300 text-gray-600 hover:bg-gray-50"
             >
-              <RotateCcw className="w-3 h-3 mr-1" />
-              Update Policy
+              <Eye className="w-3 h-3 mr-1" />
+              View Policy
             </Button>
-          )}
 
-          {/* Super Admin Delete Action for published policies */}
-          {isSuperAdmin && (
             <Button
               size="sm"
-              variant="destructive"
-              onClick={() => onDelete(policy.id)}
-              className="w-full text-xs"
+              variant="outline"
+              onClick={() => handlePrintPolicy(policy)}
+              className="text-xs border-gray-300 text-gray-600 hover:bg-gray-50"
             >
-              <Trash2 className="w-3 h-3 mr-1" />
-              Delete Policy
+              <Printer className="w-3 h-3 mr-1" />
+              Print Policy
             </Button>
-          )}
+          </div>
+
+          {/* Second row: Update and Delete buttons (conditionally rendered) */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* Update Policy Button - Show for users with edit/publish permissions */}
+            {(isEditor || canPublish) ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onUpdateStatus(policy.id, 'draft')}
+                className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
+              >
+                <RotateCcw className="w-3 h-3 mr-1" />
+                Update Policy
+              </Button>
+            ) : (
+              <div></div>
+            )}
+
+            {/* Super Admin Delete Action */}
+            {isSuperAdmin ? (
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => onDelete(policy.id)}
+                className="text-xs"
+              >
+                <Trash2 className="w-3 h-3 mr-1" />
+                Delete Policy
+              </Button>
+            ) : (
+              <div></div>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
