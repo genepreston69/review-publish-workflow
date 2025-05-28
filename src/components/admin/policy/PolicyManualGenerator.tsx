@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -362,10 +363,10 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
             }
             
             .toc-title {
-              font-size: 24pt;
+              font-size: 22pt;
               font-weight: bold;
               text-align: center;
-              margin: 0 0 0.75in 0;
+              margin: 0 0 0.5in 0;
               color: #1565c0;
               text-transform: uppercase;
               letter-spacing: 1px;
@@ -375,28 +376,27 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               width: 100%;
               border-collapse: collapse;
               margin-bottom: 1in;
-              font-size: 12pt;
-              border: 1px solid #dee2e6;
+              font-size: 11pt;
+              border: 2px solid #1565c0;
             }
             
             .toc-table th {
-              background-color: #f8f9fa;
-              padding: 10px 12px;
+              background-color: #1565c0;
+              color: white;
+              padding: 8px 12px;
               text-align: left;
               font-weight: bold;
-              border-bottom: 2px solid #1565c0;
-              border-right: 1px solid #dee2e6;
-              color: #1565c0;
-              font-size: 12pt;
+              border-right: 1px solid white;
+              font-size: 11pt;
             }
 
             .toc-table th:first-child {
-              width: 15%;
+              width: 20%;
               text-align: left;
             }
 
             .toc-table th:nth-child(2) {
-              width: 70%;
+              width: 65%;
               text-align: left;
             }
 
@@ -407,9 +407,9 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
             }
             
             .toc-table td {
-              padding: 8px 12px;
-              border-bottom: 1px solid #dee2e6;
-              border-right: 1px solid #dee2e6;
+              padding: 6px 12px;
+              border-bottom: 1px solid #ddd;
+              border-right: 1px solid #ddd;
               vertical-align: top;
               font-size: 11pt;
               line-height: 1.3;
