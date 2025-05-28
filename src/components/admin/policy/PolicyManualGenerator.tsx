@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -119,7 +118,7 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
     
     policies.forEach((policy) => {
       tocEntries += `
-        <tr>
+        <tr class="toc-row">
           <td class="toc-number">${policy.policy_number || 'N/A'}</td>
           <td class="toc-title">
             <a href="#policy-${policy.id}" class="toc-link">
@@ -143,51 +142,57 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
             <div class="header-text">Recovery Point West Virginia ${type} Policy Manual</div>
           </div>
           
-          <div class="policy-header">
-            <h1 class="policy-title">${policy.name || 'Untitled Policy'}</h1>
+          <div class="policy-content">
+            <div class="policy-title-section">
+              <h1 class="policy-title">${policy.name || 'Untitled Policy'}</h1>
+              <div class="policy-divider"></div>
+            </div>
+            
             <div class="policy-metadata-box">
-              <div class="metadata-row">
-                <span class="metadata-label">Policy Number:</span>
-                <span class="metadata-value">${policy.policy_number || 'Not Assigned'}</span>
-              </div>
-              <div class="metadata-row">
-                <span class="metadata-label">Status:</span>
-                <span class="metadata-value">${policy.status || 'Draft'}</span>
-              </div>
-              <div class="metadata-row">
-                <span class="metadata-label">Reviewer:</span>
-                <span class="metadata-value">${policy.reviewer ? stripHtml(policy.reviewer) : 'Not Assigned'}</span>
-              </div>
-              <div class="metadata-row">
-                <span class="metadata-label">Created Date:</span>
-                <span class="metadata-value">${new Date(policy.created_at).toLocaleDateString()}</span>
+              <div class="metadata-grid">
+                <div class="metadata-item">
+                  <span class="metadata-label">Policy Number:</span>
+                  <span class="metadata-value">${policy.policy_number || 'Not Assigned'}</span>
+                </div>
+                <div class="metadata-item">
+                  <span class="metadata-label">Status:</span>
+                  <span class="metadata-value">${policy.status || 'Draft'}</span>
+                </div>
+                <div class="metadata-item">
+                  <span class="metadata-label">Reviewer:</span>
+                  <span class="metadata-value">${policy.reviewer ? stripHtml(policy.reviewer) : 'Not Assigned'}</span>
+                </div>
+                <div class="metadata-item">
+                  <span class="metadata-label">Created Date:</span>
+                  <span class="metadata-value">${new Date(policy.created_at).toLocaleDateString()}</span>
+                </div>
               </div>
             </div>
+
+            ${policy.purpose ? `
+              <div class="policy-section">
+                <h2 class="section-title">PURPOSE</h2>
+                <div class="section-content">${policy.purpose}</div>
+              </div>
+            ` : ''}
+
+            ${policy.policy_text ? `
+              <div class="policy-section">
+                <h2 class="section-title">POLICY</h2>
+                <div class="section-content">${policy.policy_text}</div>
+              </div>
+            ` : ''}
+
+            ${policy.procedure ? `
+              <div class="policy-section">
+                <h2 class="section-title">PROCEDURE</h2>
+                <div class="section-content">${policy.procedure}</div>
+              </div>
+            ` : ''}
           </div>
 
-          ${policy.purpose ? `
-            <div class="policy-section no-break">
-              <h2 class="section-title">PURPOSE</h2>
-              <div class="section-content">${policy.purpose}</div>
-            </div>
-          ` : ''}
-
-          ${policy.policy_text ? `
-            <div class="policy-section no-break">
-              <h2 class="section-title">POLICY</h2>
-              <div class="section-content">${policy.policy_text}</div>
-            </div>
-          ` : ''}
-
-          ${policy.procedure ? `
-            <div class="policy-section no-break">
-              <h2 class="section-title">PROCEDURE</h2>
-              <div class="section-content">${policy.procedure}</div>
-            </div>
-          ` : ''}
-
           <div class="page-footer">
-            <span>Page ${pageNumber} of ${totalPages}</span>
+            <span class="page-number">Page ${pageNumber} of ${totalPages}</span>
           </div>
         </div>
       `;
@@ -216,17 +221,25 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
                 page-break-before: always;
               }
               
-              .policy-page {
+              .policy-page, .toc-page, .cover-page {
                 page-break-before: always;
                 position: relative;
                 min-height: 9.5in;
               }
               
-              .no-break {
+              .cover-page {
+                page-break-before: avoid;
+              }
+              
+              .policy-section {
                 page-break-inside: avoid;
               }
 
               .page-header {
+                page-break-inside: avoid;
+              }
+              
+              .toc-table {
                 page-break-inside: avoid;
               }
             }
@@ -237,8 +250,8 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
             
             body {
               font-family: 'Arial', 'Helvetica', sans-serif;
-              font-size: 11pt;
-              line-height: 1.5;
+              font-size: 12pt;
+              line-height: 1.4;
               color: #333;
               margin: 0;
               padding: 0;
@@ -256,25 +269,25 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
             }
             
             .cover-logo {
-              width: 400px;
+              width: 300px;
               height: auto;
-              margin: 0 auto 1in auto;
+              margin: 0 auto 1.5in auto;
               max-width: 100%;
             }
             
             .cover-title {
-              font-size: 28pt;
+              font-size: 32pt;
               font-weight: bold;
               margin-bottom: 0.5in;
               color: #1565c0;
               text-transform: uppercase;
               letter-spacing: 2px;
-              line-height: 1.2;
+              line-height: 1.1;
             }
             
             .cover-subtitle {
               font-size: 18pt;
-              margin-bottom: 1in;
+              margin-bottom: 1.5in;
               color: #333;
               font-weight: 500;
             }
@@ -301,35 +314,40 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               display: flex;
               align-items: center;
               justify-content: space-between;
-              padding-bottom: 15px;
-              margin-bottom: 30px;
-              border-bottom: 2px solid #1565c0;
+              padding-bottom: 12px;
+              margin-bottom: 24px;
+              border-bottom: 1px solid #ddd;
             }
 
             .header-logo {
-              height: 40px;
+              height: 30px;
               width: auto;
             }
 
             .header-text {
-              font-size: 12pt;
-              font-weight: bold;
+              font-size: 10pt;
+              font-weight: 600;
               color: #1565c0;
             }
 
             /* Page Footer Styles */
             .page-footer {
-              position: fixed;
+              position: absolute;
               bottom: 0.75in;
-              right: 1in;
+              right: 0;
+              width: 100%;
+              text-align: right;
+            }
+            
+            .page-number {
               font-size: 10pt;
               color: #666;
-              font-weight: bold;
+              font-weight: 500;
             }
             
             /* Table of Contents Styles */
             .toc-page {
-              padding: 1in 0;
+              padding: 0;
               position: relative;
               min-height: 9.5in;
             }
@@ -338,7 +356,7 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               font-size: 24pt;
               font-weight: bold;
               text-align: center;
-              margin-bottom: 1in;
+              margin: 0 0 1in 0;
               color: #1565c0;
               text-transform: uppercase;
               letter-spacing: 1px;
@@ -348,26 +366,31 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               width: 100%;
               border-collapse: collapse;
               margin-bottom: 1in;
-              font-size: 11pt;
+              font-size: 12pt;
+              table-layout: fixed;
             }
             
             .toc-table th {
               background-color: #f8f9fa;
-              padding: 15px 12px;
+              padding: 16px 12px;
               text-align: left;
               font-weight: bold;
               border: 1px solid #dee2e6;
               color: #1565c0;
               font-size: 12pt;
+              white-space: nowrap;
             }
             
             .toc-table td {
               padding: 12px;
               border: 1px solid #dee2e6;
               vertical-align: top;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
             }
 
-            .toc-table tr:nth-child(even) {
+            .toc-row:nth-child(even) {
               background-color: #f8f9fa;
             }
             
@@ -376,21 +399,26 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               font-weight: bold;
               color: #1565c0;
               font-family: 'Courier New', monospace;
+              text-align: center;
             }
             
             .toc-title {
               width: 65%;
+              white-space: normal;
+              word-wrap: break-word;
             }
             
-            .toc-page-col {
+            .toc-page {
               width: 15%;
-              text-align: right;
+              text-align: center;
               font-weight: bold;
             }
             
             .toc-link {
               text-decoration: none;
               color: #333;
+              display: block;
+              width: 100%;
             }
             
             .toc-link:hover {
@@ -400,22 +428,33 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
             
             /* Policy Page Styles */
             .policy-page {
-              padding-top: 0;
+              padding: 0;
               position: relative;
+              min-height: 9.5in;
             }
             
-            .policy-header {
-              margin-bottom: 40px;
+            .policy-content {
+              margin-bottom: 80px; /* Space for footer */
+            }
+            
+            .policy-title-section {
+              margin-bottom: 30px;
             }
             
             .policy-title {
-              font-size: 20pt;
+              font-size: 22pt;
               font-weight: bold;
-              margin: 0 0 20px 0;
+              margin: 0;
               color: #1565c0;
               text-transform: uppercase;
               letter-spacing: 1px;
               line-height: 1.2;
+            }
+            
+            .policy-divider {
+              height: 2px;
+              background-color: #1565c0;
+              margin: 15px 0 0 0;
             }
             
             .policy-metadata-box {
@@ -423,22 +462,24 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               border: 1px solid #dee2e6;
               border-left: 4px solid #1565c0;
               padding: 20px;
-              margin: 20px 0;
+              margin: 0 0 30px 0;
             }
 
-            .metadata-row {
+            .metadata-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 12px;
+            }
+
+            .metadata-item {
               display: flex;
-              margin-bottom: 10px;
-            }
-
-            .metadata-row:last-child {
-              margin-bottom: 0;
+              align-items: flex-start;
             }
 
             .metadata-label {
               font-weight: bold;
               color: #1565c0;
-              width: 120px;
+              width: 100px;
               flex-shrink: 0;
               font-size: 10pt;
             }
@@ -447,47 +488,50 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               color: #333;
               font-size: 11pt;
               flex: 1;
+              margin-left: 10px;
             }
             
             .policy-section {
-              margin-bottom: 35px;
+              margin-bottom: 30px;
+              page-break-inside: avoid;
             }
             
             .section-title {
               font-size: 14pt;
               font-weight: bold;
-              margin: 0 0 20px 0;
+              margin: 0 0 15px 0;
               color: #1565c0;
               text-transform: uppercase;
               letter-spacing: 1px;
-              border-bottom: 2px solid #1565c0;
-              padding-bottom: 8px;
+              border-bottom: 1px solid #1565c0;
+              padding-bottom: 6px;
             }
             
             .section-content {
-              line-height: 1.6;
+              line-height: 1.5;
               text-align: justify;
-              font-size: 11pt;
+              font-size: 12pt;
             }
             
             .section-content p {
-              margin-bottom: 15px;
+              margin-bottom: 12px;
             }
             
             .section-content ul, .section-content ol {
-              margin: 15px 0 15px 25px;
+              margin: 12px 0 12px 20px;
               padding: 0;
             }
             
             .section-content li {
-              margin-bottom: 8px;
-              line-height: 1.5;
+              margin-bottom: 6px;
+              line-height: 1.4;
             }
             
             .section-content h1, .section-content h2, .section-content h3 {
               color: #1565c0;
-              margin: 25px 0 15px 0;
+              margin: 20px 0 12px 0;
               font-weight: bold;
+              text-transform: uppercase;
             }
 
             .section-content h1 {
@@ -513,9 +557,12 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               .page-footer {
                 position: relative;
                 bottom: auto;
-                right: auto;
                 text-align: right;
                 margin-top: 20px;
+              }
+              
+              .policy-content {
+                margin-bottom: 20px;
               }
             }
           </style>
@@ -532,13 +579,14 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               <p class="compilation-date">Compiled on ${compilationDate}</p>
               <div class="organization-info">
                 Recovery Point West Virginia<br>
+                1007 Washington Street East, Charleston, WV 25301<br>
                 www.recoverypointwv.com
               </div>
             </div>
           </div>
 
           <!-- Table of Contents -->
-          <div class="toc-page page-break">
+          <div class="toc-page">
             <div class="page-header">
               <img src="/lovable-uploads/07b7c8f7-302d-4fa4-add8-69e1b84285ac.png" alt="Recovery Point West Virginia Logo" class="header-logo">
               <div class="header-text">Recovery Point West Virginia ${type} Policy Manual</div>
@@ -559,7 +607,7 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
             </table>
 
             <div class="page-footer">
-              <span>Page 2 of ${totalPages}</span>
+              <span class="page-number">Page 2 of ${totalPages}</span>
             </div>
           </div>
 
@@ -635,13 +683,15 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
             <h4 className="font-medium text-gray-900">Professional Features:</h4>
             <ul className="list-disc list-inside space-y-1">
               <li>Official Recovery Point West Virginia logo and branding</li>
-              <li>Professional cover page with organization details</li>
-              <li>Clean table of contents with policy numbers and page references</li>
-              <li>Consistent headers and footers with page numbering</li>
-              <li>Board-ready formatting with proper spacing and typography</li>
-              <li>Each policy on separate page with metadata and sections</li>
+              <li>Professional cover page with complete organization details</li>
+              <li>Single-page table of contents with clickable policy links</li>
+              <li>Consistent headers with logo and manual title</li>
+              <li>Clean footers with proper page numbering</li>
+              <li>Board-ready formatting with professional typography</li>
+              <li>Each policy on separate page with enhanced metadata</li>
               <li>Print-optimized layout with proper page breaks</li>
               <li>Professional color scheme and visual hierarchy</li>
+              <li>All-caps section headers (PURPOSE, POLICY, PROCEDURE)</li>
             </ul>
           </div>
         </CardContent>
