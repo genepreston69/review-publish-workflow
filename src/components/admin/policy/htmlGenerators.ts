@@ -1,4 +1,3 @@
-
 import { Policy, ManualType } from './types';
 
 const stripHtml = (html: string | null): string => {
@@ -47,20 +46,23 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number):
   return `
     <!-- Table of Contents -->
     <div class="toc-page">
-      <h1 class="toc-main-title">Table of Contents</h1>
-      <table class="toc-table">
-        <thead>
-          <tr>
-            <th>Policy Number</th>
-            <th>Policy Title</th>
-            <th>Page</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tocRows}
-        </tbody>
-      </table>
-
+      <div class="toc-content">
+        <h1 class="toc-main-title">Table of Contents</h1>
+        <div class="toc-table-container">
+          <table class="toc-table">
+            <thead>
+              <tr>
+                <th>Policy Number</th>
+                <th>Policy Title</th>
+                <th>Page</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tocRows}
+            </tbody>
+          </table>
+        </div>
+      </div>
       <div class="page-footer">
         <span class="page-number">Page 2 of ${totalPages}</span>
       </div>

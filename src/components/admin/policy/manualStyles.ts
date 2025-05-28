@@ -21,10 +21,10 @@ export const getManualStyles = (): string => {
         page-break-before: always;
         page-break-after: always;
         position: relative;
-        min-height: 8.5in;
-        max-height: 8.5in;
+        min-height: 9in;
+        max-height: 9in;
         overflow: hidden;
-        padding-bottom: 1in;
+        padding-bottom: 0.75in;
       }
       
       .cover-page {
@@ -39,10 +39,14 @@ export const getManualStyles = (): string => {
         page-break-inside: avoid;
       }
       
-      /* TOC Table Print Styles - Board Standard */
+      /* TOC Table Print Styles */
+      .toc-table-container {
+        max-height: 7.5in;
+        overflow: visible;
+      }
+
       .toc-table {
-        page-break-inside: avoid;
-        break-inside: avoid;
+        page-break-inside: auto;
         border-collapse: collapse;
         width: 100%;
       }
@@ -82,6 +86,19 @@ export const getManualStyles = (): string => {
         content: "";
         display: block;
         clear: both;
+      }
+
+      /* Fixed page footer positioning */
+      .page-footer {
+        position: absolute !important;
+        bottom: 0.25in !important;
+        right: 0 !important;
+        left: auto !important;
+        width: auto !important;
+        text-align: right !important;
+        background: white;
+        z-index: 10;
+        padding: 0.25in 0 !important;
       }
     }
     
@@ -159,25 +176,22 @@ export const getManualStyles = (): string => {
       line-height: 1.4;
     }
 
-    .cover-page .page-footer {
-      position: absolute;
-      bottom: 0.25in;
-      right: 0;
-      width: 100%;
-      text-align: right;
-      background: white;
-      z-index: 10;
-      padding: 0.25in 0;
-    }
-
     /* Table of Contents Page Styles */
     .toc-page {
-      padding: 0 0 1in 0;
+      padding: 0;
       position: relative;
-      min-height: 8.5in;
-      max-height: 8.5in;
+      min-height: 9in;
+      max-height: 9in;
       isolation: isolate;
       background: white;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toc-content {
+      flex: 1;
+      padding-bottom: 1in;
+      overflow: hidden;
     }
     
     .toc-main-title {
@@ -190,6 +204,11 @@ export const getManualStyles = (): string => {
       letter-spacing: 2px;
       padding-bottom: 0.2in;
       border-bottom: 3px solid #1565c0;
+    }
+
+    .toc-table-container {
+      max-height: 7in;
+      overflow: visible;
     }
     
     /* Page Header Styles - Only for Policy Pages */
@@ -217,23 +236,13 @@ export const getManualStyles = (): string => {
       color: #1565c0;
     }
 
-    /* Page Footer Styles - Different for each page type */
-    .toc-page .page-footer {
+    /* Page Footer Styles - Fixed positioning */
+    .page-footer {
       position: absolute;
       bottom: 0.25in;
       right: 0;
-      width: 100%;
-      text-align: right;
-      background: white;
-      z-index: 10;
-      padding: 0.25in 0;
-    }
-
-    .policy-page .page-footer {
-      position: absolute;
-      bottom: 0.25in;
-      right: 0;
-      width: 100%;
+      left: auto;
+      width: auto;
       text-align: right;
       background: white;
       z-index: 10;
@@ -252,7 +261,7 @@ export const getManualStyles = (): string => {
       border-collapse: collapse;
       font-size: 11pt;
       border: 2px solid #1565c0;
-      margin-bottom: 1in;
+      margin-bottom: 0.5in;
       clear: both;
     }
     
@@ -337,12 +346,14 @@ export const getManualStyles = (): string => {
     .policy-page {
       padding: 0;
       position: relative;
-      min-height: 8.5in;
+      min-height: 9in;
+      display: flex;
+      flex-direction: column;
     }
     
     .policy-content {
-      margin-bottom: 1.5in; /* Increased space for footer */
-      max-height: 7in; /* Ensure content doesn't overflow */
+      flex: 1;
+      margin-bottom: 1in;
       overflow: hidden;
     }
     
@@ -472,6 +483,15 @@ export const getManualStyles = (): string => {
       
       .policy-content {
         margin-bottom: 20px;
+        flex: none;
+      }
+
+      .toc-content {
+        flex: none;
+        padding-bottom: 20px;
+      }
+
+      .toc-table-container {
         max-height: none;
       }
     }
