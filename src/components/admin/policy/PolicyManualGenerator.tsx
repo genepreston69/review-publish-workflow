@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -113,7 +112,7 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
     const manualTitle = `Recovery Point West Virginia ${type} Policy Manual`;
     const totalPages = 2 + policies.length; // Cover + TOC + policies
     
-    // Generate Table of Contents entries
+    // Generate Table of Contents entries - NO LINE BREAKS
     let tocRows = '';
     let currentPage = 3; // Start after cover page and TOC
     
@@ -121,13 +120,8 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
       const policyTitle = policy.name || 'Untitled Policy';
       const policyNumber = policy.policy_number || 'N/A';
       
-      tocRows += `
-        <tr class="toc-row" onclick="window.location.href='#policy-${policy.id}'" style="cursor: pointer;">
-          <td class="toc-number">${policyNumber}</td>
-          <td class="toc-title">${policyTitle}</td>
-          <td class="toc-page">${currentPage}</td>
-        </tr>
-      `;
+      // Generate each row as a single line of HTML without line breaks
+      tocRows += `<tr class="toc-row"><td class="toc-number">${policyNumber}</td><td class="toc-title">${policyTitle}</td><td class="toc-page">${currentPage}</td></tr>`;
       currentPage++;
     });
 
@@ -223,7 +217,7 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
                 page-break-before: always;
               }
               
-              .policy-page, .toc-page, .cover-page {
+              .policy-page, .cover-page {
                 page-break-before: always;
                 position: relative;
                 min-height: 9.5in;
@@ -241,8 +235,23 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
                 page-break-inside: avoid;
               }
               
+              /* TOC Table Print Styles - CRITICAL FIXES */
+              .toc-page {
+                page-break-before: always;
+                page-break-after: always;
+                page-break-inside: avoid;
+              }
+              
+              .toc-table-container {
+                page-break-inside: avoid;
+                break-inside: avoid;
+              }
+              
               .toc-table {
-                page-break-inside: auto;
+                page-break-inside: avoid;
+                break-inside: avoid;
+                border-collapse: collapse;
+                table-layout: fixed;
               }
 
               .toc-table thead {
@@ -254,6 +263,13 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               }
 
               .toc-row {
+                page-break-inside: avoid;
+                break-inside: avoid;
+                page-break-after: avoid;
+                break-after: avoid;
+              }
+
+              .toc-table td {
                 page-break-inside: avoid;
                 break-inside: avoid;
               }
@@ -381,12 +397,17 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
               letter-spacing: 1px;
             }
             
+            .toc-table-container {
+              width: 100%;
+              margin-bottom: 1in;
+            }
+            
             .toc-table {
               width: 100%;
               border-collapse: collapse;
-              margin-bottom: 1in;
               font-size: 11pt;
               border: 2px solid #1565c0;
+              table-layout: fixed;
             }
             
             .toc-table th {
@@ -631,18 +652,20 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
             </div>
             
             <h2 class="toc-title">Table of Contents</h2>
-            <table class="toc-table">
-              <thead>
-                <tr>
-                  <th>Policy Number</th>
-                  <th>Policy Title</th>
-                  <th>Page</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${tocRows}
-              </tbody>
-            </table>
+            <div class="toc-table-container">
+              <table class="toc-table">
+                <thead>
+                  <tr>
+                    <th>Policy Number</th>
+                    <th>Policy Title</th>
+                    <th>Page</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${tocRows}
+                </tbody>
+              </table>
+            </div>
 
             <div class="page-footer">
               <span class="page-number">Page 2 of ${totalPages}</span>
