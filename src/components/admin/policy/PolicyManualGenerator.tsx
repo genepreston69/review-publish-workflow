@@ -245,8 +245,17 @@ export function PolicyManualGenerator({}: PolicyManualGeneratorProps) {
                 page-break-inside: auto;
               }
 
+              .toc-table thead {
+                display: table-header-group;
+              }
+
+              .toc-table tbody {
+                display: table-row-group;
+              }
+
               .toc-row {
                 page-break-inside: avoid;
+                break-inside: avoid;
               }
             }
             
