@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { FileText, Calendar, User, CheckCircle, XCircle, Trash2, Eye } from 'lucide-react';
+import { FileText, Calendar, User, Trash2, Eye, RotateCcw } from 'lucide-react';
 import { PolicyViewModal } from './policy/PolicyViewModal';
 
 interface Policy {
@@ -37,6 +36,7 @@ export function FacilityPolicies() {
 
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
   const isSuperAdmin = userRole === 'super-admin';
+  const isEditor = userRole === 'edit';
 
   useEffect(() => {
     fetchPolicies();
@@ -106,9 +106,13 @@ export function FacilityPolicies() {
 
       if (error) throw error;
 
+      const statusMessage = newStatus === 'draft' 
+        ? 'Policy returned to draft status for editing'
+        : `Policy ${newStatus === 'published' ? 'published' : 'rejected'} successfully`;
+
       toast({
         title: "Success",
-        description: `Policy ${newStatus === 'published' ? 'published' : 'rejected'} successfully.`,
+        description: statusMessage,
       });
 
       // Refresh policies
@@ -275,6 +279,19 @@ export function FacilityPolicies() {
                       View Policy
                     </Button>
 
+                    {/* Update Policy Button - Show for users with edit/publish permissions */}
+                    {(isEditor || canPublish) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updatePolicyStatus(policy.id, 'draft')}
+                        className="w-full text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
+                      >
+                        <RotateCcw className="w-3 h-3 mr-1" />
+                        Update Policy
+                      </Button>
+                    )}
+
                     {/* Super Admin Delete Action for published policies */}
                     {isSuperAdmin && (
                       <Button
@@ -299,6 +316,7 @@ export function FacilityPolicies() {
         <PolicyViewModal
           policyId={viewingPolicyId}
           onClose={handleCloseView}
+          onUpdateStatus={updatePolicyStatus}
         />
       )}
     </div>

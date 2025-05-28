@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -92,9 +91,13 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus }: P
     console.log('=== RETURNING POLICY TO DRAFT ===', policy.id);
     try {
       await onUpdateStatus(policy.id, 'draft');
+      const message = policy.status === 'published' 
+        ? 'Policy returned to draft status for editing'
+        : 'Policy returned to draft status';
+      
       toast({
         title: "Success",
-        description: "Policy returned to draft status.",
+        description: message,
       });
       onClose();
     } catch (error) {
@@ -244,6 +247,18 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus }: P
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Return to Draft
+              </Button>
+            )}
+
+            {/* Update Policy Button - Show for published policies for users with edit/publish permissions */}
+            {policy.status === 'published' && onUpdateStatus && (isEditor || canPublish) && (
+              <Button 
+                variant="outline" 
+                onClick={handleReturnToDraft}
+                className="border-blue-300 text-blue-600 hover:bg-blue-50"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Update Policy
               </Button>
             )}
 

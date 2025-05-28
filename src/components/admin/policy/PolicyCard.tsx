@@ -55,14 +55,6 @@ export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onView,
   const isSuperAdmin = userRole === 'super-admin';
   const isEditor = userRole === 'edit';
 
-  console.log('PolicyCard debug:', {
-    policyId: policy.id,
-    status: policy.status,
-    canPublish,
-    userRole,
-    showReturnToDraft: canPublish && (policy.status === 'under-review' || policy.status === 'under review')
-  });
-
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader>
@@ -136,6 +128,19 @@ export function PolicyCard({ policy, canPublish, onUpdateStatus, onEdit, onView,
               >
                 <RotateCcw className="w-3 h-3 mr-1" />
                 Return to Draft
+              </Button>
+            )}
+
+            {/* Update Policy Button - Show for published policies for users with edit/publish permissions */}
+            {policy.status === 'published' && (isEditor || canPublish) && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onUpdateStatus(policy.id, 'draft')}
+                className="w-full text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
+              >
+                <RotateCcw className="w-3 h-3 mr-1" />
+                Update Policy
               </Button>
             )}
 
