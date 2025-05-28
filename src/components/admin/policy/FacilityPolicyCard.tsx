@@ -83,7 +83,7 @@ const handlePrintPolicy = (policy: Policy) => {
             line-height: 1.3;
             color: #333;
             margin: 0;
-            padding: 0;
+            padding: 0 0 40px 0;
             background: white;
           }
           
@@ -154,14 +154,14 @@ const handlePrintPolicy = (policy: Policy) => {
           }
           
           .section {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             page-break-inside: avoid;
           }
           
           .section-title {
             font-size: 13pt;
             font-weight: bold;
-            margin: 20px 0 8px 0;
+            margin: 15px 0 8px 0;
             color: #1565c0;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -212,7 +212,7 @@ const handlePrintPolicy = (policy: Policy) => {
             bottom: 0.5in;
             left: 1in;
             right: 1in;
-            height: 30px;
+            height: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -221,19 +221,17 @@ const handlePrintPolicy = (policy: Policy) => {
             border-top: 1px solid #dee2e6;
             padding-top: 8px;
             background: white;
+            white-space: nowrap;
           }
           
           .footer-left {
             font-weight: bold;
-            color: #dc3545;
-          }
-          
-          .footer-center {
-            font-weight: bold;
+            color: #333;
           }
           
           .footer-right {
             font-style: italic;
+            color: #666;
           }
           
           @media print {
@@ -310,8 +308,7 @@ const handlePrintPolicy = (policy: Policy) => {
         ` : ''}
         
         <div class="footer">
-          <div class="footer-left">Confidential – For Internal Use Only</div>
-          <div class="footer-center">Page 1 of 1</div>
+          <div class="footer-left">Page 1 of 1</div>
           <div class="footer-right">Printed on ${printDateTime}</div>
         </div>
       </body>
