@@ -84,7 +84,8 @@ export function FacilityPolicyCard({
       </CardHeader>
       
       <CardContent className="flex flex-col flex-grow">
-        <div className="space-y-3 flex-grow">
+        {/* Main content area that flexes to fill space */}
+        <div className="flex-grow space-y-3">
           {policy.purpose && (
             <div>
               <h4 className="font-medium text-sm text-gray-700">Purpose</h4>
@@ -102,23 +103,24 @@ export function FacilityPolicyCard({
               </p>
             </div>
           )}
+        </div>
 
-          <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t">
-            {policy.reviewer && (
-              <div className="flex items-center gap-1">
-                <User className="h-3 w-3" />
-                <span>{stripHtml(policy.reviewer)}</span>
-              </div>
-            )}
+        {/* User/date row - consistently positioned at bottom of content area */}
+        <div className="flex items-center justify-between text-xs text-gray-500 pt-4 mt-4">
+          {policy.reviewer && (
             <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              <span>{new Date(policy.created_at).toLocaleDateString()}</span>
+              <User className="h-3 w-3" />
+              <span>{stripHtml(policy.reviewer)}</span>
             </div>
+          )}
+          <div className="flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            <span>{new Date(policy.created_at).toLocaleDateString()}</span>
           </div>
         </div>
 
-        {/* Action buttons - anchored to bottom with margin-top: auto */}
-        <div className="pt-3 border-t space-y-2 mt-auto">
+        {/* Action buttons - anchored to bottom with border separator */}
+        <div className="pt-3 border-t space-y-2 mt-3">
           {/* View Button for all published policies */}
           <Button
             size="sm"
