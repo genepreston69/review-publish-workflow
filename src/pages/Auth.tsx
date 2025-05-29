@@ -13,9 +13,16 @@ import { Loader2 } from 'lucide-react';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  
+  // Separate state for sign-in form
+  const [signInEmail, setSignInEmail] = useState('');
+  const [signInPassword, setSignInPassword] = useState('');
+  
+  // Separate state for sign-up form
+  const [signUpEmail, setSignUpEmail] = useState('');
+  const [signUpPassword, setSignUpPassword] = useState('');
+  const [signUpName, setSignUpName] = useState('');
+  
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentUser, isLoading: authLoading } = useAuth();
@@ -45,15 +52,25 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!signUpEmail || !signUpPassword || !signUpName) {
+      toast({
+        variant: "destructive",
+        title: "Missing information",
+        description: "Please fill in all fields.",
+      });
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
       const { error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: signUpEmail,
+        password: signUpPassword,
         options: {
           data: {
-            name,
+            name: signUpName,
           },
         },
       });
@@ -69,6 +86,10 @@ const Auth = () => {
           title: "Account created!",
           description: "Please check your email for verification.",
         });
+        // Clear the form
+        setSignUpEmail('');
+        setSignUpPassword('');
+        setSignUpName('');
       }
     } catch (error) {
       toast({
@@ -83,25 +104,41 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!signInEmail || !signInPassword) {
+      toast({
+        variant: "destructive",
+        title: "Missing information",
+        description: "Please enter both email and password.",
+      });
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
+      console.log('=== ATTEMPTING SIGN IN ===', { email: signInEmail });
+      
       const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: signInEmail,
+        password: signInPassword,
       });
 
       if (error) {
+        console.error('=== SIGN IN ERROR ===', error);
         toast({
           variant: "destructive",
           title: "Sign in failed",
           description: error.message,
         });
       } else {
-        // Don't manually navigate here - let the useEffect handle it
         console.log('=== SIGN IN SUCCESSFUL ===');
+        // Clear the form
+        setSignInEmail('');
+        setSignInPassword('');
       }
     } catch (error) {
+      console.error('=== UNEXPECTED SIGN IN ERROR ===', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -132,9 +169,10 @@ const Auth = () => {
                   <Input
                     id="signin-email"
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={signInEmail}
+                    onChange={(e) => setSignInEmail(e.target.value)}
                     required
+                    autoComplete="email"
                   />
                 </div>
                 <div className="space-y-2">
@@ -142,9 +180,10 @@ const Auth = () => {
                   <Input
                     id="signin-password"
                     type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={signInPassword}
+                    onChange={(e) => setSignInPassword(e.target.value)}
                     required
+                    autoComplete="current-password"
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
@@ -161,9 +200,10 @@ const Auth = () => {
                   <Input
                     id="signup-name"
                     type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    value={signUpName}
+                    onChange={(e) => setSignUpName(e.target.value)}
                     required
+                    autoComplete="name"
                   />
                 </div>
                 <div className="space-y-2">
@@ -171,9 +211,10 @@ const Auth = () => {
                   <Input
                     id="signup-email"
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={signUpEmail}
+                    onChange={(e) => setSignUpEmail(e.target.value)}
                     required
+                    autoComplete="email"
                   />
                 </div>
                 <div className="space-y-2">
@@ -181,10 +222,11 @@ const Auth = () => {
                   <Input
                     id="signup-password"
                     type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={signUpPassword}
+                    onChange={(e) => setSignUpPassword(e.target.value)}
                     required
                     minLength={6}
+                    autoComplete="new-password"
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
