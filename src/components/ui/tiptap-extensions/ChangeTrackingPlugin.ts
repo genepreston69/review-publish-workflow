@@ -27,7 +27,7 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
             tr.insertText(text, from, to);
             const insertEnd = from + text.length;
             
-            // Apply suggestion mark to the entire inserted text range
+            // Apply suggestion mark to the ENTIRE inserted text range in one operation
             tr.addMark(
               from,
               insertEnd,
@@ -50,7 +50,7 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
         tr.insertText(text, from, to);
         const insertEnd = from + text.length;
         
-        // Apply suggestion mark to the entire inserted text range
+        // Apply suggestion mark to the ENTIRE inserted text range in one operation
         tr.addMark(
           from,
           insertEnd,
@@ -83,7 +83,7 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
             if (deletedText.trim()) {
               const { tr } = state;
               
-              // Apply suggestion mark to the entire selected range
+              // Apply suggestion mark to the ENTIRE selected range in one operation
               tr.addMark(
                 from,
                 to,
