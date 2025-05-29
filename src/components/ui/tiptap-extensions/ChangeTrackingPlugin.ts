@@ -15,6 +15,7 @@ export const createChangeTrackingPlugin = (options: ChangeTrackingOptions) =>
     key: changeTrackingPluginKey,
     props: {
       handleTextInput(view, from, to, text) {
+        // Only intercept when tracking is enabled
         if (!options.enabled) return false;
 
         const { state, dispatch } = view;
@@ -24,15 +25,12 @@ export const createChangeTrackingPlugin = (options: ChangeTrackingOptions) =>
         if (to > from) {
           const deletedText = state.doc.textBetween(from, to, '\0', '\0');
           if (deletedText.length > 0) {
-            // This is a replacement operation
-            // First, mark the existing text as deleted (without removing it)
-            const deletionMark = schema.marks.suggestion.create({
+            // Mark existing text as deleted using the deletion mark
+            const deletionMark = schema.marks.deletion.create({
               changeId: uuidv4(),
               userInitials: options.userInitials,
               timestamp: new Date().toISOString(),
               originalText: deletedText,
-              suggestedText: '',
-              changeType: 'delete',
             });
 
             tr.addMark(from, to, deletionMark);
@@ -41,40 +39,35 @@ export const createChangeTrackingPlugin = (options: ChangeTrackingOptions) =>
             tr.insertText(text, to);
             const insertEnd = to + text.length;
             
-            const insertionMark = schema.marks.suggestion.create({
+            const additionMark = schema.marks.addition.create({
               changeId: uuidv4(),
               userInitials: options.userInitials,
               timestamp: new Date().toISOString(),
-              originalText: '',
-              suggestedText: text,
-              changeType: 'insert',
             });
 
-            tr.addMark(to, insertEnd, insertionMark);
+            tr.addMark(to, insertEnd, additionMark);
             dispatch(tr);
             return true;
           }
         }
 
-        // Insert the new text with insertion suggestion
+        // Insert the new text with addition mark
         tr.insertText(text, from, to);
         const insertEnd = from + text.length;
         
-        const insertionMark = schema.marks.suggestion.create({
+        const additionMark = schema.marks.addition.create({
           changeId: uuidv4(),
           userInitials: options.userInitials,
           timestamp: new Date().toISOString(),
-          originalText: '',
-          suggestedText: text,
-          changeType: 'insert',
         });
 
-        tr.addMark(from, insertEnd, insertionMark);
+        tr.addMark(from, insertEnd, additionMark);
         dispatch(tr);
         return true;
       },
 
       handleKeyDown(view, event) {
+        // Only intercept when tracking is enabled
         if (!options.enabled) return false;
         if (event.key !== 'Backspace' && event.key !== 'Delete') return false;
 
@@ -83,7 +76,7 @@ export const createChangeTrackingPlugin = (options: ChangeTrackingOptions) =>
         const { from, to, empty } = selection;
 
         if (!empty && from !== to) {
-          // Range selection (can be across multiple nodes)
+          // Range selection - get the actual text
           let deletedText = '';
           doc.nodesBetween(from, to, (node, pos) => {
             if (node.isText) {
@@ -96,13 +89,11 @@ export const createChangeTrackingPlugin = (options: ChangeTrackingOptions) =>
           });
 
           if (deletedText) {
-            const deletionMark = schema.marks.suggestion.create({
+            const deletionMark = schema.marks.deletion.create({
               userInitials: options.userInitials,
               changeId: uuidv4(),
               timestamp: new Date().toISOString(),
               originalText: deletedText,
-              suggestedText: '',
-              changeType: 'delete',
             });
 
             const markedNode = schema.text(deletedText, [deletionMark]);
@@ -122,13 +113,11 @@ export const createChangeTrackingPlugin = (options: ChangeTrackingOptions) =>
           
           const deletedChar = doc.textBetween(markPos, markPos + 1, '\0', '\0');
           if (deletedChar) {
-            const deletionMark = schema.marks.suggestion.create({
+            const deletionMark = schema.marks.deletion.create({
               userInitials: options.userInitials,
               changeId: uuidv4(),
               timestamp: new Date().toISOString(),
               originalText: deletedChar,
-              suggestedText: '',
-              changeType: 'delete',
             });
 
             const markedNode = schema.text(deletedChar, [deletionMark]);

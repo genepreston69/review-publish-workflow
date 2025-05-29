@@ -46,8 +46,9 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
     return content;
   }, [content]);
 
-  const editor = useEditor({
-    extensions: [
+  // Create extensions array with conditional change tracking plugin
+  const extensions = useMemo(() => {
+    const baseExtensions = [
       StarterKit.configure({
         // Disable default list extensions to configure them separately
         bulletList: false,
@@ -85,7 +86,21 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
       // Keep legacy extensions for backward compatibility
       Addition,
       Deletion,
-    ],
+    ];
+
+    // Add change tracking plugin only if tracking is enabled
+    if (trackingOptions?.enabled) {
+      return [
+        ...baseExtensions,
+        createChangeTrackingPlugin(trackingOptions),
+      ];
+    }
+
+    return baseExtensions;
+  }, [trackingOptions]);
+
+  const editor = useEditor({
+    extensions,
     content: getInitialContent,
     onUpdate: ({ editor }) => {
       const updatedContent = isJsonMode 
@@ -99,21 +114,13 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
         style: 'line-height: 1.8;',
       },
     },
-    // Add the change tracking plugin if tracking options are provided
-    ...(trackingOptions && {
+    // Add parse options if tracking is enabled
+    ...(trackingOptions?.enabled && {
       parseOptions: {
         preserveWhitespace: 'full',
       },
     }),
-  }, [getInitialContent, isJsonMode, onChange, trackingOptions]);
-
-  // Add the change tracking plugin after editor creation
-  useMemo(() => {
-    if (editor && trackingOptions) {
-      const plugin = createChangeTrackingPlugin(trackingOptions);
-      editor.registerPlugin(plugin);
-    }
-  }, [editor, trackingOptions]);
+  }, [extensions, getInitialContent, isJsonMode, onChange]);
 
   return editor;
 }

@@ -83,7 +83,6 @@ export function RichTextEditor({
 
   // Create tracking options
   const trackingOptions: ChangeTrackingOptions | undefined = useMemo(() => {
-    if (!trackingEnabled) return undefined;
     return {
       userInitials,
       enabled: trackingEnabled,
