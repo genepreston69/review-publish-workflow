@@ -13,7 +13,6 @@ export function UndoRedoButtons({ editor }: UndoRedoButtonsProps) {
   const handleUndo = () => {
     console.log('Undo button clicked');
     console.log('Can undo:', editor.can().undo());
-    console.log('History state:', editor.state.history);
     
     const result = editor.chain().focus().undo().run();
     console.log('Undo command result:', result);
