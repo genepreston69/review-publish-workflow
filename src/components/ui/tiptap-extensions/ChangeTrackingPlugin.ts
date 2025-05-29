@@ -26,19 +26,34 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
           const deletedText = state.doc.textBetween(from, to);
           if (deletedText.trim()) {
             // This is a replacement operation
-            tr.insertText(text, from, to);
-            const insertEnd = from + text.length;
-            
+            // First, mark the existing text as deleted (without removing it)
             tr.addMark(
               from,
-              insertEnd,
+              to,
               state.schema.marks.suggestion.create({
                 changeId: generateChangeId(),
                 userInitials: options.userInitials,
                 timestamp: new Date().toISOString(),
                 originalText: deletedText,
+                suggestedText: '',
+                changeType: 'delete',
+              })
+            );
+
+            // Then insert the new text after the deleted text
+            tr.insertText(text, to);
+            const insertEnd = to + text.length;
+            
+            tr.addMark(
+              to,
+              insertEnd,
+              state.schema.marks.suggestion.create({
+                changeId: generateChangeId(),
+                userInitials: options.userInitials,
+                timestamp: new Date().toISOString(),
+                originalText: '',
                 suggestedText: text,
-                changeType: 'replace',
+                changeType: 'insert',
               })
             );
 
@@ -77,6 +92,7 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
         // Handle deletion keys (Backspace, Delete)
         if (event.key === 'Backspace' || event.key === 'Delete') {
           if (!selection.empty) {
+            // Handle selection deletion
             const { from, to } = selection;
             const deletedText = state.doc.textBetween(from, to);
             
