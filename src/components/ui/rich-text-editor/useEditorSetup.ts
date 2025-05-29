@@ -1,4 +1,3 @@
-
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { History } from '@tiptap/extension-history';
@@ -55,13 +54,11 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
         bulletList: false,
         orderedList: false,
         listItem: false,
-        // Disable default history to configure it separately for better control
-        history: false,
-      }),
-      // Configure history extension with proper settings
-      History.configure({
-        depth: 100,
-        newGroupDelay: 500,
+        // Configure history with proper settings for change tracking
+        history: {
+          depth: 100,
+          newGroupDelay: 500,
+        },
       }),
       // Configure list extensions separately for better control
       ListItem.configure({
@@ -118,7 +115,7 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
     parseOptions: {
       preserveWhitespace: 'full',
     },
-    // Enable undo support explicitly
+    // Enable all input rules and paste rules for natural editing
     enableInputRules: true,
     enablePasteRules: true,
   }, [extensions, getInitialContent, isJsonMode, onChange]);
