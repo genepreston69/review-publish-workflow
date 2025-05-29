@@ -53,10 +53,15 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
         bulletList: false,
         orderedList: false,
         listItem: false,
-        // Configure history with proper settings for change tracking
+        // Configure history with optimized settings for change tracking
         history: {
           depth: 100,
           newGroupDelay: 500,
+          // Ensure tracking transactions are properly grouped with content changes
+          preventHistoryEvent: ({ transaction }) => {
+            // Don't prevent tracking transactions from being added to history
+            return false;
+          },
         },
       }),
       // Configure list extensions separately for better control
@@ -110,13 +115,15 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
         style: 'line-height: 1.8;',
       },
     },
-    // Add parse options for better tracking support
+    // Optimized parse options for change tracking
     parseOptions: {
       preserveWhitespace: 'full',
     },
     // Enable all input rules and paste rules for natural editing
     enableInputRules: true,
     enablePasteRules: true,
+    // Ensure proper transaction handling for undo/redo
+    enableContentCheck: true,
   }, [extensions, getInitialContent, isJsonMode, onChange]);
 
   return editor;

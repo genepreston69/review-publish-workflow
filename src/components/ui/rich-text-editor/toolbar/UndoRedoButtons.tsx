@@ -10,12 +10,18 @@ interface UndoRedoButtonsProps {
 
 export function UndoRedoButtons({ editor }: UndoRedoButtonsProps) {
   const handleUndo = () => {
+    console.log('Undo action triggered');
     editor.chain().focus().undo().run();
   };
 
   const handleRedo = () => {
+    console.log('Redo action triggered');
     editor.chain().focus().redo().run();
   };
+
+  // Check if undo/redo operations are available
+  const canUndo = editor.can().undo();
+  const canRedo = editor.can().redo();
 
   return (
     <>
@@ -26,7 +32,8 @@ export function UndoRedoButtons({ editor }: UndoRedoButtonsProps) {
             variant="ghost"
             size="sm"
             onClick={handleUndo}
-            disabled={!editor.can().undo()}
+            disabled={!canUndo}
+            className={!canUndo ? 'opacity-50 cursor-not-allowed' : ''}
           >
             <Undo className="h-4 w-4" />
           </Button>
@@ -43,7 +50,8 @@ export function UndoRedoButtons({ editor }: UndoRedoButtonsProps) {
             variant="ghost"
             size="sm"
             onClick={handleRedo}
-            disabled={!editor.can().redo()}
+            disabled={!canRedo}
+            className={!canRedo ? 'opacity-50 cursor-not-allowed' : ''}
           >
             <Redo className="h-4 w-4" />
           </Button>
