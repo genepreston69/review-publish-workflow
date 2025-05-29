@@ -19,51 +19,56 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
         const { state, dispatch } = view;
         const { tr } = state;
         
+        console.log('=== HANDLING TEXT INPUT ===');
+        console.log('From:', from, 'To:', to, 'Text:', text);
+        
         // If text is being replaced (to > from), handle as replacement
         if (to > from) {
           const deletedText = state.doc.textBetween(from, to);
+          console.log('Replacing text:', deletedText, 'with:', text);
+          
           if (deletedText.trim()) {
-            // Insert the new text
+            // Insert the new text first
             tr.insertText(text, from, to);
             const insertEnd = from + text.length;
             
+            console.log('Applying replacement mark from', from, 'to', insertEnd);
+            
             // Apply suggestion mark to the ENTIRE inserted text range in one operation
-            tr.addMark(
-              from,
-              insertEnd,
-              state.schema.marks.suggestion.create({
-                changeId: generateChangeId(),
-                userInitials: options.userInitials,
-                timestamp: new Date().toISOString(),
-                originalText: deletedText,
-                suggestedText: text,
-                changeType: 'replace',
-              })
-            );
-
+            const mark = state.schema.marks.suggestion.create({
+              changeId: generateChangeId(),
+              userInitials: options.userInitials,
+              timestamp: new Date().toISOString(),
+              originalText: deletedText,
+              suggestedText: text,
+              changeType: 'replace',
+            });
+            
+            tr.addMark(from, insertEnd, mark);
             dispatch(tr);
             return true;
           }
         }
 
-        // Insert the new text
+        console.log('Inserting new text:', text, 'from', from, 'to', to);
+        
+        // Insert the new text first
         tr.insertText(text, from, to);
         const insertEnd = from + text.length;
         
+        console.log('Applying insertion mark from', from, 'to', insertEnd);
+        
         // Apply suggestion mark to the ENTIRE inserted text range in one operation
-        tr.addMark(
-          from,
-          insertEnd,
-          state.schema.marks.suggestion.create({
-            changeId: generateChangeId(),
-            userInitials: options.userInitials,
-            timestamp: new Date().toISOString(),
-            originalText: '',
-            suggestedText: text,
-            changeType: 'insert',
-          })
-        );
-
+        const mark = state.schema.marks.suggestion.create({
+          changeId: generateChangeId(),
+          userInitials: options.userInitials,
+          timestamp: new Date().toISOString(),
+          originalText: '',
+          suggestedText: text,
+          changeType: 'insert',
+        });
+        
+        tr.addMark(from, insertEnd, mark);
         dispatch(tr);
         return true;
       },
@@ -74,30 +79,33 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
         const { state } = view;
         const { selection } = state;
 
+        console.log('=== HANDLING KEY DOWN ===', event.key);
+
         // Handle deletion keys (Backspace, Delete)
         if (event.key === 'Backspace' || event.key === 'Delete') {
           if (!selection.empty) {
             const { from, to } = selection;
             const deletedText = state.doc.textBetween(from, to);
             
+            console.log('Deleting selected text:', deletedText, 'from', from, 'to', to);
+            
             if (deletedText.trim()) {
               const { tr } = state;
               
+              console.log('Applying deletion mark from', from, 'to', to);
+              
               // Apply suggestion mark to the ENTIRE selected range in one operation
-              tr.addMark(
-                from,
-                to,
-                state.schema.marks.suggestion.create({
-                  changeId: generateChangeId(),
-                  userInitials: options.userInitials,
-                  timestamp: new Date().toISOString(),
-                  originalText: deletedText,
-                  suggestedText: '',
-                  changeType: 'delete',
-                })
-              );
-
-              view.dispatch(tr);
+              const mark = state.schema.marks.suggestion.create({
+                changeId: generateChangeId(),
+                userInitials: options.userInitials,
+                timestamp: new Date().toISOString(),
+                originalText: deletedText,
+                suggestedText: '',
+                changeType: 'delete',
+              });
+              
+              tr.addMark(from, to, mark);
+              dispatch(tr);
               return true;
             }
           }
