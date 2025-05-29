@@ -9,14 +9,21 @@ interface UndoRedoButtonsProps {
 }
 
 export function UndoRedoButtons({ editor }: UndoRedoButtonsProps) {
+  // Add console logging to debug undo/redo functionality
   const handleUndo = () => {
     console.log('Undo button clicked');
-    editor.chain().focus().undo().run();
+    console.log('Can undo:', editor.can().undo());
+    
+    const result = editor.chain().focus().undo().run();
+    console.log('Undo command result:', result);
   };
 
   const handleRedo = () => {
     console.log('Redo button clicked');
-    editor.chain().focus().redo().run();
+    console.log('Can redo:', editor.can().redo());
+    
+    const result = editor.chain().focus().redo().run();
+    console.log('Redo command result:', result);
   };
 
   return (

@@ -1,3 +1,4 @@
+
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { History } from '@tiptap/extension-history';
@@ -57,7 +58,7 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
         // Disable default history to configure it separately for better control
         history: false,
       }),
-      // Configure history extension with proper settings for change tracking
+      // Configure history extension with proper settings
       History.configure({
         depth: 100,
         newGroupDelay: 500,
@@ -117,7 +118,7 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
     parseOptions: {
       preserveWhitespace: 'full',
     },
-    // Enable all input handling for natural behavior
+    // Enable undo support explicitly
     enableInputRules: true,
     enablePasteRules: true,
   }, [extensions, getInitialContent, isJsonMode, onChange]);

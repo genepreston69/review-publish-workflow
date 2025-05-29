@@ -1,7 +1,7 @@
 
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from 'prosemirror-state';
-import { Step } from 'prosemirror-transform';
+import { TextSelection } from 'prosemirror-state';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface ChangeTrackingOptions {
@@ -14,121 +14,165 @@ export const changeTrackingPluginKey = new PluginKey('changeTracking');
 const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =>
   new Plugin({
     key: changeTrackingPluginKey,
-    
-    appendTransaction(transactions, oldState, newState) {
-      // Only process when tracking is enabled
-      if (!options.enabled) return null;
-      
-      // Skip if this is already a tracking transaction (to avoid infinite loops)
-      if (transactions.some(tr => tr.getMeta('isTrackingTransaction'))) {
-        return null;
-      }
-      
-      // Skip if no actual content changes occurred
-      if (!transactions.some(tr => tr.docChanged)) {
-        return null;
-      }
-      
-      const { schema } = newState;
-      
-      // Check if tracking marks exist in schema
-      if (!schema.marks.addition || !schema.marks.deletion) {
-        console.warn('Tracking marks not found in schema');
-        return null;
-      }
-      
-      let tr = newState.tr;
-      let hasChanges = false;
-      
-      // Process each transaction that changed the document
-      for (const transaction of transactions) {
-        if (!transaction.docChanged) continue;
+    props: {
+      handleTextInput(view, from, to, text) {
+        // Only intercept when tracking is enabled
+        if (!options.enabled) return false;
+
+        const { state, dispatch } = view;
+        const { tr, schema } = state;
         
-        // Analyze the steps to detect insertions and deletions
-        for (const step of transaction.steps) {
-          // Check if this is a replace step using the step's constructor name
-          if (step.constructor.name === 'ReplaceStep') {
-            const replaceStep = step as any;
-            const { from, to, slice } = replaceStep;
+        // Check if deletion mark exists in schema
+        if (!schema.marks.deletion) {
+          console.warn('Deletion mark not found in schema');
+          return false;
+        }
+
+        // Check if addition mark exists in schema  
+        if (!schema.marks.addition) {
+          console.warn('Addition mark not found in schema');
+          return false;
+        }
+        
+        // Create a transaction
+        let transaction = tr;
+        
+        // If text is being replaced (to > from), handle as replacement
+        if (to > from) {
+          const deletedText = state.doc.textBetween(from, to, '\0', '\0');
+          if (deletedText.length > 0) {
+            // Mark existing text as deleted using the deletion mark
+            const deletionMark = schema.marks.deletion.create({
+              changeId: uuidv4(),
+              userInitials: options.userInitials,
+              timestamp: new Date().toISOString(),
+              originalText: deletedText,
+            });
+
+            transaction = transaction.addMark(from, to, deletionMark);
+
+            // Then insert the new text after the deleted text
+            transaction = transaction.insertText(text, to);
+            const insertEnd = to + text.length;
             
-            // Handle deletions (when content is removed)
-            if (from < to && (!slice || slice.size === 0)) {
-              const deletedText = oldState.doc.textBetween(from, to, '\0', '\0');
-              if (deletedText.trim()) {
-                const deletionMark = schema.marks.deletion.create({
-                  changeId: uuidv4(),
-                  userInitials: options.userInitials,
-                  timestamp: new Date().toISOString(),
-                  originalText: deletedText,
-                });
-                
-                const markedNode = schema.text(deletedText, [deletionMark]);
-                tr = tr.insert(from, markedNode);
-                hasChanges = true;
-              }
-            }
-            // Handle insertions (when new content is added)
-            else if (slice && slice.size > 0) {
-              const insertedText = slice.content.textBetween(0, slice.content.size, '\0', '\0');
-              if (insertedText.trim()) {
-                const additionMark = schema.marks.addition.create({
-                  changeId: uuidv4(),
-                  userInitials: options.userInitials,
-                  timestamp: new Date().toISOString(),
-                });
-                
-                // Find the inserted content in the new document and mark it
-                const insertEnd = from + slice.size;
-                tr = tr.addMark(from, insertEnd, additionMark);
-                hasChanges = true;
-              }
-            }
-            // Handle replacements (deletion + insertion)
-            else if (from < to && slice && slice.size > 0) {
-              const deletedText = oldState.doc.textBetween(from, to, '\0', '\0');
-              const insertedText = slice.content.textBetween(0, slice.content.size, '\0', '\0');
-              
-              if (deletedText.trim()) {
-                // Mark the deleted text
-                const deletionMark = schema.marks.deletion.create({
-                  changeId: uuidv4(),
-                  userInitials: options.userInitials,
-                  timestamp: new Date().toISOString(),
-                  originalText: deletedText,
-                });
-                
-                const markedDeletedNode = schema.text(deletedText, [deletionMark]);
-                tr = tr.insert(from, markedDeletedNode);
-                hasChanges = true;
-              }
-              
-              if (insertedText.trim()) {
-                // Mark the inserted text
-                const additionMark = schema.marks.addition.create({
-                  changeId: uuidv4(),
-                  userInitials: options.userInitials,
-                  timestamp: new Date().toISOString(),
-                });
-                
-                const insertStart = from + (deletedText.length || 0);
-                const insertEnd = insertStart + slice.size;
-                tr = tr.addMark(insertStart, insertEnd, additionMark);
-                hasChanges = true;
-              }
-            }
+            const additionMark = schema.marks.addition.create({
+              changeId: uuidv4(),
+              userInitials: options.userInitials,
+              timestamp: new Date().toISOString(),
+            });
+
+            transaction = transaction.addMark(to, insertEnd, additionMark);
+            
+            dispatch(transaction);
+            return true;
           }
         }
-      }
-      
-      if (hasChanges) {
-        // Mark this as a tracking transaction to avoid infinite loops
-        tr.setMeta('isTrackingTransaction', true);
-        // Don't group with history to maintain proper undo behavior
-        tr.setMeta('addToHistory', true);
-        return tr;
-      }
-      
-      return null;
+
+        // Insert the new text with addition mark
+        transaction = transaction.insertText(text, from, to);
+        const insertEnd = from + text.length;
+        
+        const additionMark = schema.marks.addition.create({
+          changeId: uuidv4(),
+          userInitials: options.userInitials,
+          timestamp: new Date().toISOString(),
+        });
+
+        transaction = transaction.addMark(from, insertEnd, additionMark);
+        
+        dispatch(transaction);
+        return true;
+      },
+
+      handleKeyDown(view, event) {
+        // Only intercept when tracking is enabled
+        if (!options.enabled) return false;
+        
+        // NEVER intercept undo/redo shortcuts - let them pass through
+        if ((event.ctrlKey || event.metaKey) && (event.key === 'z' || event.key === 'y')) {
+          console.log('Undo/Redo shortcut detected, allowing default behavior');
+          return false;
+        }
+        
+        if (event.key !== 'Backspace' && event.key !== 'Delete') return false;
+
+        const { state, dispatch } = view;
+        const { selection, schema, doc } = state;
+        const { from, to, empty } = selection;
+
+        // Check if deletion mark exists in schema
+        if (!schema.marks.deletion) {
+          console.warn('Deletion mark not found in schema');
+          return false;
+        }
+
+        let transaction = state.tr;
+
+        if (!empty && from !== to) {
+          // Range selection - get the actual text
+          let deletedText = '';
+          doc.nodesBetween(from, to, (node, pos) => {
+            if (node.isText) {
+              const start = Math.max(from, pos);
+              const end = Math.min(to, pos + node.nodeSize - 2);
+              deletedText += node.text?.slice(start - pos, end - pos) || '';
+            } else if (node.isLeaf && node.isInline) {
+              deletedText += node.textContent;
+            }
+          });
+
+          if (deletedText) {
+            const deletionMark = schema.marks.deletion.create({
+              userInitials: options.userInitials,
+              changeId: uuidv4(),
+              timestamp: new Date().toISOString(),
+              originalText: deletedText,
+            });
+
+            const markedNode = schema.text(deletedText, [deletionMark]);
+            transaction = transaction.replaceSelectionWith(markedNode, false);
+            const newPos = transaction.selection.from + markedNode.nodeSize;
+            
+            // Ensure position is valid before creating selection
+            if (newPos <= transaction.doc.content.size) {
+              transaction = transaction.setSelection(TextSelection.create(transaction.doc, newPos));
+            }
+            
+            dispatch(transaction);
+            return true;
+          }
+        }
+
+        // Single-character fallback
+        if (empty) {
+          let markPos = event.key === 'Backspace' ? from - 1 : from;
+          if (markPos < 0 || markPos >= doc.content.size) return false;
+          
+          const deletedChar = doc.textBetween(markPos, markPos + 1, '\0', '\0');
+          if (deletedChar) {
+            const deletionMark = schema.marks.deletion.create({
+              userInitials: options.userInitials,
+              changeId: uuidv4(),
+              timestamp: new Date().toISOString(),
+              originalText: deletedChar,
+            });
+
+            const markedNode = schema.text(deletedChar, [deletionMark]);
+            transaction = transaction.replaceWith(markPos, markPos + 1, markedNode);
+            
+            // Ensure position is valid before creating selection
+            const newPos = markPos + 1;
+            if (newPos <= transaction.doc.content.size) {
+              transaction = transaction.setSelection(TextSelection.create(transaction.doc, newPos));
+            }
+            
+            dispatch(transaction);
+            return true;
+          }
+        }
+
+        return false;
+      },
     },
   });
 
