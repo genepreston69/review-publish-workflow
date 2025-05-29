@@ -19,16 +19,14 @@ export const getManualStyles = (): string => {
       
       .policy-page, .cover-page, .toc-page {
         page-break-before: always;
-        page-break-after: always;
         position: relative;
         min-height: 9in;
-        max-height: 9in;
-        overflow: hidden;
-        padding-bottom: 0.75in;
+        padding-bottom: 1in;
       }
       
       .cover-page {
         page-break-before: avoid;
+        page-break-after: always;
       }
       
       .policy-section {
@@ -39,10 +37,16 @@ export const getManualStyles = (): string => {
         page-break-inside: avoid;
       }
       
-      /* TOC Table Print Styles */
+      /* TOC Table Print Styles - Allow multi-page TOC */
+      .toc-page {
+        page-break-after: auto;
+        min-height: auto;
+        max-height: none;
+      }
+
       .toc-table-container {
-        max-height: 7.5in;
-        overflow: visible;
+        max-height: none !important;
+        overflow: visible !important;
       }
 
       .toc-table {
@@ -69,36 +73,38 @@ export const getManualStyles = (): string => {
         break-inside: avoid;
       }
 
-      /* Hide links for print */
+      /* TOC page break handling */
+      .toc-page-break {
+        page-break-before: always;
+      }
+
+      /* Hide links for print but keep them functional */
       .toc-link {
         color: inherit !important;
         text-decoration: none !important;
       }
 
-      /* Ensure clean page separation */
-      .cover-page::after {
-        content: "";
-        display: block;
-        page-break-after: always;
-      }
-
-      .toc-page::before {
-        content: "";
-        display: block;
-        clear: both;
-      }
-
-      /* Fixed page footer positioning */
+      /* Fixed page footer positioning - prevent bleeding */
       .page-footer {
-        position: absolute !important;
-        bottom: 0.25in !important;
-        right: 0 !important;
+        position: fixed !important;
+        bottom: 0.5in !important;
+        right: 0.75in !important;
         left: auto !important;
         width: auto !important;
         text-align: right !important;
         background: white;
-        z-index: 10;
-        padding: 0.25in 0 !important;
+        z-index: 1000;
+        padding: 0.1in 0 !important;
+        margin: 0 !important;
+      }
+
+      /* Ensure TOC content doesn't overlap with footer */
+      .toc-content {
+        margin-bottom: 1.5in !important;
+      }
+
+      .policy-content {
+        margin-bottom: 1.5in !important;
       }
     }
     
@@ -180,8 +186,6 @@ export const getManualStyles = (): string => {
     .toc-page {
       padding: 0;
       position: relative;
-      min-height: 9in;
-      max-height: 9in;
       isolation: isolate;
       background: white;
       display: flex;
@@ -190,8 +194,8 @@ export const getManualStyles = (): string => {
 
     .toc-content {
       flex: 1;
-      padding-bottom: 1in;
-      overflow: hidden;
+      padding-bottom: 1.5in;
+      overflow: visible;
     }
     
     .toc-main-title {
@@ -207,8 +211,8 @@ export const getManualStyles = (): string => {
     }
 
     .toc-table-container {
-      max-height: 7in;
       overflow: visible;
+      max-height: none;
     }
     
     /* Page Header Styles - Only for Policy Pages */
@@ -239,14 +243,15 @@ export const getManualStyles = (): string => {
     /* Page Footer Styles - Fixed positioning */
     .page-footer {
       position: absolute;
-      bottom: 0.25in;
+      bottom: 0.5in;
       right: 0;
       left: auto;
       width: auto;
       text-align: right;
       background: white;
       z-index: 10;
-      padding: 0.25in 0;
+      padding: 0.1in 0;
+      margin: 0;
     }
     
     .page-number {
@@ -332,14 +337,16 @@ export const getManualStyles = (): string => {
     }
 
     .toc-link {
-      color: inherit;
+      color: #1565c0;
       text-decoration: none;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
 
     .toc-link:hover {
       text-decoration: underline;
-      color: #1565c0;
+      color: #0d47a1;
+      font-weight: 500;
     }
     
     /* Policy Page Styles */
@@ -353,7 +360,7 @@ export const getManualStyles = (): string => {
     
     .policy-content {
       flex: 1;
-      margin-bottom: 1in;
+      margin-bottom: 1.5in;
       overflow: hidden;
     }
     
