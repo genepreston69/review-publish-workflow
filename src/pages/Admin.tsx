@@ -43,6 +43,9 @@ const Admin = () => {
   };
 
   const renderContent = () => {
+    console.log('=== ADMIN RENDER CONTENT ===');
+    console.log('Active section:', activeSection);
+    
     switch (activeSection) {
       case 'create-policy':
         return <CreatePolicy />;
@@ -50,6 +53,7 @@ const Admin = () => {
         return <DraftPolicies />;
       case 'review-policies':
         return <ReviewPolicies />;
+      case 'hr-policies':
       case 'facility-policies':
         return <FacilityPolicies />;
       case 'policy-manuals':
