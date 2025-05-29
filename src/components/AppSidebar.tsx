@@ -127,7 +127,7 @@ export function AppSidebar() {
       <SidebarHeader className="border-b p-6">
         <div className="flex items-center justify-center">
           <img 
-            src="/lovable-uploads/b2869fb2-8ffd-4462-b535-bcc8bed6b004.png" 
+            src="/lovable-uploads/574646d6-6de7-444f-a9a2-327c1a816521.png" 
             alt="Recovery Point West Virginia" 
             className="h-16 w-auto max-w-full"
           />
