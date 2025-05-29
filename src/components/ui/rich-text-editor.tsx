@@ -1,4 +1,3 @@
-
 import { EditorContent } from '@tiptap/react';
 import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
@@ -128,21 +127,25 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
   };
 
   return (
-    <div className={cn("border rounded-md", className)}>
-      <EditorToolbar
-        editor={editor}
-        trackingEnabled={trackingEnabled}
-        userInitials={userInitials}
-        onToggleTracking={toggleTracking}
-        onAITextChange={handleAITextChange}
-        getPlainText={getPlainText}
-        context={context}
-      />
-      <EditorContent 
-        editor={editor} 
-        className="min-h-[200px]"
-        placeholder={placeholder}
-      />
+    <div className={cn("border rounded-md flex flex-col", className)}>
+      <div className="sticky top-0 z-10 bg-white border-b rounded-t-md">
+        <EditorToolbar
+          editor={editor}
+          trackingEnabled={trackingEnabled}
+          userInitials={userInitials}
+          onToggleTracking={toggleTracking}
+          onAITextChange={handleAITextChange}
+          getPlainText={getPlainText}
+          context={context}
+        />
+      </div>
+      <div className="flex-1 overflow-auto">
+        <EditorContent 
+          editor={editor} 
+          className="min-h-[200px]"
+          placeholder={placeholder}
+        />
+      </div>
       <EditorStyles />
     </div>
   );

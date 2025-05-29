@@ -39,7 +39,7 @@ export function EditorToolbar({
   context
 }: EditorToolbarProps) {
   return (
-    <div className="border-b p-2 flex flex-wrap gap-1 justify-between">
+    <div className="p-2 flex flex-wrap gap-1 justify-between bg-white">
       <div className="flex flex-wrap gap-1">
         <Button
           type="button"
