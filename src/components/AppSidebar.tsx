@@ -95,7 +95,7 @@ export function AppSidebar() {
     
     return (
       <SidebarGroup>
-        <SidebarGroupLabel>{sectionTitle}</SidebarGroupLabel>
+        <SidebarGroupLabel className="text-base font-bold">{sectionTitle}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             {items.map((item) => (
@@ -124,7 +124,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b p-6">
+      <SidebarHeader className="p-6">
         <div className="flex items-center justify-center">
           <img 
             src="/lovable-uploads/574646d6-6de7-444f-a9a2-327c1a816521.png" 
