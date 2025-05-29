@@ -1,4 +1,3 @@
-
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -49,32 +48,32 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
   // Load user initials from profile
   useEffect(() => {
     const loadUserInitials = async () => {
-      if (!auth?.user?.id) return;
+      if (!auth?.currentUser?.id) return;
 
       try {
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('name, email')
-          .eq('id', auth.user.id)
+          .eq('id', auth.currentUser.id)
           .single();
 
         if (error) {
           console.error('Error loading profile:', error);
-          setUserInitials(getUserInitials(undefined, auth.user.email));
+          setUserInitials(getUserInitials(undefined, auth.currentUser.email));
           return;
         }
 
         // For now, generate initials from name/email since the column doesn't exist yet
-        const initials = getUserInitials(profile?.name, profile?.email || auth.user.email);
+        const initials = getUserInitials(profile?.name, profile?.email || auth.currentUser.email);
         setUserInitials(initials);
       } catch (error) {
         console.error('Error loading user initials:', error);
-        setUserInitials(getUserInitials(undefined, auth.user.email));
+        setUserInitials(getUserInitials(undefined, auth.currentUser.email));
       }
     };
 
     loadUserInitials();
-  }, [auth?.user]);
+  }, [auth?.currentUser]);
 
   // Determine if content is JSON or HTML and prepare initial content
   const initialContent = (() => {
