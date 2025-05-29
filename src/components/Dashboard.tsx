@@ -1,3 +1,4 @@
+
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { PolicyManualGenerator } from './admin/policy/PolicyManualGenerator';
 import { FacilityPoliciesGrid } from './admin/policy/FacilityPoliciesGrid';
@@ -8,7 +9,7 @@ import { useAppNavigation } from '@/hooks/useAppNavigation';
 
 // New imports for refactored components
 import { useContentManagement } from '@/hooks/useContentManagement';
-import { usePublishedPolicies } from '@/hooks/usePublishedPolicies';
+import { useAllUserPolicies } from '@/hooks/useAllUserPolicies';
 import { useDashboardActions } from './dashboard/DashboardActions';
 import { DashboardHeader } from './dashboard/DashboardHeader';
 import { ContentGrid } from './dashboard/ContentGrid';
@@ -20,7 +21,7 @@ export const Dashboard = () => {
 
   // Use custom hooks for data management
   const { contents, isLoading, handlePublish } = useContentManagement(currentUser, userRole);
-  const { hrPolicies, facilityPolicies, isLoadingPolicies } = usePublishedPolicies(userRole);
+  const { hrPolicies, facilityPolicies, isLoadingPolicies } = useAllUserPolicies();
   
   // Use action handlers
   const {
@@ -32,7 +33,7 @@ export const Dashboard = () => {
     handlePolicyDelete,
   } = useDashboardActions();
 
-  if (isLoading || (userRole === 'read-only' && isLoadingPolicies)) {
+  if (isLoading || isLoadingPolicies) {
     return (
       <div className="p-8">
         <div className="flex justify-center items-center h-64">

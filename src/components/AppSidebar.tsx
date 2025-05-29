@@ -27,17 +27,18 @@ export function AppSidebar() {
   const isSuperAdmin = userRole === 'super-admin';
   const isReadOnly = userRole === 'read-only';
 
-  // Policy items
+  // Policy items - HR Policies now available for all users
   const policyItems = [
-    ...(isReadOnly ? [{
+    {
       id: "hr-policies",
       title: "HR Policies",
       icon: Users,
-    }, {
+    },
+    {
       id: "facility-policies", 
       title: "Facility Policies",
       icon: Building,
-    }] : []),
+    },
     ...(!isReadOnly ? [{
       id: "create-policy",
       title: "Create Policy",
@@ -52,11 +53,6 @@ export function AppSidebar() {
       id: "review-policies",
       title: "Review Policies",
       icon: FileCheck,
-    }] : []),
-    ...(!isReadOnly ? [{
-      id: "facility-policies",
-      title: "Facility Policies",
-      icon: Building,
     }] : []),
     {
       id: "policy-manuals",

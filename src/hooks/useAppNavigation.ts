@@ -29,10 +29,8 @@ export function useAppNavigation() {
     }
     
     // Fall back to role-based defaults if no URL parameter
-    if (userRole === 'read-only') {
-      return 'hr-policies';
-    }
-    return 'all';
+    // Now all users default to hr-policies as the first policy section
+    return 'hr-policies';
   };
 
   const [activeSection, setActiveSection] = useState(getDefaultSection());
