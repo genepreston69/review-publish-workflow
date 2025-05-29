@@ -31,21 +31,16 @@ export const generateCoverPage = (type: ManualType, compilationDate: string, tot
   `;
 };
 
-export const generateTableOfContents = (policies: Policy[], totalPages: number): string => {
+export const generateTableOfContents = (policies: Policy[], totalPages: number, tocPages: number): string => {
   console.log('Generating TOC for policies:', policies.length, 'policies');
-  console.log('Policy IDs:', policies.map(p => ({ id: p.id, number: p.policy_number, name: p.name })));
-  
-  // Calculate how many TOC pages we'll need (approximately 20-25 entries per page)
-  const entriesPerPage = 20;
-  const tocPages = Math.ceil(policies.length / entriesPerPage);
+  console.log('TOC will span', tocPages, 'pages');
   
   // Calculate starting page for policies (cover + TOC pages + 1)
-  let policyStartPage = 2 + tocPages;
+  let policyStartPage = 1 + tocPages + 1;
   
-  // Generate TOC rows - single continuous table for ALL policies
+  // Generate TOC rows
   let tocRows = '';
   
-  // Ensure we process ALL policies passed to this function
   policies.forEach((policy, index) => {
     const policyTitle = policy.name || 'Untitled Policy';
     const policyNumber = policy.policy_number || 'N/A';
@@ -62,60 +57,54 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number):
     </tr>`;
   });
 
-  console.log('Total TOC rows generated:', policies.length);
-  console.log('TOC will span approximately', tocPages, 'pages');
-
-  // Generate TOC page numbers for footer
-  let tocPageFooters = '';
-  for (let i = 1; i <= tocPages; i++) {
-    const pageNum = 1 + i;
-    tocPageFooters += `
-      <div class="page-footer">
-        <span class="page-number">Page ${pageNum} of ${totalPages}</span>
-      </div>
-    `;
-  }
-
-  return `
-    <!-- Table of Contents -->
-    <div class="toc-page">
-      <div class="toc-content">
-        <h1 class="toc-main-title">Table of Contents</h1>
-        <div class="toc-table-container">
-          <table class="toc-table">
-            <thead>
-              <tr>
-                <th>Policy Number</th>
-                <th>Policy Title</th>
-                <th>Page</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${tocRows}
-            </tbody>
-          </table>
+  // Generate TOC pages with correct page numbering
+  let tocContent = '';
+  let currentTocPage = 2; // TOC starts on page 2
+  
+  for (let i = 0; i < tocPages; i++) {
+    const isFirstTocPage = i === 0;
+    const pageBreakClass = isFirstTocPage ? '' : 'toc-page-break';
+    
+    tocContent += `
+      <div class="toc-page ${pageBreakClass}">
+        <div class="toc-content">
+          ${isFirstTocPage ? '<h1 class="toc-main-title">Table of Contents</h1>' : ''}
+          <div class="toc-table-container">
+            <table class="toc-table">
+              ${isFirstTocPage ? `
+                <thead>
+                  <tr>
+                    <th>Policy Number</th>
+                    <th>Policy Title</th>
+                    <th>Page</th>
+                  </tr>
+                </thead>
+              ` : ''}
+              <tbody>
+                ${tocRows}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="page-footer">
+          <span class="page-number">Page ${currentTocPage} of ${totalPages}</span>
         </div>
       </div>
-      <div class="page-footer">
-        <span class="page-number">Page 2 of ${totalPages}</span>
-      </div>
-    </div>
-  `;
+    `;
+    currentTocPage++;
+  }
+
+  return tocContent;
 };
 
-export const generatePolicyContent = (type: ManualType, policies: Policy[], totalPages: number): string => {
+export const generatePolicyContent = (type: ManualType, policies: Policy[], totalPages: number, tocPages: number): string => {
   console.log('Generating policy content for policies:', policies.length, 'policies');
   
-  // Calculate how many TOC pages we'll need
-  const entriesPerPage = 20;
-  const tocPages = Math.ceil(policies.length / entriesPerPage);
-  
   // Calculate starting page for policies (cover + TOC pages + 1)
-  let pageNumber = 2 + tocPages;
+  let pageNumber = 1 + tocPages + 1;
   
   let policyContent = '';
   
-  // Ensure we process ALL policies passed to this function
   policies.forEach((policy, index) => {
     console.log(`Policy Content ${index + 1}: ${policy.policy_number} - ${policy.name} (Page ${pageNumber})`);
     

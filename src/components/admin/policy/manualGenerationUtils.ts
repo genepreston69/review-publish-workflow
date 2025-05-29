@@ -17,13 +17,21 @@ export const generateManualHTML = (type: ManualType, policies: Policy[], compila
   })));
   
   const manualTitle = `Recovery Point West Virginia ${type} Policy Manual`;
-  const totalPages = 2 + policies.length; // Cover + TOC + policies
   
+  // Calculate TOC pages needed (approximately 20-25 entries per page)
+  const entriesPerPage = 20;
+  const tocPages = Math.max(1, Math.ceil(policies.length / entriesPerPage));
+  
+  // Calculate total pages: Cover (1) + TOC pages + Policy pages
+  const totalPages = 1 + tocPages + policies.length;
+  
+  console.log('TOC Pages Calculated:', tocPages);
   console.log('Total Pages Calculated:', totalPages);
+  console.log('Policy pages will start on page:', 1 + tocPages + 1);
   
   const coverPage = generateCoverPage(type, compilationDate, totalPages);
-  const tableOfContents = generateTableOfContents(policies, totalPages);
-  const policyContent = generatePolicyContent(type, policies, totalPages);
+  const tableOfContents = generateTableOfContents(policies, totalPages, tocPages);
+  const policyContent = generatePolicyContent(type, policies, totalPages, tocPages);
 
   console.log('=== MANUAL GENERATION COMPLETE ===');
 
@@ -39,7 +47,6 @@ export const generateManualHTML = (type: ManualType, policies: Policy[], compila
       <body>
         ${coverPage}
         ${tableOfContents}
-        <!-- Policy Content -->
         ${policyContent}
       </body>
     </html>
