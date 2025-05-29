@@ -1,6 +1,5 @@
 
-import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import { UserManagement } from '@/components/admin/UserManagement';
@@ -12,23 +11,13 @@ import { CreatePolicy } from '@/components/admin/CreatePolicy';
 import { DraftPolicies } from '@/components/admin/DraftPolicies';
 import { ReviewPolicies } from '@/components/admin/ReviewPolicies';
 import { PolicyManualGenerator } from '@/components/admin/policy/PolicyManualGenerator';
-import { AdminSidebar } from '@/components/admin/AdminSidebar';
-import { PolicySidebar } from '@/components/admin/PolicySidebar';
+import { AppSidebar } from '@/components/AppSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
-import { AdminTabs } from '@/components/admin/AdminTabs';
-import { useAdminLogic } from '@/hooks/useAdminLogic';
+import { useAppNavigation } from '@/hooks/useAppNavigation';
 
 const Admin = () => {
   const { userRole, isLoading } = useAuth();
-  const {
-    activeTab,
-    setActiveTab,
-    isEditor,
-    canPublish,
-    isSuperAdmin,
-    getPageTitle,
-    handleTabChange
-  } = useAdminLogic();
+  const { activeSection } = useAppNavigation();
 
   if (isLoading) {
     return (
@@ -44,95 +33,54 @@ const Admin = () => {
     return <Navigate to="/" replace />;
   }
 
-  // Super-admin layout with horizontal tabs (no sidebar)
-  if (isSuperAdmin) {
-    return (
-      <div className="min-h-screen flex w-full">
-        <div className="flex-1 flex flex-col">
-          <AdminHeader isSuperAdmin={isSuperAdmin} pageTitle={getPageTitle()} />
-          
-          <div className="flex-1 overflow-auto p-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <AdminTabs />
-              
-              <TabsContent value="create-policy">
-                <CreatePolicy />
-              </TabsContent>
+  const isSuperAdmin = userRole === 'super-admin';
 
-              <TabsContent value="draft-policies">
-                <DraftPolicies />
-              </TabsContent>
+  const getPageTitle = () => {
+    if (userRole === 'super-admin') return 'Super Admin Dashboard';
+    if (userRole === 'publish') return 'Publisher Dashboard';
+    if (userRole === 'edit') return 'Editor Dashboard';
+    return 'Dashboard';
+  };
 
-              <TabsContent value="review-policies">
-                <ReviewPolicies />
-              </TabsContent>
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'create-policy':
+        return <CreatePolicy />;
+      case 'draft-policies':
+        return <DraftPolicies />;
+      case 'review-policies':
+        return <ReviewPolicies />;
+      case 'facility-policies':
+        return <FacilityPolicies />;
+      case 'policy-manuals':
+        return <PolicyManualGenerator />;
+      case 'users':
+        return <UserManagement />;
+      case 'assignments':
+        return <AssignmentManagement />;
+      case 'analytics':
+        return <SystemAnalytics />;
+      case 'moderation':
+        return <ContentModeration />;
+      default:
+        return <CreatePolicy />;
+    }
+  };
 
-              <TabsContent value="facility-policies">
-                <FacilityPolicies />
-              </TabsContent>
-
-              <TabsContent value="policy-manuals">
-                <PolicyManualGenerator />
-              </TabsContent>
-
-              <TabsContent value="users">
-                <UserManagement />
-              </TabsContent>
-
-              <TabsContent value="assignments">
-                <AssignmentManagement />
-              </TabsContent>
-
-              <TabsContent value="analytics">
-                <SystemAnalytics />
-              </TabsContent>
-
-              <TabsContent value="moderation">
-                <ContentModeration />
-              </TabsContent>
-            </Tabs>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Editor/Publisher layout with sidebar (existing behavior)
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <PolicySidebar 
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          isEditor={isEditor}
-          canPublish={canPublish}
-        />
-        
-        <div className="flex-1 flex flex-col ml-64">
-          <AdminHeader isSuperAdmin={isSuperAdmin} pageTitle={getPageTitle()} />
+        <AppSidebar />
+        <div className="flex-1 flex flex-col">
+          <div className="sticky top-0 z-10 bg-white border-b">
+            <AdminHeader isSuperAdmin={isSuperAdmin} pageTitle={getPageTitle()} />
+            <div className="flex items-center gap-2 px-4 py-2 border-b">
+              <SidebarTrigger />
+            </div>
+          </div>
           
           <div className="flex-1 overflow-auto p-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsContent value="create-policy">
-                <CreatePolicy />
-              </TabsContent>
-
-              <TabsContent value="draft-policies">
-                <DraftPolicies />
-              </TabsContent>
-
-              <TabsContent value="review-policies">
-                <ReviewPolicies />
-              </TabsContent>
-
-              <TabsContent value="facility-policies">
-                <FacilityPolicies />
-              </TabsContent>
-
-              <TabsContent value="policy-manuals">
-                <PolicyManualGenerator />
-              </TabsContent>
-            </Tabs>
+            {renderContent()}
           </div>
         </div>
       </div>

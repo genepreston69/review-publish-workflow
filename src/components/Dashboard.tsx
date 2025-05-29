@@ -1,4 +1,3 @@
-
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { DashboardTabs } from './DashboardTabs';
 import { PolicyManualGenerator } from './admin/policy/PolicyManualGenerator';
@@ -6,6 +5,7 @@ import { FacilityPoliciesGrid } from './admin/policy/FacilityPoliciesGrid';
 import { FacilityPoliciesEmptyState } from './admin/policy/FacilityPoliciesEmptyState';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
+import { useAppNavigation } from '@/hooks/useAppNavigation';
 
 // New imports for refactored components
 import { useContentManagement } from '@/hooks/useContentManagement';
@@ -16,6 +16,7 @@ import { ContentGrid } from './dashboard/ContentGrid';
 
 export const Dashboard = () => {
   const { currentUser, userRole } = useAuth();
+  const { activeSection } = useAppNavigation();
   const canCreate = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
   // Use custom hooks for data management
@@ -46,8 +47,97 @@ export const Dashboard = () => {
   const reviewContents = contents.filter(c => c.status === 'under-review');
   const publishedContents = contents.filter(c => c.status === 'published');
 
-  // Set default tab based on user role
-  const defaultTab = userRole === 'read-only' ? 'hr-policies' : 'all';
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'all':
+        return (
+          <ContentGrid
+            contents={contents}
+            onEdit={handleEdit}
+            onView={handleView}
+            onPublish={handlePublish}
+            emptyMessage={`No content found for your role (${userRole}). ${canCreate ? " Create your first piece of content to get started." : ""}`}
+          />
+        );
+
+      case 'drafts':
+        return (
+          <ContentGrid
+            contents={draftContents}
+            onEdit={handleEdit}
+            onView={handleView}
+            onPublish={handlePublish}
+            emptyMessage="No draft content found."
+          />
+        );
+
+      case 'review':
+        return (
+          <ContentGrid
+            contents={reviewContents}
+            onEdit={handleEdit}
+            onView={handleView}
+            onPublish={handlePublish}
+            emptyMessage="No content under review."
+          />
+        );
+
+      case 'published':
+        return (
+          <ContentGrid
+            contents={publishedContents}
+            onEdit={handleEdit}
+            onView={handleView}
+            onPublish={handlePublish}
+            emptyMessage="No published content found."
+          />
+        );
+
+      case 'hr-policies':
+        return hrPolicies.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">No HR policies found.</p>
+          </div>
+        ) : (
+          <FacilityPoliciesGrid
+            policies={hrPolicies}
+            isEditor={false}
+            canPublish={false}
+            isSuperAdmin={false}
+            onView={handlePolicyView}
+            onUpdateStatus={handlePolicyUpdateStatus}
+            onDelete={handlePolicyDelete}
+          />
+        );
+
+      case 'facility-policies':
+        return facilityPolicies.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">No facility policies found.</p>
+          </div>
+        ) : (
+          <FacilityPoliciesGrid
+            policies={facilityPolicies}
+            isEditor={false}
+            canPublish={false}
+            isSuperAdmin={false}
+            onView={handlePolicyView}
+            onUpdateStatus={handlePolicyUpdateStatus}
+            onDelete={handlePolicyDelete}
+          />
+        );
+
+      case 'policy-manuals':
+        return <PolicyManualGenerator />;
+
+      default:
+        return (
+          <div className="text-center py-12">
+            <p className="text-gray-500">Select a section from the sidebar to view content.</p>
+          </div>
+        );
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -56,97 +146,10 @@ export const Dashboard = () => {
         canCreate={canCreate}
         onCreateNew={handleCreateNew}
       />
-
-      <Tabs defaultValue={defaultTab} className="w-full">
-        <DashboardTabs />
-
-        {/* Only show these tabs for non-read-only users */}
-        {userRole !== 'read-only' && (
-          <>
-            <TabsContent value="all" className="mt-6">
-              <ContentGrid
-                contents={contents}
-                onEdit={handleEdit}
-                onView={handleView}
-                onPublish={handlePublish}
-                emptyMessage={`No content found for your role (${userRole}). ${canCreate ? " Create your first piece of content to get started." : ""}`}
-              />
-            </TabsContent>
-
-            <TabsContent value="drafts" className="mt-6">
-              <ContentGrid
-                contents={draftContents}
-                onEdit={handleEdit}
-                onView={handleView}
-                onPublish={handlePublish}
-                emptyMessage="No draft content found."
-              />
-            </TabsContent>
-
-            <TabsContent value="review" className="mt-6">
-              <ContentGrid
-                contents={reviewContents}
-                onEdit={handleEdit}
-                onView={handleView}
-                onPublish={handlePublish}
-                emptyMessage="No content under review."
-              />
-            </TabsContent>
-
-            <TabsContent value="published" className="mt-6">
-              <ContentGrid
-                contents={publishedContents}
-                onEdit={handleEdit}
-                onView={handleView}
-                onPublish={handlePublish}
-                emptyMessage="No published content found."
-              />
-            </TabsContent>
-          </>
-        )}
-
-        {/* HR Policies tab for read-only users */}
-        <TabsContent value="hr-policies" className="mt-6">
-          {hrPolicies.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No HR policies found.</p>
-            </div>
-          ) : (
-            <FacilityPoliciesGrid
-              policies={hrPolicies}
-              isEditor={false}
-              canPublish={false}
-              isSuperAdmin={false}
-              onView={handlePolicyView}
-              onUpdateStatus={handlePolicyUpdateStatus}
-              onDelete={handlePolicyDelete}
-            />
-          )}
-        </TabsContent>
-
-        {/* Facility Policies tab for read-only users */}
-        <TabsContent value="facility-policies" className="mt-6">
-          {facilityPolicies.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No facility policies found.</p>
-            </div>
-          ) : (
-            <FacilityPoliciesGrid
-              policies={facilityPolicies}
-              isEditor={false}
-              canPublish={false}
-              isSuperAdmin={false}
-              onView={handlePolicyView}
-              onUpdateStatus={handlePolicyUpdateStatus}
-              onDelete={handlePolicyDelete}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="policy-manuals" className="mt-6">
-          <PolicyManualGenerator />
-        </TabsContent>
-      </Tabs>
+      
+      <div className="mt-6">
+        {renderContent()}
+      </div>
     </div>
   );
 };
