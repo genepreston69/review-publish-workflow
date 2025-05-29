@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -80,7 +81,7 @@ export function ContentSidebar() {
         const { data, error } = await supabase
           .from('Policies')
           .select('*')
-          .eq('status', 'published') // Changed from 'active' to 'published'
+          .eq('status', 'published')
           .order('policy_number', { ascending: true });
 
         console.log('=== POLICIES RESPONSE ===', { data, error });
@@ -188,11 +189,11 @@ export function ContentSidebar() {
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
                               <CardTitle className="text-sm leading-tight">
-                                {policy.name || 'Untitled Policy'}
+                                {stripHtml(policy.name) || 'Untitled Policy'}
                               </CardTitle>
                               {policy.policy_number && (
                                 <CardDescription className="font-mono text-xs">
-                                  {policy.policy_number}
+                                  {stripHtml(policy.policy_number)}
                                 </CardDescription>
                               )}
                             </div>
@@ -201,7 +202,7 @@ export function ContentSidebar() {
                                 variant="secondary" 
                                 className={`text-xs ${getStatusColor(policy.status)}`}
                               >
-                                {policy.status}
+                                {stripHtml(policy.status)}
                               </Badge>
                             )}
                           </div>

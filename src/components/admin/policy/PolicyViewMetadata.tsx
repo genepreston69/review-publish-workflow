@@ -32,7 +32,7 @@ export function PolicyViewMetadata({ policy }: PolicyViewMetadataProps) {
           policy.status === 'under-review' || policy.status === 'under review' ? 'bg-blue-100 text-blue-800' :
           'bg-gray-100 text-gray-800'
         }`}>
-          {policy.status}
+          {stripHtml(policy.status)}
         </span>
       )}
     </div>

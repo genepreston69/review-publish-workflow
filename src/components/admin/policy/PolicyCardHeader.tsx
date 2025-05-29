@@ -1,7 +1,7 @@
 
 import { CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getStatusColor } from './policyUtils';
+import { getStatusColor, stripHtml } from './policyUtils';
 
 interface Policy {
   id: string;
@@ -20,11 +20,11 @@ export function PolicyCardHeader({ policy }: PolicyCardHeaderProps) {
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <CardTitle className="text-base">
-            {policy.name || 'Untitled Policy'}
+            {stripHtml(policy.name) || 'Untitled Policy'}
           </CardTitle>
           {policy.policy_number && (
             <CardDescription className="font-mono text-xs">
-              {policy.policy_number}
+              {stripHtml(policy.policy_number)}
             </CardDescription>
           )}
         </div>
@@ -33,7 +33,7 @@ export function PolicyCardHeader({ policy }: PolicyCardHeaderProps) {
             variant="secondary" 
             className={getStatusColor(policy.status)}
           >
-            {policy.status}
+            {stripHtml(policy.status)}
           </Badge>
         )}
       </div>
