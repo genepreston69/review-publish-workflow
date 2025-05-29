@@ -35,8 +35,8 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
   // Policies start after TOC pages: page (tocPages + 1)
   let policyStartPage = tocPages + 1;
   
-  // Generate TOC rows with correct page numbers
-  let tocRows = '';
+  // Generate all TOC rows first
+  let allTocRows = '';
   
   policies.forEach((policy, index) => {
     const policyTitle = policy.name || 'Untitled Policy';
@@ -45,7 +45,7 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
     
     console.log(`TOC Entry ${index + 1}: ${policyNumber} - ${policyTitle} (Page ${policyPageNumber})`);
     
-    tocRows += `<tr class="toc-row">
+    allTocRows += `<tr class="toc-row">
       <td class="toc-policy-number">${policyNumber}</td>
       <td class="toc-policy-title">
         <a href="#policy-${policy.id}" class="toc-link">${policyTitle}</a>
@@ -54,15 +54,40 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
     </tr>`;
   });
 
-  // Generate TOC pages - removed fallback page footer elements
+  // Calculate entries per page (leaving room for header on first page)
+  const entriesPerPage = 20;
+  const entriesOnFirstPage = entriesPerPage - 1; // Account for header
+  const entriesOnSubsequentPages = entriesPerPage;
+
+  // Split TOC rows into chunks for each page
+  const tocRowArray = allTocRows.match(/<tr class="toc-row">.*?<\/tr>/gs) || [];
+  const tocChunks: string[] = [];
+  
+  // First page chunk (with header space)
+  if (tocRowArray.length > 0) {
+    tocChunks.push(tocRowArray.slice(0, entriesOnFirstPage).join(''));
+    
+    // Subsequent page chunks
+    let remaining = tocRowArray.slice(entriesOnFirstPage);
+    while (remaining.length > 0) {
+      tocChunks.push(remaining.slice(0, entriesOnSubsequentPages).join(''));
+      remaining = remaining.slice(entriesOnSubsequentPages);
+    }
+  }
+
+  // Generate TOC pages with distributed content
   let tocContent = '';
   
   for (let i = 0; i < tocPages; i++) {
     const isFirstTocPage = i === 0;
+    const isLastTocPage = i === tocPages - 1;
     const pageBreakClass = isFirstTocPage ? '' : 'toc-page-break';
+    const lastPageBreakClass = isLastTocPage ? 'toc-final-page-break' : '';
+    
+    const currentChunk = tocChunks[i] || '';
     
     tocContent += `
-      <div class="toc-page ${pageBreakClass}">
+      <div class="toc-page ${pageBreakClass} ${lastPageBreakClass}">
         <div class="toc-content">
           ${isFirstTocPage ? '<h1 class="toc-main-title">Table of Contents</h1>' : ''}
           <div class="toc-table-container">
@@ -77,7 +102,7 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
                 </thead>
               ` : ''}
               <tbody>
-                ${i === 0 ? tocRows : ''}
+                ${currentChunk}
               </tbody>
             </table>
           </div>

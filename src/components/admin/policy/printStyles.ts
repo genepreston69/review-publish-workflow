@@ -88,6 +88,11 @@ export const getPrintStyles = (): string => {
         padding-bottom: 0;
       }
       
+      /* Force page break after final TOC page */
+      .toc-final-page-break {
+        page-break-after: always;
+      }
+      
       .policy-section {
         page-break-inside: avoid;
       }
