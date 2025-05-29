@@ -25,6 +25,9 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
       // Skip if any transaction is already marked as tracking
       if (transactions.some(tr => tr.getMeta('isTrackingChange'))) return null;
       
+      // Skip undo/redo transactions to avoid interfering with history
+      if (transactions.some(tr => tr.getMeta('history$'))) return null;
+      
       const { schema } = newState;
       const tr = newState.tr;
       let hasChanges = false;
@@ -39,7 +42,7 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
         if (!transaction.docChanged) continue;
         
         // Analyze steps to determine what changed
-        transaction.steps.forEach((step) => {
+        transaction.steps.forEach((step, stepIndex) => {
           if (step instanceof ReplaceStep) {
             const { from, to, slice } = step;
             
@@ -91,7 +94,7 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
                 }
               }
               
-              // Mark the inserted content
+              // Mark the inserted content with addition marks
               insertedContent.forEach((node, nodeOffset) => {
                 if (node.isText && node.text && node.text.trim()) {
                   console.log('Marking addition:', node.text);
@@ -102,9 +105,11 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
                     timestamp: new Date().toISOString(),
                   });
                   
-                  // Apply addition mark to the inserted text
+                  // Calculate the position of the inserted text in the new document
                   const textStart = insertPos + nodeOffset;
                   const textEnd = textStart + node.text.length;
+                  
+                  // Apply addition mark to the inserted text
                   tr.addMark(textStart, textEnd, additionMark);
                   hasChanges = true;
                 }
@@ -117,8 +122,12 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
       if (hasChanges) {
         // Mark this transaction as a tracking change to prevent infinite recursion
         tr.setMeta('isTrackingChange', true);
-        // Don't add to history - let the original transaction handle history
-        tr.setMeta('addToHistory', false);
+        
+        // IMPORTANT: Don't set addToHistory: false
+        // Let this transaction be part of the history so undo/redo works properly
+        // The tracking marks should be undone together with the original content change
+        
+        console.log('Returning tracking transaction with changes');
         return tr;
       }
       
