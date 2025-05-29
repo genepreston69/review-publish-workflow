@@ -10,9 +10,49 @@ export interface ChangeTrackingOptions {
 export const changeTrackingPluginKey = new PluginKey('changeTracking');
 
 export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
+  let typingTimeout: NodeJS.Timeout | null = null;
+  let lastContentLength = 0;
+  let lastCursorPosition = 0;
+
   return new Plugin({
     key: changeTrackingPluginKey,
     props: {
+      handleTextInput(view, from, to, text) {
+        if (!options.enabled) return false;
+
+        // Clear any existing timeout
+        if (typingTimeout) {
+          clearTimeout(typingTimeout);
+        }
+
+        // Set a debounced timeout to apply tracking after user stops typing
+        typingTimeout = setTimeout(() => {
+          const { state } = view;
+          const currentCursorPos = state.selection.from;
+          const insertEnd = from + text.length;
+          
+          // Only mark if this is actually new content (not just cursor movement)
+          if (text.trim()) {
+            console.log('Applying addition mark from', from, 'to', insertEnd);
+            
+            const markTr = state.tr.addMark(
+              from,
+              insertEnd,
+              state.schema.marks.addition.create({
+                changeId: generateChangeId(),
+                userInitials: options.userInitials,
+                timestamp: new Date().toISOString(),
+              })
+            );
+            
+            view.dispatch(markTr);
+          }
+        }, 500); // 500ms delay after user stops typing
+
+        // Return false to let TipTap handle the text insertion normally
+        return false;
+      },
+
       handleKeyDown(view, event) {
         if (!options.enabled) return false;
 
@@ -30,17 +70,15 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
             if (deletedText.trim()) {
               const { tr } = state;
               
-              // Apply suggestion mark to the selected range before deletion
+              // Apply deletion mark to the selected range before deletion
               tr.addMark(
                 from,
                 to,
-                state.schema.marks.suggestion.create({
+                state.schema.marks.deletion.create({
                   changeId: generateChangeId(),
                   userInitials: options.userInitials,
                   timestamp: new Date().toISOString(),
                   originalText: deletedText,
-                  suggestedText: '',
-                  changeType: 'delete',
                 })
               );
 
