@@ -1,16 +1,78 @@
-
 export const getManualStyles = (): string => {
   return `
-    /* Print-optimized styles */
+    /* Print-optimized styles with CSS @page margin boxes */
     @media print {
       @page {
-        margin: 0.75in;
+        margin: 0.75in 0.75in 1.25in 0.75in; /* top, right, bottom, left - extra bottom for footer */
         size: letter;
+        
+        /* CSS @page margin box for page numbers - bottom right */
+        @bottom-right {
+          content: counter(page);
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 10pt;
+          color: #666;
+          margin-bottom: 0.25in;
+          margin-right: 0;
+        }
       }
       
+      /* Reset page counter for the manual */
       body {
+        counter-reset: page 0;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+      }
+      
+      /* Cover page - no page number */
+      .cover-page {
+        page: cover;
+      }
+      
+      @page cover {
+        margin: 0.75in;
+        @bottom-right {
+          content: none; /* No page number on cover */
+        }
+      }
+      
+      /* TOC and Policy pages - with page numbers */
+      .toc-page, .policy-page {
+        page: content;
+      }
+      
+      @page content {
+        margin: 0.75in 0.75in 1.25in 0.75in;
+        @bottom-right {
+          content: counter(page);
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 10pt;
+          color: #666;
+          margin-bottom: 0.25in;
+          margin-right: 0;
+        }
+      }
+      
+      /* Fallback positioning for browsers that don't support @page margin boxes */
+      .page-footer {
+        position: fixed !important;
+        bottom: 0.5in !important;
+        right: 0.75in !important;
+        left: auto !important;
+        width: auto !important;
+        text-align: right !important;
+        background: transparent !important;
+        z-index: 9999 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        font-family: Arial, Helvetica, sans-serif !important;
+        font-size: 10pt !important;
+        color: #666 !important;
+      }
+
+      /* Hide fallback page numbers on cover */
+      .cover-page .page-footer {
+        display: none !important;
       }
       
       .page-break {
@@ -20,13 +82,15 @@ export const getManualStyles = (): string => {
       .policy-page, .cover-page, .toc-page {
         page-break-before: always;
         position: relative;
-        min-height: 8.5in;
-        padding-bottom: 1.25in;
+        min-height: calc(100vh - 1.5in); /* Account for footer space */
+        padding-bottom: 0.75in; /* Space for footer */
       }
       
       .cover-page {
         page-break-before: avoid;
         page-break-after: always;
+        min-height: 100vh;
+        padding-bottom: 0;
       }
       
       .policy-section {
@@ -37,12 +101,11 @@ export const getManualStyles = (): string => {
         page-break-inside: avoid;
       }
       
-      /* TOC Table Print Styles - Allow multi-page TOC */
+      /* TOC Table Print Styles */
       .toc-page {
         page-break-after: auto;
         min-height: auto;
         max-height: none;
-        padding-bottom: 1.25in;
       }
 
       .toc-table-container {
@@ -74,52 +137,29 @@ export const getManualStyles = (): string => {
         break-inside: avoid;
       }
 
-      /* TOC page break handling */
       .toc-page-break {
         page-break-before: always;
       }
 
-      /* Hide links for print but keep them functional */
       .toc-link {
         color: inherit !important;
         text-decoration: none !important;
       }
 
-      /* STANDARDIZED PAGE FOOTER - Bottom Right for ALL pages except cover */
-      .page-footer {
-        position: absolute !important;
-        bottom: 0.25in !important;
-        right: 0.75in !important;
-        left: auto !important;
-        width: auto !important;
-        text-align: right !important;
-        background: transparent;
-        z-index: 1000;
-        padding: 0 !important;
-        margin: 0 !important;
-      }
-
-      .page-number {
-        font-family: Arial, Helvetica, sans-serif !important;
-        font-size: 10pt !important;
-        color: #666 !important;
-        font-weight: normal !important;
-      }
-
-      /* Ensure content doesn't overlap with footer */
+      /* Content spacing to avoid footer overlap */
       .toc-content {
-        margin-bottom: 1.5in !important;
+        margin-bottom: 1in !important;
         padding-bottom: 0.5in !important;
       }
 
       .policy-content {
-        margin-bottom: 1.5in !important;
+        margin-bottom: 1in !important;
         padding-bottom: 0.5in !important;
       }
 
       .cover-content {
-        margin-bottom: 1.5in !important;
-        padding-bottom: 0.5in !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
       }
     }
     
@@ -255,7 +295,7 @@ export const getManualStyles = (): string => {
       color: #1565c0;
     }
 
-    /* STANDARDIZED PAGE FOOTER - Bottom Right for ALL pages except cover */
+    /* Fallback Page Footer - for browsers without @page margin box support */
     .page-footer {
       position: absolute;
       bottom: 0.5in;
@@ -276,7 +316,7 @@ export const getManualStyles = (): string => {
       font-weight: normal;
     }
     
-    /* TOC Table Styles - Board Standard */
+    /* TOC Table Styles */
     .toc-table {
       width: 100%;
       border-collapse: collapse;
