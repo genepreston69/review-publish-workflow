@@ -33,6 +33,12 @@ export const Dashboard = () => {
     handlePolicyDelete,
   } = useDashboardActions();
 
+  // Debug logging
+  console.log('=== DASHBOARD RENDER ===');
+  console.log('Active Section:', activeSection);
+  console.log('HR Policies count:', hrPolicies.length);
+  console.log('Facility Policies count:', facilityPolicies.length);
+
   if (isLoading || isLoadingPolicies) {
     return (
       <div className="p-8">
@@ -48,6 +54,9 @@ export const Dashboard = () => {
   const publishedContents = contents.filter(c => c.status === 'published');
 
   const renderContent = () => {
+    console.log('=== RENDER CONTENT ===');
+    console.log('Rendering for activeSection:', activeSection);
+    
     switch (activeSection) {
       case 'all':
         return (
@@ -94,6 +103,7 @@ export const Dashboard = () => {
         );
 
       case 'hr-policies':
+        console.log('=== RENDERING HR POLICIES ===', hrPolicies.length);
         return hrPolicies.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">No HR policies found.</p>
@@ -111,6 +121,7 @@ export const Dashboard = () => {
         );
 
       case 'facility-policies':
+        console.log('=== RENDERING FACILITY POLICIES ===', facilityPolicies.length);
         return facilityPolicies.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">No facility policies found.</p>

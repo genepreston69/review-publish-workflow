@@ -96,7 +96,13 @@ export function AppSidebar() {
             {items.map((item) => (
               <SidebarMenuItem key={item.id}>
                 <SidebarMenuButton 
-                  onClick={() => navigateToSection(item.id)}
+                  onClick={() => {
+                    console.log('=== SIDEBAR NAVIGATION ===');
+                    console.log('Clicked item:', item.id);
+                    console.log('Current activeSection:', activeSection);
+                    navigateToSection(item.id);
+                    console.log('After navigation call');
+                  }}
                   isActive={activeSection === item.id}
                   className="flex items-center gap-2 cursor-pointer"
                 >
