@@ -1,4 +1,3 @@
-
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Selection } from '@tiptap/pm/state';
 import { Editor } from '@tiptap/react';
@@ -23,8 +22,8 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
         
         // If text is being replaced (to > from), handle as replacement
         if (to > from) {
-          const deletedText = state.doc.textBetween(from, to);
-          if (deletedText.trim()) {
+          const deletedText = state.doc.textBetween(from, to, '\0', '\0');
+          if (deletedText.length > 0) {
             // This is a replacement operation
             // First, mark the existing text as deleted (without removing it)
             tr.addMark(
@@ -92,11 +91,11 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
         // Handle deletion keys (Backspace, Delete)
         if (event.key === 'Backspace' || event.key === 'Delete') {
           if (!selection.empty) {
-            // Handle selection deletion
+            // Handle selection deletion - work with full range
             const { from, to } = selection;
-            const deletedText = state.doc.textBetween(from, to);
+            const deletedText = state.doc.textBetween(from, to, '\0', '\0');
             
-            if (deletedText.trim()) {
+            if (deletedText.length > 0) {
               const { tr } = state;
               
               // Mark the selected text as deleted WITHOUT removing it
@@ -136,9 +135,9 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
             }
             
             if (deleteFrom < deleteTo) {
-              const deletedText = state.doc.textBetween(deleteFrom, deleteTo);
+              const deletedText = state.doc.textBetween(deleteFrom, deleteTo, '\0', '\0');
               
-              if (deletedText.trim()) {
+              if (deletedText.length > 0) {
                 const { tr } = state;
                 
                 // Mark the character as deleted WITHOUT removing it
