@@ -1,7 +1,7 @@
 
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from 'prosemirror-state';
-import { Node as ProseMirrorNode } from 'prosemirror-model';
+import { Step } from 'prosemirror-transform';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface ChangeTrackingOptions {
@@ -11,98 +11,56 @@ export interface ChangeTrackingOptions {
 
 export const changeTrackingPluginKey = new PluginKey('changeTracking');
 
-interface Change {
-  type: 'insert' | 'delete';
-  from: number;
-  to: number;
-  content?: string;
-  deletedContent?: string;
-}
-
-// Helper function to find text differences between two documents
-const findDocumentChanges = (oldDoc: ProseMirrorNode, newDoc: ProseMirrorNode): Change[] => {
-  const changes: Change[] = [];
-  
-  const oldText = oldDoc.textContent;
-  const newText = newDoc.textContent;
-  
-  if (oldText === newText) return changes;
-  
-  // Find the first and last positions where text differs
-  let start = 0;
-  while (start < Math.min(oldText.length, newText.length) && oldText[start] === newText[start]) {
-    start++;
-  }
-  
-  let oldEnd = oldText.length;
-  let newEnd = newText.length;
-  while (oldEnd > start && newEnd > start && oldText[oldEnd - 1] === newText[newEnd - 1]) {
-    oldEnd--;
-    newEnd--;
-  }
-  
-  // Determine change type
-  const deletedText = oldText.slice(start, oldEnd);
-  const insertedText = newText.slice(start, newEnd);
-  
-  if (insertedText && !deletedText) {
-    // Pure insertion
-    changes.push({
-      type: 'insert',
-      from: start,
-      to: start + insertedText.length,
-      content: insertedText,
-    });
-  } else if (deletedText && !insertedText) {
-    // Pure deletion - store metadata only, don't re-insert
-    changes.push({
-      type: 'delete',
-      from: start,
-      to: start,
-      deletedContent: deletedText,
-    });
-  } else if (deletedText && insertedText) {
-    // Replacement - treat as deletion (metadata) + insertion (marked)
-    changes.push({
-      type: 'delete',
-      from: start,
-      to: start,
-      deletedContent: deletedText,
-    });
-    changes.push({
-      type: 'insert',
-      from: start,
-      to: start + insertedText.length,
-      content: insertedText,
-    });
-  }
-  
-  return changes;
+// Helper to check if a step is an insertion
+const isInsertStep = (step: Step): boolean => {
+  return step.jsonID === 'replace' && (step as any).slice?.size > 0;
 };
 
-// Helper function to find the actual position in the new document
-const findPositionInNewDoc = (newDoc: ProseMirrorNode, textPosition: number): number => {
-  let pos = 0;
-  let textPos = 0;
-  
-  newDoc.descendants((node, nodePos) => {
-    if (node.isText) {
-      const nodeText = node.text || '';
-      if (textPos + nodeText.length >= textPosition) {
-        pos = nodePos + (textPosition - textPos);
-        return false; // Stop iteration
-      }
-      textPos += nodeText.length;
-    }
-    return true;
-  });
-  
-  return Math.max(1, pos);
+// Helper to check if a step is a deletion
+const isDeletionStep = (step: Step): boolean => {
+  return step.jsonID === 'replace' && (step as any).slice?.size === 0 && (step as any).to > (step as any).from;
+};
+
+// Helper to get step details
+const getStepDetails = (step: Step) => {
+  const stepData = step as any;
+  return {
+    from: stepData.from || 0,
+    to: stepData.to || 0,
+    slice: stepData.slice,
+  };
 };
 
 const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =>
   new Plugin({
     key: changeTrackingPluginKey,
+    
+    state: {
+      init() {
+        return {
+          pendingMarks: new Map(),
+          lastGroupTime: 0,
+        };
+      },
+      apply(tr, state) {
+        // Clear pending marks if this is a tracking transaction
+        if (tr.getMeta('isTrackingChange')) {
+          return {
+            ...state,
+            pendingMarks: new Map(),
+          };
+        }
+        
+        // Group rapid typing by time
+        const now = Date.now();
+        const isGrouped = now - state.lastGroupTime < 500; // 500ms grouping window
+        
+        return {
+          ...state,
+          lastGroupTime: isGrouped ? state.lastGroupTime : now,
+        };
+      },
+    },
     
     appendTransaction(transactions, oldState, newState) {
       // Only process when tracking is enabled
@@ -124,57 +82,100 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
         return null;
       }
       
-      // Find what changed by comparing documents
-      const changes = findDocumentChanges(oldState.doc, newState.doc);
-      
-      if (changes.length === 0) return null;
-      
-      console.log('Document changes detected:', changes);
-      
       const tr = newState.tr;
       let hasChanges = false;
       
-      // Process each change - ONLY ADD MARKS, NO STRUCTURAL CHANGES
-      changes.forEach((change) => {
-        const changeId = uuidv4();
-        const timestamp = new Date().toISOString();
+      // Process each transaction's steps
+      for (const transaction of transactions) {
+        if (!transaction.steps.length) continue;
         
-        if (change.type === 'insert' && change.content) {
-          // Handle insertion - apply addition mark to the inserted content
-          const startPos = findPositionInNewDoc(newState.doc, change.from);
-          const endPos = startPos + change.content.length;
+        // Group consecutive steps by type and position
+        const stepGroups: { steps: Step[]; type: 'insert' | 'delete' | 'other' }[] = [];
+        let currentGroup: { steps: Step[]; type: 'insert' | 'delete' | 'other' } | null = null;
+        
+        for (const step of transaction.steps) {
+          let stepType: 'insert' | 'delete' | 'other' = 'other';
           
-          // Ensure positions are valid
-          if (startPos >= 1 && endPos <= newState.doc.content.size && startPos < endPos) {
-            console.log('Marking insertion:', { content: change.content, startPos, endPos });
-            
-            const additionMark = schema.marks.addition.create({
-              changeId,
-              userInitials: options.userInitials,
-              timestamp,
-            });
-            
-            tr.addMark(startPos, endPos, additionMark);
-            hasChanges = true;
+          if (isInsertStep(step)) {
+            stepType = 'insert';
+          } else if (isDeletionStep(step)) {
+            stepType = 'delete';
           }
           
-        } else if (change.type === 'delete' && change.deletedContent) {
-          // Handle deletion - DO NOT re-insert text, only log metadata
-          console.log('Deletion detected (metadata only):', { 
-            content: change.deletedContent, 
-            position: change.from,
-            changeId,
-            userInitials: options.userInitials,
-            timestamp 
-          });
-          
-          // Store deletion metadata for future use (could be used for side panel, etc.)
-          // For now, we just log it - no structural changes to the document
-          
-          // TODO: Could store in plugin state for retrieval by UI components
-          // TODO: Could add deletion marks to adjacent content as visual indicators
+          if (!currentGroup || currentGroup.type !== stepType) {
+            currentGroup = { steps: [step], type: stepType };
+            stepGroups.push(currentGroup);
+          } else {
+            currentGroup.steps.push(step);
+          }
         }
-      });
+        
+        // Process each group
+        for (const group of stepGroups) {
+          if (group.type === 'insert') {
+            // Handle insertions - apply addition mark to the inserted content
+            const changeId = uuidv4();
+            const timestamp = new Date().toISOString();
+            
+            // Calculate the range for all insertions in this group
+            let groupFrom = Infinity;
+            let groupTo = 0;
+            let totalInsertedLength = 0;
+            
+            for (const step of group.steps) {
+              const details = getStepDetails(step);
+              groupFrom = Math.min(groupFrom, details.from);
+              if (details.slice && details.slice.content) {
+                totalInsertedLength += details.slice.content.size;
+              }
+            }
+            
+            groupTo = groupFrom + totalInsertedLength;
+            
+            // Ensure positions are valid in the new document
+            if (groupFrom >= 1 && groupTo <= newState.doc.content.size && groupFrom < groupTo) {
+              console.log('Marking insertion group:', { 
+                from: groupFrom, 
+                to: groupTo, 
+                length: totalInsertedLength,
+                changeId 
+              });
+              
+              const additionMark = schema.marks.addition.create({
+                changeId,
+                userInitials: options.userInitials,
+                timestamp,
+              });
+              
+              tr.addMark(groupFrom, groupTo, additionMark);
+              hasChanges = true;
+            }
+            
+          } else if (group.type === 'delete') {
+            // Handle deletions - track metadata only, no re-insertion
+            const changeId = uuidv4();
+            const timestamp = new Date().toISOString();
+            
+            for (const step of group.steps) {
+              const details = getStepDetails(step);
+              const deletedLength = details.to - details.from;
+              
+              console.log('Deletion detected (metadata only):', { 
+                from: details.from,
+                to: details.to,
+                deletedLength,
+                changeId,
+                userInitials: options.userInitials,
+                timestamp 
+              });
+              
+              // Store deletion metadata for future use
+              // Could be used for side panel, comments, etc.
+              // For now, we just log it - no structural changes to the document
+            }
+          }
+        }
+      }
       
       if (hasChanges) {
         // Mark this transaction as a tracking change to prevent infinite recursion
