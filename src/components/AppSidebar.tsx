@@ -1,3 +1,4 @@
+
 import {
   Sidebar,
   SidebarContent,
@@ -123,12 +124,12 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b p-4">
-        <div className="flex items-center">
+      <SidebarHeader className="border-b p-6">
+        <div className="flex items-center justify-center">
           <img 
             src="/lovable-uploads/574646d6-6de7-444f-a9a2-327c1a816521.png" 
             alt="Recovery Point West Virginia" 
-            className="h-8 w-auto"
+            className="h-16 w-auto max-w-full"
           />
         </div>
       </SidebarHeader>
