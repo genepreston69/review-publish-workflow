@@ -32,7 +32,7 @@ const Index = () => {
               <div className="w-full px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                   <div className="flex items-center">
-                    <h1 className="text-2xl font-bold text-gray-900">Content Dashboard</h1>
+                    <h1 className="text-3xl font-bold text-gray-900">Content Dashboard</h1>
                   </div>
                   
                   {currentUser && userRole && (
