@@ -28,7 +28,7 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
   const auth = useAuth();
   const [userInitials, setUserInitials] = useState<string>('U');
-  const [trackingEnabled, setTrackingEnabled] = useState<boolean>(true);
+  const [trackingEnabled, setTrackingEnabled] = useState<boolean>(false);
   const [isJsonMode, setIsJsonMode] = useState<boolean>(false);
 
   // Load user initials from profile
