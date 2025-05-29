@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { User, LogOut, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Dashboard } from '@/components/Dashboard';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 
 const Index = () => {
@@ -65,9 +65,6 @@ const Index = () => {
                 </div>
               </div>
             </header>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white border-b">
-              <SidebarTrigger />
-            </div>
           </div>
           <div className="flex-1 overflow-auto">
             <Dashboard />

@@ -1,5 +1,5 @@
 
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import { UserManagement } from '@/components/admin/UserManagement';
@@ -80,9 +80,6 @@ const Admin = () => {
         <div className="flex-1 flex flex-col">
           <div className="sticky top-0 z-10">
             <AdminHeader isSuperAdmin={isSuperAdmin} pageTitle={getPageTitle()} />
-            <div className="flex items-center gap-2 px-4 py-2 bg-white border-b">
-              <SidebarTrigger />
-            </div>
           </div>
           
           <div className="flex-1 overflow-auto p-6">
