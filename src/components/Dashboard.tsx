@@ -33,12 +33,6 @@ export const Dashboard = () => {
     handlePolicyDelete,
   } = useDashboardActions();
 
-  // Debug logging to identify the issue
-  console.log('=== DASHBOARD DEBUG ===');
-  console.log('Active Section:', activeSection);
-  console.log('HR Policies:', hrPolicies.map(p => ({ id: p.id, policy_number: p.policy_number, name: p.name })));
-  console.log('Facility Policies:', facilityPolicies.map(p => ({ id: p.id, policy_number: p.policy_number, name: p.name })));
-
   if (isLoading || isLoadingPolicies) {
     return (
       <div className="p-8">
@@ -100,7 +94,6 @@ export const Dashboard = () => {
         );
 
       case 'hr-policies':
-        console.log('=== RENDERING HR POLICIES ===', hrPolicies.length);
         return hrPolicies.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">No HR policies found.</p>
@@ -118,7 +111,6 @@ export const Dashboard = () => {
         );
 
       case 'facility-policies':
-        console.log('=== RENDERING FACILITY POLICIES ===', facilityPolicies.length);
         return facilityPolicies.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">No facility policies found.</p>
