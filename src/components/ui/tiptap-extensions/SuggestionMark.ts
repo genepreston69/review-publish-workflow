@@ -79,14 +79,18 @@ export const Suggestion = Mark.create<SuggestionOptions, SuggestionAttributes>({
     
     // Base class for styling
     let baseClass = `suggestion-${attrs.changeType}`;
+    let tooltipText = '';
     
-    // Add specific styling based on change type
+    // Add specific styling and tooltip based on change type
     if (attrs.changeType === 'insert') {
       baseClass += ' font-bold text-green-700 bg-green-50';
+      tooltipText = 'Addition';
     } else if (attrs.changeType === 'delete') {
       baseClass += ' line-through text-red-700 bg-red-50';
+      tooltipText = 'Deletion';
     } else if (attrs.changeType === 'replace') {
       baseClass += ' font-bold text-blue-700 bg-blue-50';
+      tooltipText = 'Replace';
     }
     
     return [
@@ -101,7 +105,7 @@ export const Suggestion = Mark.create<SuggestionOptions, SuggestionAttributes>({
           'data-timestamp': attrs.timestamp,
           'data-change-type': attrs.changeType,
           class: baseClass,
-          title: `${attrs.changeType} by ${attrs.userInitials}`,
+          title: tooltipText,
         },
         this.options.HTMLAttributes,
         HTMLAttributes

@@ -16,16 +16,22 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
       handleTextInput(view, from, to, text) {
         if (!options.enabled) return false;
 
+        console.log('handleTextInput called:', { from, to, text, textLength: text.length });
+
         const { state, dispatch } = view;
         const { tr } = state;
         
         // If text is being replaced (to > from), handle as replacement
         if (to > from) {
           const deletedText = state.doc.textBetween(from, to);
+          console.log('Replacement detected:', { deletedText, newText: text });
+          
           if (deletedText.trim()) {
             // Insert the new text
             tr.insertText(text, from, to);
             const insertEnd = from + text.length;
+            
+            console.log('Applying replacement mark from', from, 'to', insertEnd);
             
             // Apply suggestion mark to the ENTIRE inserted text range in one operation
             tr.addMark(
@@ -45,6 +51,8 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
             return true;
           }
         }
+
+        console.log('Insert detected, applying mark from', from, 'to', from + text.length);
 
         // Insert the new text
         tr.insertText(text, from, to);
@@ -79,6 +87,8 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
           if (!selection.empty) {
             const { from, to } = selection;
             const deletedText = state.doc.textBetween(from, to);
+            
+            console.log('Deletion detected:', { from, to, deletedText });
             
             if (deletedText.trim()) {
               const { tr } = state;

@@ -94,12 +94,12 @@ export const Deletion = Mark.create<DeletionOptions>({
         {
           'data-change-type': 'deletion',
           class: 'tracked-deletion line-through text-red-700 bg-red-50',
-          title: userInitials ? `Deleted by ${userInitials}` : 'Deletion',
+          title: 'Deletion',
         },
         this.options.HTMLAttributes,
         otherAttributes
       ),
-      0, // Content goes here - no nested elements that could cause per-character rendering
+      0,
     ];
   },
 

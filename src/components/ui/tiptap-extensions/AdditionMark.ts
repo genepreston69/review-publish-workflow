@@ -82,12 +82,12 @@ export const Addition = Mark.create<AdditionOptions>({
         {
           'data-change-type': 'addition',
           class: 'tracked-addition font-bold text-green-700 bg-green-50',
-          title: userInitials ? `Added by ${userInitials}` : 'Addition',
+          title: 'Addition',
         },
         this.options.HTMLAttributes,
         otherAttributes
       ),
-      0, // Content goes here - no nested elements that could cause per-character rendering
+      0,
     ];
   },
 
