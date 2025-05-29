@@ -1,4 +1,5 @@
 
+
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -149,14 +150,14 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
         const currentState = editor.state;
         const currentPlugins = currentState.plugins;
         const filteredPlugins = currentPlugins.filter(
-          plugin => plugin.key !== changeTrackingPluginKey
+          plugin => plugin.spec?.key !== changeTrackingPluginKey
         );
         
         // Reconfigure editor with filtered plugins
         const newState = currentState.reconfigure({
           plugins: filteredPlugins
         });
-        editor.updateState(newState);
+        editor.view.updateState(newState);
         trackingPluginRef.current = null;
       }
 
@@ -181,13 +182,13 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
           const currentState = editor.state;
           const currentPlugins = currentState.plugins;
           const filteredPlugins = currentPlugins.filter(
-            plugin => plugin.key !== changeTrackingPluginKey
+            plugin => plugin.spec?.key !== changeTrackingPluginKey
           );
           
           const newState = currentState.reconfigure({
             plugins: filteredPlugins
           });
-          editor.updateState(newState);
+          editor.view.updateState(newState);
         } catch (error) {
           console.error('Error cleaning up tracking plugin:', error);
         }
@@ -440,3 +441,4 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
     </div>
   );
 }
+
