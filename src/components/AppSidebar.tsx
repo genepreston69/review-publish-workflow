@@ -95,7 +95,7 @@ export function AppSidebar() {
     
     return (
       <SidebarGroup>
-        <SidebarGroupLabel className="text-base font-bold">{sectionTitle}</SidebarGroupLabel>
+        <SidebarGroupLabel className="text-base font-bold text-black">{sectionTitle}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             {items.map((item) => (
