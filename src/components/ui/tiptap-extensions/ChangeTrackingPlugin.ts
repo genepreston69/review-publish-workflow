@@ -88,8 +88,9 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
         // Only intercept when tracking is enabled
         if (!options.enabled) return false;
         
-        // IMPORTANT: Don't intercept undo/redo shortcuts at all when tracking is enabled
+        // NEVER intercept undo/redo shortcuts - let them pass through
         if ((event.ctrlKey || event.metaKey) && (event.key === 'z' || event.key === 'y')) {
+          console.log('Undo/Redo shortcut detected, allowing default behavior');
           return false;
         }
         

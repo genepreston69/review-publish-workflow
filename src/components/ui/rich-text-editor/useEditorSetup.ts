@@ -55,10 +55,10 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
         bulletList: false,
         orderedList: false,
         listItem: false,
-        // Disable default history to configure it separately
+        // Disable default history to configure it separately for better control
         history: false,
       }),
-      // Configure history extension explicitly
+      // Configure history extension with proper settings
       History.configure({
         depth: 100,
         newGroupDelay: 500,
@@ -118,6 +118,9 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
     parseOptions: {
       preserveWhitespace: 'full',
     },
+    // Enable undo support explicitly
+    enableInputRules: true,
+    enablePasteRules: true,
   }, [extensions, getInitialContent, isJsonMode, onChange]);
 
   return editor;
