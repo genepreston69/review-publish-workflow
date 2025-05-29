@@ -1,19 +1,36 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { DashboardTabs } from './DashboardTabs';
 import { ContentCard } from './ContentCard';
 import { PolicyManualGenerator } from './admin/policy/PolicyManualGenerator';
+import { FacilityPoliciesGrid } from './admin/policy/FacilityPoliciesGrid';
+import { FacilityPoliciesEmptyState } from './admin/policy/FacilityPoliciesEmptyState';
 import { useAuth } from '@/hooks/useAuth';
 import { Content } from '@/types/content';
 import { Plus, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+interface Policy {
+  id: string;
+  name: string | null;
+  policy_number: string | null;
+  policy_text: string | null;
+  procedure: string | null;
+  purpose: string | null;
+  reviewer: string | null;
+  status: string | null;
+  created_at: string;
+}
+
 export const Dashboard = () => {
   const { currentUser, userRole } = useAuth();
   const [contents, setContents] = useState<Content[]>([]);
+  const [publishedPolicies, setPublishedPolicies] = useState<Policy[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
   const { toast } = useToast();
   
   const canCreate = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
@@ -83,10 +100,50 @@ export const Dashboard = () => {
     }
   };
 
+  const fetchPublishedPolicies = async () => {
+    if (userRole !== 'read-only') return;
+
+    try {
+      console.log('=== FETCHING PUBLISHED POLICIES FOR READ-ONLY USER ===');
+      setIsLoadingPolicies(true);
+      
+      const { data, error } = await supabase
+        .from('Policies')
+        .select('*')
+        .eq('status', 'published')
+        .order('policy_number', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching published policies:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load published policies.",
+        });
+        return;
+      }
+
+      console.log('=== PUBLISHED POLICIES FETCHED ===', data);
+      setPublishedPolicies(data || []);
+    } catch (error) {
+      console.error('Error fetching published policies:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred.",
+      });
+    } finally {
+      setIsLoadingPolicies(false);
+    }
+  };
+
   useEffect(() => {
     if (currentUser && userRole) {
       console.log('=== DASHBOARD USEEFFECT: FETCHING CONTENT ===', { currentUser: !!currentUser, userRole });
       fetchContents();
+      if (userRole === 'read-only') {
+        fetchPublishedPolicies();
+      }
     }
   }, [currentUser, userRole]);
 
@@ -158,7 +215,32 @@ export const Dashboard = () => {
     }
   };
 
-  if (isLoading) {
+  // Policy handlers for read-only users
+  const handlePolicyView = (policyId: string) => {
+    console.log('View policy:', policyId);
+    toast({
+      title: "Feature coming soon",
+      description: "Policy viewing will be implemented next.",
+    });
+  };
+
+  const handlePolicyUpdateStatus = (policyId: string, newStatus: string) => {
+    console.log('Update policy status:', policyId, newStatus);
+    toast({
+      title: "Feature coming soon",
+      description: "Policy updating will be implemented next.",
+    });
+  };
+
+  const handlePolicyDelete = (policyId: string) => {
+    console.log('Delete policy:', policyId);
+    toast({
+      title: "Feature coming soon",
+      description: "Policy deletion will be implemented next.",
+    });
+  };
+
+  if (isLoading || (userRole === 'read-only' && isLoadingPolicies)) {
     return (
       <div className="p-8">
         <div className="flex justify-center items-center h-64">
@@ -264,22 +346,40 @@ export const Dashboard = () => {
         )}
 
         <TabsContent value="published" className="mt-6">
-          {publishedContents.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No published content found.</p>
-            </div>
+          {userRole === 'read-only' ? (
+            // For read-only users, show published policies from Policies table
+            publishedPolicies.length === 0 ? (
+              <FacilityPoliciesEmptyState />
+            ) : (
+              <FacilityPoliciesGrid
+                policies={publishedPolicies}
+                isEditor={false}
+                canPublish={false}
+                isSuperAdmin={false}
+                onView={handlePolicyView}
+                onUpdateStatus={handlePolicyUpdateStatus}
+                onDelete={handlePolicyDelete}
+              />
+            )
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {publishedContents.map((content) => (
-                <ContentCard
-                  key={content.id}
-                  content={content}
-                  onEdit={handleEdit}
-                  onView={handleView}
-                  onPublish={handlePublish}
-                />
-              ))}
-            </div>
+            // For other users, show published content from content table
+            publishedContents.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">No published content found.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {publishedContents.map((content) => (
+                  <ContentCard
+                    key={content.id}
+                    content={content}
+                    onEdit={handleEdit}
+                    onView={handleView}
+                    onPublish={handlePublish}
+                  />
+                ))}
+              </div>
+            )
           )}
         </TabsContent>
 
