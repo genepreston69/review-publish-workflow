@@ -18,14 +18,25 @@ export const generateManualHTML = (type: ManualType, policies: Policy[], compila
   
   const manualTitle = `Recovery Point West Virginia ${type} Policy Manual`;
   
-  // Calculate TOC pages needed (approximately 20-25 entries per page)
-  const entriesPerPage = 20;
-  const tocPages = Math.max(1, Math.ceil(policies.length / entriesPerPage));
+  // Calculate TOC pages needed - accounting for header space on first page
+  const entriesOnFirstPage = 19; // 20 - 1 for header space
+  const entriesOnSubsequentPages = 20;
+  
+  let tocPages: number;
+  if (policies.length <= entriesOnFirstPage) {
+    tocPages = 1;
+  } else {
+    // First page + additional pages for remaining entries
+    tocPages = 1 + Math.ceil((policies.length - entriesOnFirstPage) / entriesOnSubsequentPages);
+  }
   
   // Calculate total pages: Cover (1) + TOC pages + Policy pages
   const totalPages = 1 + tocPages + policies.length;
   
   console.log('TOC Pages Calculated:', tocPages);
+  console.log('- Entries on first page:', Math.min(policies.length, entriesOnFirstPage));
+  console.log('- Remaining entries:', Math.max(0, policies.length - entriesOnFirstPage));
+  console.log('- Additional pages needed:', Math.max(0, Math.ceil((policies.length - entriesOnFirstPage) / entriesOnSubsequentPages)));
   console.log('Total Pages Calculated:', totalPages);
   console.log('Policy pages will start on page:', 1 + tocPages + 1);
   
