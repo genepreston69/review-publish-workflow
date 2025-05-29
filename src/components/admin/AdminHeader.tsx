@@ -1,6 +1,9 @@
 
-import { Header } from '@/components/Header';
-import { Shield } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { RoleBadge } from '@/components/RoleBadge';
+import { useAuth } from '@/hooks/useAuth';
+import { User, LogOut, Shield } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface AdminHeaderProps {
   isSuperAdmin: boolean;
@@ -8,15 +11,61 @@ interface AdminHeaderProps {
 }
 
 export function AdminHeader({ isSuperAdmin, pageTitle }: AdminHeaderProps) {
+  const { currentUser, userRole, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+  };
+
+  // Get user name from metadata or email
+  const userName = currentUser?.user_metadata?.name || 
+                  currentUser?.email?.split('@')[0] || 
+                  'User';
+
   return (
-    <div className="bg-white border-b">
-      <Header />
-      <div className="flex items-center gap-2 px-4 py-2">
-        <div className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-purple-600" />
-          <h1 className="text-lg font-semibold">{pageTitle}</h1>
+    <header className="border-b bg-white">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          <div className="flex items-center gap-4">
+            <Link to="/" className="flex items-center hover:opacity-80 transition-opacity">
+              <img 
+                src="/lovable-uploads/574646d6-6de7-444f-a9a2-327c1a816521.png" 
+                alt="Recovery Point West Virginia" 
+                className="h-10 w-auto"
+              />
+            </Link>
+            <h1 className="text-xl font-semibold text-gray-900">{pageTitle}</h1>
+          </div>
+          
+          {currentUser && userRole && (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-gray-500" />
+                <span className="text-sm font-medium">{userName}</span>
+                <RoleBadge role={userRole} />
+              </div>
+              <div className="flex items-center gap-2">
+                {userRole === 'super-admin' && (
+                  <Link to="/admin">
+                    <Button variant="outline" size="sm">
+                      <Shield className="w-4 h-4 mr-1" />
+                      Admin
+                    </Button>
+                  </Link>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="w-4 h-4 mr-1" />
+                  Logout
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </header>
   );
 }

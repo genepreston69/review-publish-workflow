@@ -78,9 +78,9 @@ const Admin = () => {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
-          <div className="sticky top-0 z-10 bg-white border-b">
+          <div className="sticky top-0 z-10">
             <AdminHeader isSuperAdmin={isSuperAdmin} pageTitle={getPageTitle()} />
-            <div className="flex items-center gap-2 px-4 py-2 border-b">
+            <div className="flex items-center gap-2 px-4 py-2 bg-white border-b">
               <SidebarTrigger />
             </div>
           </div>
