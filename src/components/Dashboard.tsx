@@ -1,5 +1,4 @@
 import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { DashboardTabs } from './DashboardTabs';
 import { PolicyManualGenerator } from './admin/policy/PolicyManualGenerator';
 import { FacilityPoliciesGrid } from './admin/policy/FacilityPoliciesGrid';
 import { FacilityPoliciesEmptyState } from './admin/policy/FacilityPoliciesEmptyState';
