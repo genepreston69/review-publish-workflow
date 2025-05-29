@@ -2,6 +2,50 @@
 export function EditorStyles() {
   return (
     <style>{`
+      /* Suggestion styling */
+      .ProseMirror .suggestion-insert {
+        font-weight: bold;
+        color: #0074D9;
+        position: relative;
+      }
+      
+      .ProseMirror .suggestion-delete {
+        text-decoration: line-through;
+        color: #B22222;
+        opacity: 0.8;
+        position: relative;
+      }
+      
+      .ProseMirror .suggestion-replace {
+        position: relative;
+      }
+      
+      .ProseMirror .suggestion-replace::before {
+        content: attr(data-original-text);
+        text-decoration: line-through;
+        color: #B22222;
+        opacity: 0.8;
+        margin-right: 2px;
+      }
+      
+      .ProseMirror .suggestion-replace {
+        font-weight: bold;
+        color: #0074D9;
+      }
+      
+      /* User initials styling */
+      .ProseMirror .suggestion-insert::after,
+      .ProseMirror .suggestion-delete::after,
+      .ProseMirror .suggestion-replace::after {
+        content: " [" attr(data-user-initials) "]";
+        font-size: 0.65em;
+        color: #888;
+        font-weight: normal;
+        vertical-align: super;
+        margin-left: 1px;
+      }
+      
+      /* Legacy tracked changes support - keeping for backward compatibility */
       .tracked-addition {
         position: relative;
       }
@@ -83,6 +127,27 @@ export function EditorStyles() {
       }
       
       @media print {
+        .suggestion-insert {
+          font-weight: bold !important;
+          color: #0074D9 !important;
+        }
+        
+        .suggestion-delete {
+          text-decoration: line-through !important;
+          color: #B22222 !important;
+        }
+        
+        .suggestion-replace::before {
+          text-decoration: line-through !important;
+          color: #B22222 !important;
+        }
+        
+        .suggestion-replace {
+          font-weight: bold !important;
+          color: #0074D9 !important;
+        }
+        
+        /* Legacy support */
         .tracked-addition strong {
           background-color: transparent !important;
           font-weight: bold;

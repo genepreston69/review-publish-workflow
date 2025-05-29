@@ -1,4 +1,3 @@
-
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -8,6 +7,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import ListItem from '@tiptap/extension-list-item';
 import BulletList from '@tiptap/extension-bullet-list';
 import OrderedList from '@tiptap/extension-ordered-list';
+import { Suggestion } from '../tiptap-extensions/SuggestionMark';
 import { Addition } from '../tiptap-extensions/AdditionMark';
 import { Deletion } from '../tiptap-extensions/DeletionMark';
 import { useMemo } from 'react';
@@ -77,6 +77,9 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
+      // New unified suggestion system
+      Suggestion,
+      // Keep legacy extensions for backward compatibility
       Addition,
       Deletion,
     ],

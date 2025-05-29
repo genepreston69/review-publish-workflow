@@ -20,35 +20,46 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
         const { state, dispatch } = view;
         const { tr } = state;
         
-        // If text is being replaced (to > from), mark the old text as deleted
+        // If text is being replaced (to > from), handle as replacement
         if (to > from) {
           const deletedText = state.doc.textBetween(from, to);
           if (deletedText.trim()) {
-            // Apply deletion mark to the existing text
+            // This is a replacement operation
+            tr.insertText(text, from, to);
+            const insertEnd = from + text.length;
+            
             tr.addMark(
               from,
-              to,
-              state.schema.marks.deletion.create({
+              insertEnd,
+              state.schema.marks.suggestion.create({
                 changeId: generateChangeId(),
                 userInitials: options.userInitials,
                 timestamp: new Date().toISOString(),
                 originalText: deletedText,
+                suggestedText: text,
+                changeType: 'replace',
               })
             );
+
+            dispatch(tr);
+            return true;
           }
         }
 
-        // Insert the new text with addition mark
+        // Insert the new text with insertion suggestion
         tr.insertText(text, from, to);
         const insertEnd = from + text.length;
         
         tr.addMark(
           from,
           insertEnd,
-          state.schema.marks.addition.create({
+          state.schema.marks.suggestion.create({
             changeId: generateChangeId(),
             userInitials: options.userInitials,
             timestamp: new Date().toISOString(),
+            originalText: '',
+            suggestedText: text,
+            changeType: 'insert',
           })
         );
 
@@ -75,11 +86,13 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
               tr.addMark(
                 from,
                 to,
-                state.schema.marks.deletion.create({
+                state.schema.marks.suggestion.create({
                   changeId: generateChangeId(),
                   userInitials: options.userInitials,
                   timestamp: new Date().toISOString(),
                   originalText: deletedText,
+                  suggestedText: '',
+                  changeType: 'delete',
                 })
               );
 
