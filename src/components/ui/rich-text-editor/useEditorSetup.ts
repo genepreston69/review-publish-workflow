@@ -58,10 +58,15 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
         // Disable default history to configure it separately for better control
         history: false,
       }),
-      // Configure history extension with proper settings
+      // Configure history extension with proper settings for change tracking
       History.configure({
         depth: 100,
         newGroupDelay: 500,
+        // Ensure tracking transactions are properly handled
+        filterTransaction: (transaction) => {
+          // Don't add tracking transactions to history separately
+          return !transaction.getMeta('isTrackingTransaction');
+        },
       }),
       // Configure list extensions separately for better control
       ListItem.configure({
@@ -118,7 +123,7 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
     parseOptions: {
       preserveWhitespace: 'full',
     },
-    // Enable undo support explicitly
+    // Enable all input handling for natural behavior
     enableInputRules: true,
     enablePasteRules: true,
   }, [extensions, getInitialContent, isJsonMode, onChange]);
