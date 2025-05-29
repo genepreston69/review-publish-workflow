@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,12 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Policy-specific colors (exception to main color scheme)
+				policy: {
+					success: '#22c55e',
+					warning: '#eab308', 
+					danger: '#ef4444'
 				}
 			},
 			borderRadius: {

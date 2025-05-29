@@ -37,7 +37,7 @@ export function PolicyCardActions({
               size="sm"
               variant="outline"
               onClick={() => onView(policyId)}
-              className="flex-1 text-xs border-gray-300 text-gray-600 hover:bg-gray-50"
+              className="flex-1 text-xs"
             >
               <Eye className="w-3 h-3 mr-1" />
               View
@@ -67,7 +67,7 @@ export function PolicyCardActions({
             size="sm"
             variant="outline"
             onClick={() => onUpdateStatus(policyId, 'draft')}
-            className="w-full text-xs border-orange-300 text-orange-600 hover:bg-orange-50 bg-orange-50"
+            className="w-full text-xs bg-yellow-50 border-yellow-300 text-yellow-700 hover:bg-yellow-100"
           >
             <RotateCcw className="w-3 h-3 mr-1" />
             Return to Draft
@@ -93,7 +93,7 @@ export function PolicyCardActions({
             <Button
               size="sm"
               onClick={() => onUpdateStatus(policyId, 'published')}
-              className="flex-1 bg-green-600 hover:bg-green-700 text-xs"
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs"
             >
               <CheckCircle className="w-3 h-3 mr-1" />
               Publish
@@ -102,7 +102,7 @@ export function PolicyCardActions({
               size="sm"
               variant="outline"
               onClick={() => onUpdateStatus(policyId, 'archived')}
-              className="flex-1 border-red-300 text-red-600 hover:bg-red-50 text-xs"
+              className="flex-1 bg-red-50 border-red-300 text-red-600 hover:bg-red-100 text-xs"
             >
               <XCircle className="w-3 h-3 mr-1" />
               Reject
@@ -116,7 +116,7 @@ export function PolicyCardActions({
             size="sm"
             variant="destructive"
             onClick={() => onDelete(policyId)}
-            className="w-full text-xs"
+            className="w-full text-xs bg-red-600 hover:bg-red-700 text-white"
           >
             <Trash2 className="w-3 h-3 mr-1" />
             Delete Policy

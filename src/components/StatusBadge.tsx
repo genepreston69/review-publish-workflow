@@ -10,13 +10,13 @@ export const StatusBadge = ({ status }: StatusBadgeProps) => {
   const getStatusColor = (status: ContentStatus) => {
     switch (status) {
       case 'draft':
-        return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200';
+        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-yellow-300';
       case 'under-review':
-        return 'bg-orange-100 text-orange-700 hover:bg-orange-200';
+        return 'bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300';
       case 'published':
-        return 'bg-green-100 text-green-700 hover:bg-green-200';
+        return 'bg-green-100 text-green-800 hover:bg-green-200 border-green-300';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
@@ -34,7 +34,7 @@ export const StatusBadge = ({ status }: StatusBadgeProps) => {
   };
 
   return (
-    <Badge className={getStatusColor(status)}>
+    <Badge className={`${getStatusColor(status)} border`}>
       {getStatusLabel(status)}
     </Badge>
   );
