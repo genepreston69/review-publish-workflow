@@ -18,18 +18,26 @@ export function useAppNavigation() {
   
   // Determine default section based on current route and user role
   const getDefaultSection = () => {
+    console.log('=== GET DEFAULT SECTION ===');
+    console.log('Current pathname:', location.pathname);
+    console.log('Current search params:', location.search);
+    
     if (location.pathname === '/admin') {
-      return searchParams.get('tab') || 'create-policy';
+      const tabParam = searchParams.get('tab');
+      console.log('Admin route - tab param:', tabParam);
+      return tabParam || 'create-policy';
     }
     
     // Main dashboard - check for section parameter first
     const sectionParam = searchParams.get('section');
+    console.log('Main route - section param:', sectionParam);
     if (sectionParam) {
       return sectionParam;
     }
     
     // Fall back to role-based defaults if no URL parameter
     // Now all users default to hr-policies as the first policy section
+    console.log('No URL param found, defaulting to hr-policies');
     return 'hr-policies';
   };
 
