@@ -57,11 +57,6 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
         history: {
           depth: 100,
           newGroupDelay: 500,
-          // Ensure tracking transactions are properly grouped with content changes
-          preventHistoryEvent: ({ transaction }) => {
-            // Don't prevent tracking transactions from being added to history
-            return false;
-          },
         },
       }),
       // Configure list extensions separately for better control
