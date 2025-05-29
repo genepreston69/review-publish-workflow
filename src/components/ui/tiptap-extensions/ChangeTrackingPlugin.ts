@@ -34,6 +34,9 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
           return false;
         }
         
+        // Create a transaction that can be undone
+        let transaction = tr;
+        
         // If text is being replaced (to > from), handle as replacement
         if (to > from) {
           const deletedText = state.doc.textBetween(from, to, '\0', '\0');
@@ -46,10 +49,10 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
               originalText: deletedText,
             });
 
-            tr.addMark(from, to, deletionMark);
+            transaction = transaction.addMark(from, to, deletionMark);
 
             // Then insert the new text after the deleted text
-            tr.insertText(text, to);
+            transaction = transaction.insertText(text, to);
             const insertEnd = to + text.length;
             
             const additionMark = schema.marks.addition.create({
@@ -58,14 +61,17 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
               timestamp: new Date().toISOString(),
             });
 
-            tr.addMark(to, insertEnd, additionMark);
-            dispatch(tr);
+            transaction = transaction.addMark(to, insertEnd, additionMark);
+            
+            // Set metadata to allow history tracking
+            transaction = transaction.setMeta('addToHistory', true);
+            dispatch(transaction);
             return true;
           }
         }
 
         // Insert the new text with addition mark
-        tr.insertText(text, from, to);
+        transaction = transaction.insertText(text, from, to);
         const insertEnd = from + text.length;
         
         const additionMark = schema.marks.addition.create({
@@ -74,14 +80,23 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
           timestamp: new Date().toISOString(),
         });
 
-        tr.addMark(from, insertEnd, additionMark);
-        dispatch(tr);
+        transaction = transaction.addMark(from, insertEnd, additionMark);
+        
+        // Set metadata to allow history tracking
+        transaction = transaction.setMeta('addToHistory', true);
+        dispatch(transaction);
         return true;
       },
 
       handleKeyDown(view, event) {
         // Only intercept when tracking is enabled
         if (!options.enabled) return false;
+        
+        // Don't intercept undo/redo shortcuts
+        if ((event.ctrlKey || event.metaKey) && (event.key === 'z' || event.key === 'y')) {
+          return false;
+        }
+        
         if (event.key !== 'Backspace' && event.key !== 'Delete') return false;
 
         const { state, dispatch } = view;
@@ -93,6 +108,8 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
           console.warn('Deletion mark not found in schema');
           return false;
         }
+
+        let transaction = state.tr;
 
         if (!empty && from !== to) {
           // Range selection - get the actual text
@@ -116,15 +133,17 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
             });
 
             const markedNode = schema.text(deletedText, [deletionMark]);
-            let tr = state.tr;
-            tr = tr.replaceSelectionWith(markedNode, false);
-            const newPos = tr.selection.from + markedNode.nodeSize;
+            transaction = transaction.replaceSelectionWith(markedNode, false);
+            const newPos = transaction.selection.from + markedNode.nodeSize;
             
             // Ensure position is valid before creating selection
-            if (newPos <= tr.doc.content.size) {
-              tr = tr.setSelection(TextSelection.create(tr.doc, newPos));
+            if (newPos <= transaction.doc.content.size) {
+              transaction = transaction.setSelection(TextSelection.create(transaction.doc, newPos));
             }
-            dispatch(tr);
+            
+            // Set metadata to allow history tracking
+            transaction = transaction.setMeta('addToHistory', true);
+            dispatch(transaction);
             return true;
           }
         }
@@ -144,15 +163,17 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
             });
 
             const markedNode = schema.text(deletedChar, [deletionMark]);
-            let tr = state.tr;
-            tr = tr.replaceWith(markPos, markPos + 1, markedNode);
+            transaction = transaction.replaceWith(markPos, markPos + 1, markedNode);
             
             // Ensure position is valid before creating selection
             const newPos = markPos + 1;
-            if (newPos <= tr.doc.content.size) {
-              tr = tr.setSelection(TextSelection.create(tr.doc, newPos));
+            if (newPos <= transaction.doc.content.size) {
+              transaction = transaction.setSelection(TextSelection.create(transaction.doc, newPos));
             }
-            dispatch(tr);
+            
+            // Set metadata to allow history tracking
+            transaction = transaction.setMeta('addToHistory', true);
+            dispatch(transaction);
             return true;
           }
         }

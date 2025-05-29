@@ -1,3 +1,4 @@
+
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -53,6 +54,11 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
         bulletList: false,
         orderedList: false,
         listItem: false,
+        // Ensure history is enabled for undo/redo
+        history: {
+          depth: 100,
+          newGroupDelay: 500,
+        },
       }),
       // Configure list extensions separately for better control
       ListItem.configure({
