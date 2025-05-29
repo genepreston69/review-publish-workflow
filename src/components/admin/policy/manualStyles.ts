@@ -1,4 +1,3 @@
-
 export const getManualStyles = (): string => {
   return `
     /* Print-optimized styles */
@@ -20,8 +19,8 @@ export const getManualStyles = (): string => {
       .policy-page, .cover-page, .toc-page {
         page-break-before: always;
         position: relative;
-        min-height: 9in;
-        padding-bottom: 1in;
+        min-height: 8.5in;
+        padding-bottom: 1.25in;
       }
       
       .cover-page {
@@ -42,6 +41,7 @@ export const getManualStyles = (): string => {
         page-break-after: auto;
         min-height: auto;
         max-height: none;
+        padding-bottom: 1.25in;
       }
 
       .toc-table-container {
@@ -84,27 +84,36 @@ export const getManualStyles = (): string => {
         text-decoration: none !important;
       }
 
-      /* Fixed page footer positioning - prevent bleeding */
+      /* Improved page footer positioning - prevent bleeding */
       .page-footer {
-        position: fixed !important;
-        bottom: 0.5in !important;
+        position: absolute !important;
+        bottom: 0.25in !important;
         right: 0.75in !important;
         left: auto !important;
         width: auto !important;
         text-align: right !important;
-        background: white;
+        background: transparent;
         z-index: 1000;
-        padding: 0.1in 0 !important;
+        padding: 0 !important;
         margin: 0 !important;
+        font-size: 10pt;
+        color: #666;
       }
 
-      /* Ensure TOC content doesn't overlap with footer */
+      /* Ensure content doesn't overlap with footer */
       .toc-content {
         margin-bottom: 1.5in !important;
+        padding-bottom: 0.5in !important;
       }
 
       .policy-content {
         margin-bottom: 1.5in !important;
+        padding-bottom: 0.5in !important;
+      }
+
+      .cover-content {
+        margin-bottom: 1.5in !important;
+        padding-bottom: 0.5in !important;
       }
     }
     
@@ -240,7 +249,7 @@ export const getManualStyles = (): string => {
       color: #1565c0;
     }
 
-    /* Page Footer Styles - Fixed positioning */
+    /* Page Footer Styles - Improved positioning */
     .page-footer {
       position: absolute;
       bottom: 0.5in;
@@ -248,7 +257,7 @@ export const getManualStyles = (): string => {
       left: auto;
       width: auto;
       text-align: right;
-      background: white;
+      background: transparent;
       z-index: 10;
       padding: 0.1in 0;
       margin: 0;
