@@ -1,3 +1,4 @@
+
 export const getManualStyles = (): string => {
   return `
     /* Print-optimized styles with CSS @page margin boxes */
@@ -15,6 +16,11 @@ export const getManualStyles = (): string => {
           margin-bottom: 0.25in;
           margin-right: 0;
         }
+        
+        /* Hide any browser-generated headers */
+        @top-left { content: none; }
+        @top-center { content: none; }
+        @top-right { content: none; }
       }
       
       /* Reset page counter for the manual */
@@ -34,6 +40,9 @@ export const getManualStyles = (): string => {
         @bottom-right {
           content: none; /* No page number on cover */
         }
+        @top-left { content: none; }
+        @top-center { content: none; }
+        @top-right { content: none; }
       }
       
       /* TOC and Policy pages - with page numbers */
@@ -51,27 +60,13 @@ export const getManualStyles = (): string => {
           margin-bottom: 0.25in;
           margin-right: 0;
         }
+        @top-left { content: none; }
+        @top-center { content: none; }
+        @top-right { content: none; }
       }
       
-      /* Fallback positioning for browsers that don't support @page margin boxes */
+      /* Remove fallback page footer to avoid content boxes */
       .page-footer {
-        position: fixed !important;
-        bottom: 0.5in !important;
-        right: 0.75in !important;
-        left: auto !important;
-        width: auto !important;
-        text-align: right !important;
-        background: transparent !important;
-        z-index: 9999 !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        font-family: Arial, Helvetica, sans-serif !important;
-        font-size: 10pt !important;
-        color: #666 !important;
-      }
-
-      /* Hide fallback page numbers on cover */
-      .cover-page .page-footer {
         display: none !important;
       }
       
@@ -82,8 +77,8 @@ export const getManualStyles = (): string => {
       .policy-page, .cover-page, .toc-page {
         page-break-before: always;
         position: relative;
-        min-height: calc(100vh - 1.5in); /* Account for footer space */
-        padding-bottom: 0.75in; /* Space for footer */
+        min-height: auto; /* Let CSS @page handle spacing */
+        padding-bottom: 0; /* Remove excessive padding */
       }
       
       .cover-page {
@@ -146,15 +141,15 @@ export const getManualStyles = (): string => {
         text-decoration: none !important;
       }
 
-      /* Content spacing to avoid footer overlap */
+      /* Remove excessive content spacing */
       .toc-content {
-        margin-bottom: 1in !important;
-        padding-bottom: 0.5in !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
       }
 
       .policy-content {
-        margin-bottom: 1in !important;
-        padding-bottom: 0.5in !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
       }
 
       .cover-content {
@@ -249,7 +244,6 @@ export const getManualStyles = (): string => {
 
     .toc-content {
       flex: 1;
-      padding-bottom: 1.5in;
       overflow: visible;
     }
     
@@ -295,25 +289,13 @@ export const getManualStyles = (): string => {
       color: #1565c0;
     }
 
-    /* Fallback Page Footer - for browsers without @page margin box support */
+    /* Hide page footer completely - CSS @page handles page numbers */
     .page-footer {
-      position: absolute;
-      bottom: 0.5in;
-      right: 0;
-      left: auto;
-      width: auto;
-      text-align: right;
-      background: transparent;
-      z-index: 10;
-      padding: 0.1in 0;
-      margin: 0;
+      display: none;
     }
     
     .page-number {
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 10pt;
-      color: #666;
-      font-weight: normal;
+      display: none;
     }
     
     /* TOC Table Styles */
@@ -409,14 +391,13 @@ export const getManualStyles = (): string => {
     .policy-page {
       padding: 0;
       position: relative;
-      min-height: 9in;
+      min-height: auto;
       display: flex;
       flex-direction: column;
     }
     
     .policy-content {
       flex: 1;
-      margin-bottom: 1.5in;
       overflow: hidden;
     }
     

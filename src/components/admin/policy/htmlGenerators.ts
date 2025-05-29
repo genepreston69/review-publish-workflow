@@ -1,4 +1,3 @@
-
 import { Policy, ManualType } from './types';
 
 const stripHtml = (html: string | null): string => {
@@ -55,13 +54,12 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
     </tr>`;
   });
 
-  // Generate TOC pages with page numbers in footer
+  // Generate TOC pages - removed fallback page footer elements
   let tocContent = '';
   
   for (let i = 0; i < tocPages; i++) {
     const isFirstTocPage = i === 0;
     const pageBreakClass = isFirstTocPage ? '' : 'toc-page-break';
-    const currentTocPageNumber = i + 1; // TOC pages start at 1
     
     tocContent += `
       <div class="toc-page ${pageBreakClass}">
@@ -83,9 +81,6 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
               </tbody>
             </table>
           </div>
-        </div>
-        <div class="page-footer">
-          <span class="page-number">${currentTocPageNumber}</span>
         </div>
       </div>
     `;
@@ -162,10 +157,6 @@ export const generatePolicyContent = (type: ManualType, policies: Policy[], tota
               <div class="section-content">${policy.procedure}</div>
             </div>
           ` : ''}
-        </div>
-
-        <div class="page-footer">
-          <span class="page-number">${currentPageNumber}</span>
         </div>
       </div>
     `;
