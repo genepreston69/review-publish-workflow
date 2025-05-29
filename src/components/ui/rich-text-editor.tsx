@@ -1,3 +1,4 @@
+
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -8,9 +9,9 @@ import { Button } from '@/components/ui/button';
 import { AIWritingAssistant } from '@/components/ui/ai-writing-assistant';
 import { Addition } from './tiptap-extensions/AdditionMark';
 import { Deletion } from './tiptap-extensions/DeletionMark';
-import { createChangeTrackingPlugin } from './tiptap-extensions/ChangeTrackingPlugin';
+import { createChangeTrackingPlugin, changeTrackingPluginKey } from './tiptap-extensions/ChangeTrackingPlugin';
 import { useAuth } from '@/hooks/useAuth';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getUserInitials, isValidTipTapJson, migrateHtmlToJson } from '@/utils/trackingUtils';
 import { 
@@ -44,6 +45,7 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
   const [userInitials, setUserInitials] = useState<string>('U');
   const [trackingEnabled, setTrackingEnabled] = useState<boolean>(true);
   const [isJsonMode, setIsJsonMode] = useState<boolean>(false);
+  const trackingPluginRef = useRef<any>(null);
 
   // Load user initials from profile
   useEffect(() => {
@@ -137,17 +139,61 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
     },
   });
 
-  // Add change tracking plugin when editor is ready
+  // Manage change tracking plugin
   useEffect(() => {
-    if (editor && trackingEnabled) {
-      const plugin = createChangeTrackingPlugin({
-        userInitials,
-        enabled: trackingEnabled,
-      });
-      
-      // Register the plugin
-      editor.registerPlugin(plugin);
-    }
+    if (!editor) return;
+
+    const updateTrackingPlugin = () => {
+      // Remove existing plugin if it exists
+      if (trackingPluginRef.current) {
+        const currentState = editor.state;
+        const currentPlugins = currentState.plugins;
+        const filteredPlugins = currentPlugins.filter(
+          plugin => plugin.key !== changeTrackingPluginKey
+        );
+        
+        // Reconfigure editor with filtered plugins
+        const newState = currentState.reconfigure({
+          plugins: filteredPlugins
+        });
+        editor.updateState(newState);
+        trackingPluginRef.current = null;
+      }
+
+      // Add new plugin if tracking is enabled
+      if (trackingEnabled) {
+        const plugin = createChangeTrackingPlugin({
+          userInitials,
+          enabled: trackingEnabled,
+        });
+        
+        trackingPluginRef.current = plugin;
+        editor.registerPlugin(plugin);
+      }
+    };
+
+    updateTrackingPlugin();
+
+    // Cleanup function
+    return () => {
+      if (trackingPluginRef.current && editor) {
+        try {
+          const currentState = editor.state;
+          const currentPlugins = currentState.plugins;
+          const filteredPlugins = currentPlugins.filter(
+            plugin => plugin.key !== changeTrackingPluginKey
+          );
+          
+          const newState = currentState.reconfigure({
+            plugins: filteredPlugins
+          });
+          editor.updateState(newState);
+        } catch (error) {
+          console.error('Error cleaning up tracking plugin:', error);
+        }
+        trackingPluginRef.current = null;
+      }
+    };
   }, [editor, userInitials, trackingEnabled]);
 
   if (!editor) {
