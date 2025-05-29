@@ -92,15 +92,13 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
           ${isFirstTocPage ? '<h1 class="toc-main-title">Table of Contents</h1>' : ''}
           <div class="toc-table-container">
             <table class="toc-table">
-              ${isFirstTocPage ? `
-                <thead>
-                  <tr>
-                    <th>Policy Number</th>
-                    <th>Policy Title</th>
-                    <th>Page</th>
-                  </tr>
-                </thead>
-              ` : ''}
+              <thead>
+                <tr>
+                  <th>Policy Number</th>
+                  <th>Policy Title</th>
+                  <th>Page</th>
+                </tr>
+              </thead>
               <tbody>
                 ${currentChunk}
               </tbody>
