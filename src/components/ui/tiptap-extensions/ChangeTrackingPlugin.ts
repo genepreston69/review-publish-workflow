@@ -1,4 +1,5 @@
 
+import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from 'prosemirror-state';
 import { TextSelection } from 'prosemirror-state';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,7 +11,7 @@ export interface ChangeTrackingOptions {
 
 export const changeTrackingPluginKey = new PluginKey('changeTracking');
 
-export const createChangeTrackingPlugin = (options: ChangeTrackingOptions) =>
+const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =>
   new Plugin({
     key: changeTrackingPluginKey,
     props: {
@@ -133,3 +134,20 @@ export const createChangeTrackingPlugin = (options: ChangeTrackingOptions) =>
       },
     },
   });
+
+export const ChangeTrackingExtension = Extension.create<ChangeTrackingOptions>({
+  name: 'changeTracking',
+
+  addOptions() {
+    return {
+      userInitials: 'U',
+      enabled: false,
+    };
+  },
+
+  addProseMirrorPlugins() {
+    return [
+      createChangeTrackingProseMirrorPlugin(this.options),
+    ];
+  },
+});

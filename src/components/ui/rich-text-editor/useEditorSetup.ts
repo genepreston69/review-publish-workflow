@@ -1,4 +1,3 @@
-
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -11,7 +10,7 @@ import OrderedList from '@tiptap/extension-ordered-list';
 import { Suggestion } from '../tiptap-extensions/SuggestionMark';
 import { Addition } from '../tiptap-extensions/AdditionMark';
 import { Deletion } from '../tiptap-extensions/DeletionMark';
-import { createChangeTrackingPlugin, ChangeTrackingOptions } from '../tiptap-extensions/ChangeTrackingPlugin';
+import { ChangeTrackingExtension, ChangeTrackingOptions } from '../tiptap-extensions/ChangeTrackingPlugin';
 import { useMemo } from 'react';
 import { isValidTipTapJson, migrateHtmlToJson } from '@/utils/trackingUtils';
 
@@ -46,7 +45,7 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
     return content;
   }, [content]);
 
-  // Create extensions array with conditional change tracking plugin
+  // Create extensions array with conditional change tracking extension
   const extensions = useMemo(() => {
     const baseExtensions = [
       StarterKit.configure({
@@ -88,11 +87,11 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
       Deletion,
     ];
 
-    // Add change tracking plugin only if tracking is enabled
+    // Add change tracking extension only if tracking is enabled
     if (trackingOptions?.enabled) {
       return [
         ...baseExtensions,
-        createChangeTrackingPlugin(trackingOptions),
+        ChangeTrackingExtension.configure(trackingOptions),
       ];
     }
 
