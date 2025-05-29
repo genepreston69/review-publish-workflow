@@ -27,31 +27,16 @@ export function AppSidebar() {
   const isSuperAdmin = userRole === 'super-admin';
   const isReadOnly = userRole === 'read-only';
 
-  // Content Management items (for non-read-only users)
+  // Content Management items (only for non-read-only users, excluding drafts/review/published)
   const contentItems = !isReadOnly ? [
     {
       id: "all",
       title: "All Content",
       icon: FileText,
     },
-    {
-      id: "drafts",
-      title: "Drafts",
-      icon: FileClock,
-    },
-    ...(canPublish ? [{
-      id: "review",
-      title: "Under Review",
-      icon: Eye,
-    }] : []),
-    {
-      id: "published",
-      title: "Published",
-      icon: CheckCircle,
-    },
   ] : [];
 
-  // Policy items
+  // Policy items with content status items moved here for edit/publish users
   const policyItems = [
     ...(isReadOnly ? [{
       id: "hr-policies",
@@ -66,6 +51,22 @@ export function AppSidebar() {
       id: "create-policy",
       title: "Create Policy",
       icon: Plus,
+    }] : []),
+    // Content status items moved under Policies for non-read-only users
+    ...(!isReadOnly ? [{
+      id: "drafts",
+      title: "Drafts",
+      icon: FileClock,
+    }] : []),
+    ...(!isReadOnly && canPublish ? [{
+      id: "review",
+      title: "Under Review",
+      icon: Eye,
+    }] : []),
+    ...(!isReadOnly ? [{
+      id: "published",
+      title: "Published",
+      icon: CheckCircle,
     }] : []),
     ...(isEditor ? [{
       id: "draft-policies",
