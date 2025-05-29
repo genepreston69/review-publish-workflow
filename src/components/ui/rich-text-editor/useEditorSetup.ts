@@ -1,3 +1,4 @@
+
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -10,6 +11,7 @@ import OrderedList from '@tiptap/extension-ordered-list';
 import { Suggestion } from '../tiptap-extensions/SuggestionMark';
 import { Addition } from '../tiptap-extensions/AdditionMark';
 import { Deletion } from '../tiptap-extensions/DeletionMark';
+import { createChangeTrackingPlugin, ChangeTrackingOptions } from '../tiptap-extensions/ChangeTrackingPlugin';
 import { useMemo } from 'react';
 import { isValidTipTapJson, migrateHtmlToJson } from '@/utils/trackingUtils';
 
@@ -17,9 +19,10 @@ interface UseEditorSetupProps {
   content: string;
   onChange: (content: string) => void;
   isJsonMode: boolean;
+  trackingOptions?: ChangeTrackingOptions;
 }
 
-export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetupProps) {
+export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions }: UseEditorSetupProps) {
   // Determine if content is JSON or HTML and prepare initial content
   const getInitialContent = useMemo(() => {
     if (!content) return '';
@@ -96,7 +99,21 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
         style: 'line-height: 1.8;',
       },
     },
-  });
+    // Add the change tracking plugin if tracking options are provided
+    ...(trackingOptions && {
+      parseOptions: {
+        preserveWhitespace: 'full',
+      },
+    }),
+  }, [getInitialContent, isJsonMode, onChange, trackingOptions]);
+
+  // Add the change tracking plugin after editor creation
+  useMemo(() => {
+    if (editor && trackingOptions) {
+      const plugin = createChangeTrackingPlugin(trackingOptions);
+      editor.registerPlugin(plugin);
+    }
+  }, [editor, trackingOptions]);
 
   return editor;
 }
