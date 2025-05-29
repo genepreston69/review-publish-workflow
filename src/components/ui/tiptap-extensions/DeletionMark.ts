@@ -93,27 +93,13 @@ export const Deletion = Mark.create<DeletionOptions>({
       mergeAttributes(
         {
           'data-change-type': 'deletion',
-          class: 'tracked-deletion',
+          class: 'tracked-deletion line-through text-red-700 bg-red-50',
           title: userInitials ? `Deleted by ${userInitials}` : 'Deletion',
         },
         this.options.HTMLAttributes,
         otherAttributes
       ),
-      [
-        's',
-        {
-          style: 'text-decoration: line-through; color: #666;'
-        },
-        0, // Content goes here
-      ],
-      ...(userInitials ? [[
-        'sup',
-        {
-          class: 'tracked-initials',
-          style: 'font-size: 0.7em; color: #666; font-weight: normal; margin-left: 2px;'
-        },
-        `[${userInitials}]`
-      ]] : []),
+      0, // Content goes here - no nested elements that could cause per-character rendering
     ];
   },
 

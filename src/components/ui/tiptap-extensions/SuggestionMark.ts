@@ -77,6 +77,18 @@ export const Suggestion = Mark.create<SuggestionOptions, SuggestionAttributes>({
   renderHTML({ HTMLAttributes, mark }) {
     const attrs = mark.attrs as SuggestionAttributes;
     
+    // Base class for styling
+    let baseClass = `suggestion-${attrs.changeType}`;
+    
+    // Add specific styling based on change type
+    if (attrs.changeType === 'insert') {
+      baseClass += ' font-bold text-green-700 bg-green-50';
+    } else if (attrs.changeType === 'delete') {
+      baseClass += ' line-through text-red-700 bg-red-50';
+    } else if (attrs.changeType === 'replace') {
+      baseClass += ' font-bold text-blue-700 bg-blue-50';
+    }
+    
     return [
       'span',
       mergeAttributes(
@@ -88,7 +100,8 @@ export const Suggestion = Mark.create<SuggestionOptions, SuggestionAttributes>({
           'data-suggested-text': attrs.suggestedText || '',
           'data-timestamp': attrs.timestamp,
           'data-change-type': attrs.changeType,
-          class: `suggestion-${attrs.changeType}`,
+          class: baseClass,
+          title: `${attrs.changeType} by ${attrs.userInitials}`,
         },
         this.options.HTMLAttributes,
         HTMLAttributes

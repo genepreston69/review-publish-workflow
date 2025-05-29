@@ -81,25 +81,13 @@ export const Addition = Mark.create<AdditionOptions>({
       mergeAttributes(
         {
           'data-change-type': 'addition',
-          class: 'tracked-addition',
+          class: 'tracked-addition font-bold text-green-700 bg-green-50',
           title: userInitials ? `Added by ${userInitials}` : 'Addition',
         },
         this.options.HTMLAttributes,
         otherAttributes
       ),
-      [
-        'strong',
-        {},
-        0, // Content goes here
-      ],
-      ...(userInitials ? [[
-        'sup',
-        {
-          class: 'tracked-initials',
-          style: 'font-size: 0.7em; color: #666; font-weight: normal; margin-left: 2px;'
-        },
-        `[${userInitials}]`
-      ]] : []),
+      0, // Content goes here - no nested elements that could cause per-character rendering
     ];
   },
 
