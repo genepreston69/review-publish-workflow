@@ -80,6 +80,7 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
                 placeholder="Describe the purpose of this policy..."
                 className="min-h-[150px]"
                 context="purpose"
+                showBottomToolbar={true}
               />
             </FormControl>
             <FormDescription>
@@ -103,6 +104,7 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
                 placeholder="Enter the complete policy text..."
                 className="min-h-[250px]"
                 context="policy text"
+                showBottomToolbar={true}
               />
             </FormControl>
             <FormDescription>
@@ -126,6 +128,7 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
                 placeholder="Outline the step-by-step procedure..."
                 className="min-h-[180px]"
                 context="procedure"
+                showBottomToolbar={true}
               />
             </FormControl>
             <FormDescription>

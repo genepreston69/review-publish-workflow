@@ -1,4 +1,3 @@
-
 import { EditorContent } from '@tiptap/react';
 import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
@@ -16,9 +15,17 @@ interface RichTextEditorProps {
   placeholder?: string;
   className?: string;
   context?: string;
+  showBottomToolbar?: boolean;
 }
 
-export function RichTextEditor({ content, onChange, placeholder, className, context }: RichTextEditorProps) {
+export function RichTextEditor({ 
+  content, 
+  onChange, 
+  placeholder, 
+  className, 
+  context,
+  showBottomToolbar = false 
+}: RichTextEditorProps) {
   const auth = useAuth();
   const [userInitials, setUserInitials] = useState<string>('U');
   const [trackingEnabled, setTrackingEnabled] = useState<boolean>(true);
@@ -137,12 +144,25 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
         onAITextChange={handleAITextChange}
         getPlainText={getPlainText}
         context={context}
+        position="top"
       />
       <EditorContent 
         editor={editor} 
         className="min-h-[200px]"
         placeholder={placeholder}
       />
+      {showBottomToolbar && (
+        <EditorToolbar
+          editor={editor}
+          trackingEnabled={trackingEnabled}
+          userInitials={userInitials}
+          onToggleTracking={toggleTracking}
+          onAITextChange={handleAITextChange}
+          getPlainText={getPlainText}
+          context={context}
+          position="bottom"
+        />
+      )}
       <EditorStyles />
     </div>
   );

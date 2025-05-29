@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { AIWritingAssistant } from '@/components/ui/ai-writing-assistant';
 import {
@@ -18,6 +17,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { Editor } from '@tiptap/react';
+import { cn } from '@/lib/utils';
 
 interface EditorToolbarProps {
   editor: Editor;
@@ -27,6 +27,7 @@ interface EditorToolbarProps {
   onAITextChange: (text: string) => void;
   getPlainText: () => string;
   context?: string;
+  position?: 'top' | 'bottom';
 }
 
 export function EditorToolbar({
@@ -36,10 +37,13 @@ export function EditorToolbar({
   onToggleTracking,
   onAITextChange,
   getPlainText,
-  context
+  context,
+  position = 'top'
 }: EditorToolbarProps) {
+  const borderClass = position === 'top' ? 'border-b' : 'border-t';
+  
   return (
-    <div className="border-b p-2 flex flex-wrap gap-1 justify-between">
+    <div className={cn("p-2 flex flex-wrap gap-1 justify-between", borderClass)}>
       <div className="flex flex-wrap gap-1">
         <Button
           type="button"
