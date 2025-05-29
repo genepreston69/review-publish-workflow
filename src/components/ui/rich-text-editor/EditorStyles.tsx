@@ -15,23 +15,6 @@ export function EditorStyles() {
         position: relative;
       }
       
-      .ProseMirror .suggestion-delete::after {
-        content: ' (' attr(data-user-initials) ')';
-        font-size: 0.8em;
-        color: #888;
-        margin-left: 0.25em;
-        text-decoration: none;
-        font-weight: normal;
-      }
-      
-      .ProseMirror .suggestion-insert::after {
-        content: ' (' attr(data-user-initials) ')';
-        font-size: 0.8em;
-        color: #888;
-        margin-left: 0.25em;
-        font-weight: normal;
-      }
-      
       .ProseMirror .suggestion-replace {
         position: relative;
       }
