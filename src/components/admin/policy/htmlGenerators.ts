@@ -1,4 +1,3 @@
-
 import { Policy, ManualType } from './types';
 
 const stripHtml = (html: string | null): string => {
@@ -32,60 +31,50 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
   console.log('Generating TOC for policies:', policies.length, 'policies');
   console.log('TOC will span', tocPages, 'pages');
   
-  // Policy pages start at page 1 (not continuing from cover/TOC)
-  let policyPageNumber = 1;
+  // Calculate the actual page where policies start: Cover (1) + TOC pages + 1
+  let actualPolicyPageNumber = 1 + tocPages + 1;
   
-  // Generate TOC rows
+  // Generate TOC rows with correct page numbers
   let tocRows = '';
   
   policies.forEach((policy, index) => {
     const policyTitle = policy.name || 'Untitled Policy';
     const policyNumber = policy.policy_number || 'N/A';
+    const actualPageNumber = actualPolicyPageNumber + index;
     
-    console.log(`TOC Entry ${index + 1}: ${policyNumber} - ${policyTitle} (Page ${policyPageNumber})`);
+    console.log(`TOC Entry ${index + 1}: ${policyNumber} - ${policyTitle} (Actual Page ${actualPageNumber})`);
     
     tocRows += `<tr class="toc-row">
       <td class="toc-policy-number">${policyNumber}</td>
       <td class="toc-policy-title">
         <a href="#policy-${policy.id}" class="toc-link">${policyTitle}</a>
       </td>
-      <td class="toc-page-number">${policyPageNumber}</td>
+      <td class="toc-page-number">${actualPageNumber}</td>
     </tr>`;
-    
-    policyPageNumber++;
   });
 
-  // Generate TOC pages without page numbers
-  let tocContent = '';
-  
-  for (let i = 0; i < tocPages; i++) {
-    const isFirstTocPage = i === 0;
-    const pageBreakClass = isFirstTocPage ? '' : 'toc-page-break';
-    
-    tocContent += `
-      <div class="toc-page ${pageBreakClass}">
-        <div class="toc-content">
-          ${isFirstTocPage ? '<h1 class="toc-main-title">Table of Contents</h1>' : ''}
-          <div class="toc-table-container">
-            <table class="toc-table">
-              ${isFirstTocPage ? `
-                <thead>
-                  <tr>
-                    <th>Policy Number</th>
-                    <th>Policy Title</th>
-                    <th>Page</th>
-                  </tr>
-                </thead>
-              ` : ''}
-              <tbody>
-                ${tocRows}
-              </tbody>
-            </table>
-          </div>
+  // Generate single TOC (not multiple pages for now - keeping it simple)
+  const tocContent = `
+    <div class="toc-page">
+      <div class="toc-content">
+        <h1 class="toc-main-title">Table of Contents</h1>
+        <div class="toc-table-container">
+          <table class="toc-table">
+            <thead>
+              <tr>
+                <th>Policy Number</th>
+                <th>Policy Title</th>
+                <th>Page</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tocRows}
+            </tbody>
+          </table>
         </div>
       </div>
-    `;
-  }
+    </div>
+  `;
 
   return tocContent;
 };
@@ -93,13 +82,14 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
 export const generatePolicyContent = (type: ManualType, policies: Policy[], totalPages: number, tocPages: number): string => {
   console.log('Generating policy content for policies:', policies.length, 'policies');
   
-  // Policy pages start at page 1
-  let pageNumber = 1;
+  // Calculate the actual starting page for policies: Cover (1) + TOC pages + 1
+  let actualPageNumber = 1 + tocPages + 1;
   
   let policyContent = '';
   
   policies.forEach((policy, index) => {
-    console.log(`Policy Content ${index + 1}: ${policy.policy_number} - ${policy.name} (Page ${pageNumber})`);
+    const currentPageNumber = actualPageNumber + index;
+    console.log(`Policy Content ${index + 1}: ${policy.policy_number} - ${policy.name} (Actual Page ${currentPageNumber})`);
     
     policyContent += `
       <div class="policy-page" id="policy-${policy.id}">
@@ -160,11 +150,10 @@ export const generatePolicyContent = (type: ManualType, policies: Policy[], tota
         </div>
 
         <div class="page-footer">
-          <span class="page-number">${pageNumber}</span>
+          <span class="page-number">${currentPageNumber}</span>
         </div>
       </div>
     `;
-    pageNumber++;
   });
 
   console.log('Total policy pages generated:', policies.length);
