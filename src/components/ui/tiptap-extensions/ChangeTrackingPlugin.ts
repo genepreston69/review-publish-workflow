@@ -82,7 +82,7 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
             if (deletedText.trim()) {
               const { tr } = state;
               
-              // Mark the selected text as deleted instead of removing it
+              // Mark the selected text as deleted WITHOUT removing it
               tr.addMark(
                 from,
                 to,
@@ -96,8 +96,58 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
                 })
               );
 
+              // Move cursor to the end of the marked text
+              tr.setSelection(state.selection.constructor.near(tr.doc.resolve(to)));
+
               view.dispatch(tr);
+              
+              // Prevent the default deletion behavior
+              event.preventDefault();
               return true;
+            }
+          } else {
+            // Handle single character deletion
+            const pos = selection.from;
+            let deleteFrom, deleteTo;
+            
+            if (event.key === 'Backspace') {
+              deleteFrom = Math.max(0, pos - 1);
+              deleteTo = pos;
+            } else { // Delete key
+              deleteFrom = pos;
+              deleteTo = Math.min(state.doc.content.size, pos + 1);
+            }
+            
+            if (deleteFrom < deleteTo) {
+              const deletedText = state.doc.textBetween(deleteFrom, deleteTo);
+              
+              if (deletedText.trim()) {
+                const { tr } = state;
+                
+                // Mark the character as deleted WITHOUT removing it
+                tr.addMark(
+                  deleteFrom,
+                  deleteTo,
+                  state.schema.marks.suggestion.create({
+                    changeId: generateChangeId(),
+                    userInitials: options.userInitials,
+                    timestamp: new Date().toISOString(),
+                    originalText: deletedText,
+                    suggestedText: '',
+                    changeType: 'delete',
+                  })
+                );
+
+                // Move cursor to the appropriate position
+                const newPos = event.key === 'Backspace' ? deleteFrom : deleteTo;
+                tr.setSelection(state.selection.constructor.near(tr.doc.resolve(newPos)));
+
+                view.dispatch(tr);
+                
+                // Prevent the default deletion behavior
+                event.preventDefault();
+                return true;
+              }
             }
           }
         }
