@@ -59,21 +59,35 @@ export function useAppNavigation() {
     console.log('=== NAVIGATE TO SECTION ===');
     console.log('Navigating to:', sectionId);
     console.log('Current activeSection before:', activeSection);
+    console.log('Current pathname:', location.pathname);
     
     // Update the active section immediately
     setActiveSection(sectionId);
     console.log('Set activeSection to:', sectionId);
     
-    // Determine if this is an admin section or main dashboard section
-    const adminSections = [
-      'create-policy', 'draft-policies', 'review-policies', 'facility-policies',
+    // Define admin-only sections
+    const adminOnlySections = [
+      'create-policy', 'draft-policies', 'review-policies', 
       'policy-manuals', 'users', 'assignments', 'analytics', 'moderation'
     ];
     
-    if (adminSections.includes(sectionId)) {
-      console.log('Navigating to admin section:', `/admin?tab=${sectionId}`);
+    // Define sections that are available on both admin and main routes
+    const sharedSections = ['hr-policies', 'facility-policies'];
+    
+    if (adminOnlySections.includes(sectionId)) {
+      console.log('Navigating to admin-only section:', `/admin?tab=${sectionId}`);
       navigate(`/admin?tab=${sectionId}`);
+    } else if (sharedSections.includes(sectionId)) {
+      // For shared sections, stay on the current route type but update the parameter
+      if (location.pathname === '/admin') {
+        console.log('Staying on admin route for shared section:', `/admin?tab=${sectionId}`);
+        navigate(`/admin?tab=${sectionId}`);
+      } else {
+        console.log('Staying on main route for shared section:', `/?section=${sectionId}`);
+        navigate(`/?section=${sectionId}`);
+      }
     } else {
+      // Default to main route for other sections
       console.log('Navigating to main section:', `/?section=${sectionId}`);
       navigate(`/?section=${sectionId}`);
     }
