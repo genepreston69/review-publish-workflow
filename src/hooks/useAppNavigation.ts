@@ -22,7 +22,13 @@ export function useAppNavigation() {
       return searchParams.get('tab') || 'create-policy';
     }
     
-    // Main dashboard defaults
+    // Main dashboard - check for section parameter first
+    const sectionParam = searchParams.get('section');
+    if (sectionParam) {
+      return sectionParam;
+    }
+    
+    // Fall back to role-based defaults if no URL parameter
     if (userRole === 'read-only') {
       return 'hr-policies';
     }
