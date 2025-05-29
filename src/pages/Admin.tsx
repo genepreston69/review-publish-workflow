@@ -7,6 +7,7 @@ import { AssignmentManagement } from '@/components/admin/AssignmentManagement';
 import { SystemAnalytics } from '@/components/admin/SystemAnalytics';
 import { ContentModeration } from '@/components/admin/ContentModeration';
 import { FacilityPolicies } from '@/components/admin/FacilityPolicies';
+import { HRPolicies } from '@/components/admin/HRPolicies';
 import { CreatePolicy } from '@/components/admin/CreatePolicy';
 import { DraftPolicies } from '@/components/admin/DraftPolicies';
 import { ReviewPolicies } from '@/components/admin/ReviewPolicies';
@@ -54,6 +55,7 @@ const Admin = () => {
       case 'review-policies':
         return <ReviewPolicies />;
       case 'hr-policies':
+        return <HRPolicies />;
       case 'facility-policies':
         return <FacilityPolicies />;
       case 'policy-manuals':
