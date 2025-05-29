@@ -18,7 +18,7 @@ interface UseEditorSetupProps {
   content: string;
   onChange: (content: string) => void;
   isJsonMode: boolean;
-  trackingOptions?: ChangeTrackingOptions;
+  trackingOptions: ChangeTrackingOptions;
 }
 
 export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions }: UseEditorSetupProps) {
@@ -45,9 +45,9 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
     return content;
   }, [content]);
 
-  // Create extensions array with conditional change tracking extension
+  // Create extensions array - always include change tracking extension
   const extensions = useMemo(() => {
-    const baseExtensions = [
+    return [
       StarterKit.configure({
         // Disable default list extensions to configure them separately
         bulletList: false,
@@ -85,17 +85,9 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
       // Keep legacy extensions for backward compatibility
       Addition,
       Deletion,
+      // Always include change tracking extension, controlled by options
+      ChangeTrackingExtension.configure(trackingOptions),
     ];
-
-    // Add change tracking extension only if tracking is enabled
-    if (trackingOptions?.enabled) {
-      return [
-        ...baseExtensions,
-        ChangeTrackingExtension.configure(trackingOptions),
-      ];
-    }
-
-    return baseExtensions;
   }, [trackingOptions]);
 
   const editor = useEditor({
@@ -113,12 +105,10 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
         style: 'line-height: 1.8;',
       },
     },
-    // Add parse options if tracking is enabled
-    ...(trackingOptions?.enabled && {
-      parseOptions: {
-        preserveWhitespace: 'full',
-      },
-    }),
+    // Add parse options for better tracking support
+    parseOptions: {
+      preserveWhitespace: 'full',
+    },
   }, [extensions, getInitialContent, isJsonMode, onChange]);
 
   return editor;

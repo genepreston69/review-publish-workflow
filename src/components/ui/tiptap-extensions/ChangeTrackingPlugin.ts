@@ -22,6 +22,18 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
         const { state, dispatch } = view;
         const { tr, schema } = state;
         
+        // Check if deletion mark exists in schema
+        if (!schema.marks.deletion) {
+          console.warn('Deletion mark not found in schema');
+          return false;
+        }
+
+        // Check if addition mark exists in schema  
+        if (!schema.marks.addition) {
+          console.warn('Addition mark not found in schema');
+          return false;
+        }
+        
         // If text is being replaced (to > from), handle as replacement
         if (to > from) {
           const deletedText = state.doc.textBetween(from, to, '\0', '\0');
@@ -76,6 +88,12 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
         const { selection, schema, doc } = state;
         const { from, to, empty } = selection;
 
+        // Check if deletion mark exists in schema
+        if (!schema.marks.deletion) {
+          console.warn('Deletion mark not found in schema');
+          return false;
+        }
+
         if (!empty && from !== to) {
           // Range selection - get the actual text
           let deletedText = '';
@@ -101,7 +119,11 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
             let tr = state.tr;
             tr = tr.replaceSelectionWith(markedNode, false);
             const newPos = tr.selection.from + markedNode.nodeSize;
-            tr = tr.setSelection(TextSelection.create(tr.doc, newPos));
+            
+            // Ensure position is valid before creating selection
+            if (newPos <= tr.doc.content.size) {
+              tr = tr.setSelection(TextSelection.create(tr.doc, newPos));
+            }
             dispatch(tr);
             return true;
           }
@@ -124,7 +146,12 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
             const markedNode = schema.text(deletedChar, [deletionMark]);
             let tr = state.tr;
             tr = tr.replaceWith(markPos, markPos + 1, markedNode);
-            tr = tr.setSelection(TextSelection.create(tr.doc, markPos + 1));
+            
+            // Ensure position is valid before creating selection
+            const newPos = markPos + 1;
+            if (newPos <= tr.doc.content.size) {
+              tr = tr.setSelection(TextSelection.create(tr.doc, newPos));
+            }
             dispatch(tr);
             return true;
           }
