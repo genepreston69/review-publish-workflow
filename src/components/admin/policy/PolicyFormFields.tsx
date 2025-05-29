@@ -75,7 +75,7 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
             <FormLabel>Purpose</FormLabel>
             <FormControl>
               <RichTextEditor 
-                content={field.value}
+                content={field.value || ''}
                 onChange={field.onChange}
                 placeholder="Describe the purpose of this policy..."
                 className="min-h-[150px]"
@@ -83,7 +83,7 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
               />
             </FormControl>
             <FormDescription>
-              Explain why this policy exists and what it aims to achieve. Use the AI Assistant for professional policy language suggestions.
+              Explain why this policy exists and what it aims to achieve. Use the AI Assistant for professional policy language suggestions. Tracked changes are enabled to show your edits.
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -98,7 +98,7 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
             <FormLabel>Policy</FormLabel>
             <FormControl>
               <RichTextEditor 
-                content={field.value}
+                content={field.value || ''}
                 onChange={field.onChange}
                 placeholder="Enter the complete policy text..."
                 className="min-h-[250px]"
@@ -106,7 +106,7 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
               />
             </FormControl>
             <FormDescription>
-              The full text of the policy document with formatting. Use AI tools to convert to proper policy language and ensure professional tone.
+              The full text of the policy document with formatting. Use AI tools to convert to proper policy language and ensure professional tone. All changes are tracked with your initials.
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -121,7 +121,7 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
             <FormLabel>Procedure</FormLabel>
             <FormControl>
               <RichTextEditor 
-                content={field.value}
+                content={field.value || ''}
                 onChange={field.onChange}
                 placeholder="Outline the step-by-step procedure..."
                 className="min-h-[180px]"
@@ -129,7 +129,7 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
               />
             </FormControl>
             <FormDescription>
-              Provide detailed steps on how this policy should be implemented. The AI Assistant can help expand content and improve clarity.
+              Provide detailed steps on how this policy should be implemented. The AI Assistant can help expand content and improve clarity. Your edits are tracked for review.
             </FormDescription>
             <FormMessage />
           </FormItem>

@@ -1,3 +1,4 @@
+
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -6,6 +7,13 @@ import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import { Button } from '@/components/ui/button';
 import { AIWritingAssistant } from '@/components/ui/ai-writing-assistant';
+import { Addition } from './tiptap-extensions/AdditionMark';
+import { Deletion } from './tiptap-extensions/DeletionMark';
+import { createChangeTrackingPlugin } from './tiptap-extensions/ChangeTrackingPlugin';
+import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { getUserInitials, isValidTipTapJson, migrateHtmlToJson } from '@/utils/trackingUtils';
 import { 
   Bold, 
   Italic, 
@@ -18,7 +26,9 @@ import {
   Redo,
   AlignLeft,
   AlignCenter,
-  AlignRight
+  AlignRight,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +41,65 @@ interface RichTextEditorProps {
 }
 
 export function RichTextEditor({ content, onChange, placeholder, className, context }: RichTextEditorProps) {
+  const { user } = useAuth();
+  const [userInitials, setUserInitials] = useState<string>('U');
+  const [trackingEnabled, setTrackingEnabled] = useState<boolean>(true);
+  const [isJsonMode, setIsJsonMode] = useState<boolean>(false);
+
+  // Load user initials from profile
+  useEffect(() => {
+    const loadUserInitials = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('initials, name, email')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.initials) {
+          setUserInitials(profile.initials);
+        } else {
+          // Fallback to generating initials
+          const initials = getUserInitials(profile?.name, profile?.email || user.email);
+          setUserInitials(initials);
+        }
+      } catch (error) {
+        console.error('Error loading user initials:', error);
+        setUserInitials(getUserInitials(undefined, user.email));
+      }
+    };
+
+    loadUserInitials();
+  }, [user]);
+
+  // Determine if content is JSON or HTML and prepare initial content
+  const initialContent = (() => {
+    if (!content) return '';
+    
+    // Try to parse as JSON first
+    try {
+      const parsed = JSON.parse(content);
+      if (isValidTipTapJson(parsed)) {
+        setIsJsonMode(true);
+        return parsed;
+      }
+    } catch {
+      // Not JSON, treat as HTML
+    }
+    
+    // If it's HTML, migrate to JSON format
+    if (content.includes('<') && content.includes('>')) {
+      const migratedJson = migrateHtmlToJson(content);
+      setIsJsonMode(true);
+      return migratedJson;
+    }
+    
+    // Plain text
+    return content;
+  })();
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -49,10 +118,15 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
+      Addition,
+      Deletion,
     ],
-    content,
+    content: initialContent,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      const updatedContent = isJsonMode 
+        ? JSON.stringify(editor.getJSON())
+        : editor.getHTML();
+      onChange(updatedContent);
     },
     editorProps: {
       attributes: {
@@ -61,6 +135,19 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
       },
     },
   });
+
+  // Add change tracking plugin when editor is ready
+  useEffect(() => {
+    if (editor && trackingEnabled) {
+      const plugin = createChangeTrackingPlugin({
+        userInitials,
+        enabled: trackingEnabled,
+      });
+      
+      // Register the plugin
+      editor.registerPlugin(plugin);
+    }
+  }, [editor, userInitials, trackingEnabled]);
 
   if (!editor) {
     return null;
@@ -73,12 +160,41 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
 
   // Handle AI-improved text
   const handleAITextChange = (improvedText: string) => {
-    // Convert plain text back to HTML while preserving basic formatting
-    const htmlContent = improvedText.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
-    const wrappedContent = `<p>${htmlContent}</p>`;
-    
-    editor.commands.setContent(wrappedContent);
-    onChange(wrappedContent);
+    if (trackingEnabled) {
+      // When tracking is enabled, mark AI improvements as additions
+      const changeId = crypto.randomUUID();
+      const timestamp = new Date().toISOString();
+      
+      // Clear current content and add new content with tracking
+      editor.commands.selectAll();
+      editor.commands.deleteSelection();
+      
+      // Insert new content as tracked addition
+      editor.commands.insertContent({
+        type: 'text',
+        text: improvedText,
+        marks: [
+          {
+            type: 'addition',
+            attrs: {
+              changeId,
+              userInitials: 'AI',
+              timestamp,
+            },
+          },
+        ],
+      });
+    } else {
+      // Convert plain text back to content
+      const htmlContent = improvedText.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+      const wrappedContent = `<p>${htmlContent}</p>`;
+      
+      editor.commands.setContent(wrappedContent);
+    }
+  };
+
+  const toggleTracking = () => {
+    setTrackingEnabled(!trackingEnabled);
   };
 
   return (
@@ -201,19 +317,79 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
           >
             <Redo className="h-4 w-4" />
           </Button>
+          <div className="w-px h-6 bg-gray-300 mx-1" />
+          <Button
+            type="button"
+            variant={trackingEnabled ? "default" : "ghost"}
+            size="sm"
+            onClick={toggleTracking}
+            title={trackingEnabled ? "Disable Change Tracking" : "Enable Change Tracking"}
+          >
+            {trackingEnabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          </Button>
         </div>
         
-        <AIWritingAssistant
-          text={getPlainText()}
-          onChange={handleAITextChange}
-          context={context}
-        />
+        <div className="flex items-center gap-2">
+          {trackingEnabled && (
+            <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 rounded">
+              Tracking: {userInitials}
+            </span>
+          )}
+          <AIWritingAssistant
+            text={getPlainText()}
+            onChange={handleAITextChange}
+            context={context}
+          />
+        </div>
       </div>
       <EditorContent 
         editor={editor} 
         className="min-h-[200px]"
         placeholder={placeholder}
       />
+      
+      <style jsx global>{`
+        .tracked-addition {
+          position: relative;
+        }
+        
+        .tracked-deletion {
+          position: relative;
+        }
+        
+        .tracked-initials {
+          pointer-events: none;
+          user-select: none;
+        }
+        
+        .ProseMirror .tracked-addition strong {
+          background-color: rgba(34, 139, 34, 0.1);
+          padding: 1px 2px;
+          border-radius: 2px;
+        }
+        
+        .ProseMirror .tracked-deletion s {
+          background-color: rgba(178, 34, 34, 0.1);
+          padding: 1px 2px;
+          border-radius: 2px;
+        }
+        
+        @media print {
+          .tracked-addition strong {
+            background-color: transparent !important;
+            font-weight: bold;
+          }
+          
+          .tracked-deletion s {
+            background-color: transparent !important;
+            text-decoration: line-through;
+          }
+          
+          .tracked-initials {
+            font-size: 0.6em !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
