@@ -106,6 +106,7 @@ export function ReviewPolicies() {
         isLoading={isLoadingPolicies}
         isEditor={false}
         canPublish={true}
+        editingPolicyId={editingPolicyId}
         onUpdateStatus={updatePolicyStatus}
         onEdit={handleEditPolicy}
         onView={handleViewPolicy}

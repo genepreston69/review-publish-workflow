@@ -1,3 +1,4 @@
+
 import { EditorContent } from '@tiptap/react';
 import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
@@ -7,7 +8,6 @@ import { cn } from '@/lib/utils';
 import { EditorToolbar } from './rich-text-editor/EditorToolbar';
 import { EditorStyles } from './rich-text-editor/EditorStyles';
 import { useEditorSetup } from './rich-text-editor/useEditorSetup';
-import { useChangeTracking } from './rich-text-editor/useChangeTracking';
 
 interface RichTextEditorProps {
   content: string;
@@ -16,6 +16,7 @@ interface RichTextEditorProps {
   className?: string;
   context?: string;
   showBottomToolbar?: boolean;
+  isEditMode?: boolean;
 }
 
 export function RichTextEditor({ 
@@ -24,11 +25,11 @@ export function RichTextEditor({
   placeholder, 
   className, 
   context,
-  showBottomToolbar = false 
+  showBottomToolbar = false,
+  isEditMode = false
 }: RichTextEditorProps) {
   const auth = useAuth();
   const [userInitials, setUserInitials] = useState<string>('U');
-  const [trackingEnabled, setTrackingEnabled] = useState<boolean>(false);
   const [isJsonMode, setIsJsonMode] = useState<boolean>(false);
 
   // Load user initials from profile
@@ -83,9 +84,6 @@ export function RichTextEditor({
 
   const editor = useEditorSetup({ content, onChange, isJsonMode });
 
-  // Use change tracking hook
-  useChangeTracking({ editor, userInitials, trackingEnabled });
-
   if (!editor) {
     return null;
   }
@@ -97,50 +95,29 @@ export function RichTextEditor({
 
   // Handle AI-improved text
   const handleAITextChange = (improvedText: string) => {
-    if (trackingEnabled) {
-      // When tracking is enabled, mark AI improvements as additions
-      const changeId = crypto.randomUUID();
-      const timestamp = new Date().toISOString();
-      
-      // Clear current content and add new content with tracking
-      editor.commands.selectAll();
-      editor.commands.deleteSelection();
-      
-      // Insert new content as tracked addition
-      editor.commands.insertContent({
-        type: 'text',
-        text: improvedText,
-        marks: [
-          {
-            type: 'addition',
-            attrs: {
-              changeId,
-              userInitials: 'AI',
-              timestamp,
-            },
-          },
-        ],
-      });
-    } else {
-      // Convert plain text back to content
-      const htmlContent = improvedText.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
-      const wrappedContent = `<p>${htmlContent}</p>`;
-      
-      editor.commands.setContent(wrappedContent);
-    }
-  };
-
-  const toggleTracking = () => {
-    setTrackingEnabled(!trackingEnabled);
+    // Convert plain text back to content
+    const htmlContent = improvedText.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+    const wrappedContent = `<p>${htmlContent}</p>`;
+    
+    editor.commands.setContent(wrappedContent);
   };
 
   return (
-    <div className={cn("border rounded-md", className)}>
+    <div className={cn(
+      "border rounded-md transition-colors",
+      isEditMode && "border-orange-300 ring-1 ring-orange-200 bg-orange-50/30",
+      className
+    )}>
+      {isEditMode && (
+        <div className="px-3 py-2 border-b border-orange-200 bg-orange-100/50">
+          <span className="text-xs font-medium text-orange-700">Edit Mode Active</span>
+        </div>
+      )}
       <EditorToolbar
         editor={editor}
-        trackingEnabled={trackingEnabled}
+        trackingEnabled={false}
         userInitials={userInitials}
-        onToggleTracking={toggleTracking}
+        onToggleTracking={() => {}}
         onAITextChange={handleAITextChange}
         getPlainText={getPlainText}
         context={context}
@@ -154,9 +131,9 @@ export function RichTextEditor({
       {showBottomToolbar && (
         <EditorToolbar
           editor={editor}
-          trackingEnabled={trackingEnabled}
+          trackingEnabled={false}
           userInitials={userInitials}
-          onToggleTracking={toggleTracking}
+          onToggleTracking={() => {}}
           onAITextChange={handleAITextChange}
           getPlainText={getPlainText}
           context={context}
