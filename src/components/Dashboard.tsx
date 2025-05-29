@@ -172,6 +172,9 @@ export const Dashboard = () => {
   const reviewContents = contents.filter(c => c.status === 'under-review');
   const publishedContents = contents.filter(c => c.status === 'published');
 
+  // Set default tab based on user role
+  const defaultTab = userRole === 'read-only' ? 'published' : 'all';
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -189,71 +192,76 @@ export const Dashboard = () => {
         )}
       </div>
 
-      <Tabs defaultValue="all" className="w-full">
+      <Tabs defaultValue={defaultTab} className="w-full">
         <DashboardTabs />
 
-        <TabsContent value="all" className="mt-6">
-          {contents.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">
-                No content found for your role ({userRole}). 
-                {canCreate && " Create your first piece of content to get started."}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {contents.map((content) => (
-                <ContentCard
-                  key={content.id}
-                  content={content}
-                  onEdit={handleEdit}
-                  onView={handleView}
-                  onPublish={handlePublish}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+        {/* Only show these tabs for non-read-only users */}
+        {userRole !== 'read-only' && (
+          <>
+            <TabsContent value="all" className="mt-6">
+              {contents.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">
+                    No content found for your role ({userRole}). 
+                    {canCreate && " Create your first piece of content to get started."}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {contents.map((content) => (
+                    <ContentCard
+                      key={content.id}
+                      content={content}
+                      onEdit={handleEdit}
+                      onView={handleView}
+                      onPublish={handlePublish}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
 
-        <TabsContent value="drafts" className="mt-6">
-          {draftContents.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No draft content found.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {draftContents.map((content) => (
-                <ContentCard
-                  key={content.id}
-                  content={content}
-                  onEdit={handleEdit}
-                  onView={handleView}
-                  onPublish={handlePublish}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+            <TabsContent value="drafts" className="mt-6">
+              {draftContents.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">No draft content found.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {draftContents.map((content) => (
+                    <ContentCard
+                      key={content.id}
+                      content={content}
+                      onEdit={handleEdit}
+                      onView={handleView}
+                      onPublish={handlePublish}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
 
-        <TabsContent value="review" className="mt-6">
-          {reviewContents.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No content under review.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {reviewContents.map((content) => (
-                <ContentCard
-                  key={content.id}
-                  content={content}
-                  onEdit={handleEdit}
-                  onView={handleView}
-                  onPublish={handlePublish}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+            <TabsContent value="review" className="mt-6">
+              {reviewContents.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">No content under review.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {reviewContents.map((content) => (
+                    <ContentCard
+                      key={content.id}
+                      content={content}
+                      onEdit={handleEdit}
+                      onView={handleView}
+                      onPublish={handlePublish}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </>
+        )}
 
         <TabsContent value="published" className="mt-6">
           {publishedContents.length === 0 ? (
