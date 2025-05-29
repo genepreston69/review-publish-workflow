@@ -13,11 +13,13 @@ interface Policy {
   purpose: string | null;
   reviewer: string | null;
   status: string | null;
+  policy_type: string | null;
   created_at: string;
 }
 
 export const usePublishedPolicies = (userRole: UserRole | null) => {
-  const [publishedPolicies, setPublishedPolicies] = useState<Policy[]>([]);
+  const [hrPolicies, setHrPolicies] = useState<Policy[]>([]);
+  const [facilityPolicies, setFacilityPolicies] = useState<Policy[]>([]);
   const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
   const { toast } = useToast();
 
@@ -45,7 +47,18 @@ export const usePublishedPolicies = (userRole: UserRole | null) => {
       }
 
       console.log('=== PUBLISHED POLICIES FETCHED ===', data);
-      setPublishedPolicies(data || []);
+      
+      // Separate HR policies from Facility policies
+      const hrPols = (data || []).filter(policy => policy.policy_type === 'HR');
+      const facilityPols = (data || []).filter(policy => 
+        policy.policy_type === 'RP' || policy.policy_type === 'S'
+      );
+      
+      console.log('=== HR POLICIES ===', hrPols.length);
+      console.log('=== FACILITY POLICIES ===', facilityPols.length);
+      
+      setHrPolicies(hrPols);
+      setFacilityPolicies(facilityPols);
     } catch (error) {
       console.error('Error fetching published policies:', error);
       toast({
@@ -65,7 +78,8 @@ export const usePublishedPolicies = (userRole: UserRole | null) => {
   }, [userRole]);
 
   return {
-    publishedPolicies,
+    hrPolicies,
+    facilityPolicies,
     isLoadingPolicies,
   };
 };

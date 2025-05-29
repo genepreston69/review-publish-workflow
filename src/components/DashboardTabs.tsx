@@ -1,18 +1,22 @@
 
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Eye, CheckCircle, BookOpen } from 'lucide-react';
+import { FileText, Eye, CheckCircle, BookOpen, Users, Building } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 export function DashboardTabs() {
   const { userRole } = useAuth();
   
-  // For read-only users, show only Published Policies and Policy Manuals
+  // For read-only users, show HR Policies, Facility Policies, and Policy Manuals
   if (userRole === 'read-only') {
     return (
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="published" className="flex items-center gap-2">
-          <CheckCircle className="w-4 h-4" />
-          Published Policies
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="hr-policies" className="flex items-center gap-2">
+          <Users className="w-4 h-4" />
+          HR Policies
+        </TabsTrigger>
+        <TabsTrigger value="facility-policies" className="flex items-center gap-2">
+          <Building className="w-4 h-4" />
+          Facility Policies
         </TabsTrigger>
         <TabsTrigger value="policy-manuals" className="flex items-center gap-2">
           <BookOpen className="w-4 h-4" />

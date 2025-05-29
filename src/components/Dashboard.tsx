@@ -20,7 +20,7 @@ export const Dashboard = () => {
 
   // Use custom hooks for data management
   const { contents, isLoading, handlePublish } = useContentManagement(currentUser, userRole);
-  const { publishedPolicies, isLoadingPolicies } = usePublishedPolicies(userRole);
+  const { hrPolicies, facilityPolicies, isLoadingPolicies } = usePublishedPolicies(userRole);
   
   // Use action handlers
   const {
@@ -47,7 +47,7 @@ export const Dashboard = () => {
   const publishedContents = contents.filter(c => c.status === 'published');
 
   // Set default tab based on user role
-  const defaultTab = userRole === 'read-only' ? 'published' : 'all';
+  const defaultTab = userRole === 'read-only' ? 'hr-policies' : 'all';
 
   return (
     <div className="p-6 space-y-6">
@@ -92,33 +92,53 @@ export const Dashboard = () => {
                 emptyMessage="No content under review."
               />
             </TabsContent>
+
+            <TabsContent value="published" className="mt-6">
+              <ContentGrid
+                contents={publishedContents}
+                onEdit={handleEdit}
+                onView={handleView}
+                onPublish={handlePublish}
+                emptyMessage="No published content found."
+              />
+            </TabsContent>
           </>
         )}
 
-        <TabsContent value="published" className="mt-6">
-          {userRole === 'read-only' ? (
-            // For read-only users, show published policies from Policies table
-            publishedPolicies.length === 0 ? (
-              <FacilityPoliciesEmptyState />
-            ) : (
-              <FacilityPoliciesGrid
-                policies={publishedPolicies}
-                isEditor={false}
-                canPublish={false}
-                isSuperAdmin={false}
-                onView={handlePolicyView}
-                onUpdateStatus={handlePolicyUpdateStatus}
-                onDelete={handlePolicyDelete}
-              />
-            )
+        {/* HR Policies tab for read-only users */}
+        <TabsContent value="hr-policies" className="mt-6">
+          {hrPolicies.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No HR policies found.</p>
+            </div>
           ) : (
-            // For other users, show published content from content table
-            <ContentGrid
-              contents={publishedContents}
-              onEdit={handleEdit}
-              onView={handleView}
-              onPublish={handlePublish}
-              emptyMessage="No published content found."
+            <FacilityPoliciesGrid
+              policies={hrPolicies}
+              isEditor={false}
+              canPublish={false}
+              isSuperAdmin={false}
+              onView={handlePolicyView}
+              onUpdateStatus={handlePolicyUpdateStatus}
+              onDelete={handlePolicyDelete}
+            />
+          )}
+        </TabsContent>
+
+        {/* Facility Policies tab for read-only users */}
+        <TabsContent value="facility-policies" className="mt-6">
+          {facilityPolicies.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No facility policies found.</p>
+            </div>
+          ) : (
+            <FacilityPoliciesGrid
+              policies={facilityPolicies}
+              isEditor={false}
+              canPublish={false}
+              isSuperAdmin={false}
+              onView={handlePolicyView}
+              onUpdateStatus={handlePolicyUpdateStatus}
+              onDelete={handlePolicyDelete}
             />
           )}
         </TabsContent>
