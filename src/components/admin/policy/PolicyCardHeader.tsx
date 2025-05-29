@@ -12,9 +12,10 @@ interface Policy {
 
 interface PolicyCardHeaderProps {
   policy: Policy;
+  children?: React.ReactNode;
 }
 
-export function PolicyCardHeader({ policy }: PolicyCardHeaderProps) {
+export function PolicyCardHeader({ policy, children }: PolicyCardHeaderProps) {
   return (
     <CardHeader>
       <div className="flex items-start justify-between">
@@ -28,14 +29,17 @@ export function PolicyCardHeader({ policy }: PolicyCardHeaderProps) {
             </CardDescription>
           )}
         </div>
-        {policy.status && (
-          <Badge 
-            variant="secondary" 
-            className={getStatusColor(policy.status)}
-          >
-            {stripHtml(policy.status)}
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {policy.status && (
+            <Badge 
+              variant="secondary" 
+              className={getStatusColor(policy.status)}
+            >
+              {stripHtml(policy.status)}
+            </Badge>
+          )}
+          {children}
+        </div>
       </div>
     </CardHeader>
   );

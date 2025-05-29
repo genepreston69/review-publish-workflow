@@ -1,9 +1,9 @@
-
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PolicyCardHeader } from './PolicyCardHeader';
 import { PolicyCardContent } from './PolicyCardContent';
 import { PolicyCardActions } from './PolicyCardActions';
+import { cn } from '@/lib/utils';
 
 interface Policy {
   id: string;

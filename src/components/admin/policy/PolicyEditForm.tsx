@@ -235,10 +235,7 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <PolicyFormFields 
-              control={form.control} 
-              isEditMode={true}
-            />
+            <PolicyFormFields control={form.control} />
             
             <PolicyNumberDisplay policyNumber={policy.policy_number} />
 
