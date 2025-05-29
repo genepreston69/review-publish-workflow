@@ -1,3 +1,4 @@
+
 import { Policy, ManualType } from './types';
 
 const stripHtml = (html: string | null): string => {
@@ -94,7 +95,10 @@ export const generatePolicyContent = (type: ManualType, policies: Policy[], tota
     console.log(`Policy Content ${index + 1}: ${policy.policy_number} - ${policy.name} (Page ${currentPageNumber})`);
     
     policyContent += `
-      <div class="policy-page" id="policy-${policy.id}">
+      <div class="policy-page">
+        <!-- Anchor for TOC navigation - placed at the very top of the page -->
+        <a id="policy-${policy.id}" name="policy-${policy.id}" class="policy-anchor"></a>
+        
         <div class="page-header">
           <div class="header-content">
             <img src="/lovable-uploads/07b7c8f7-302d-4fa4-add8-69e1b84285ac.png" alt="Recovery Point West Virginia Logo" class="header-logo">

@@ -96,6 +96,17 @@ export const getPrintStyles = (): string => {
         page-break-inside: avoid;
       }
       
+      /* Policy anchor styling for PDF navigation */
+      .policy-anchor {
+        position: absolute;
+        top: 0;
+        left: 0;
+        visibility: hidden;
+        height: 0;
+        width: 0;
+        display: block;
+      }
+      
       /* Enhanced TOC Table Print Styles for Natural Page Flow */
       .toc-page {
         page-break-after: always; /* Force break after TOC to start policies on new page */
