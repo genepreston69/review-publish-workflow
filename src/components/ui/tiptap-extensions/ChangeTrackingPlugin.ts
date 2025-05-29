@@ -12,7 +12,7 @@ export interface ChangeTrackingOptions {
 export const changeTrackingPluginKey = new PluginKey('changeTracking');
 
 interface Change {
-  type: 'insert' | 'delete' | 'replace';
+  type: 'insert' | 'delete';
   from: number;
   to: number;
   content?: string;
@@ -23,7 +23,6 @@ interface Change {
 const findDocumentChanges = (oldDoc: ProseMirrorNode, newDoc: ProseMirrorNode): Change[] => {
   const changes: Change[] = [];
   
-  // Simple approach: compare the entire text content
   const oldText = oldDoc.textContent;
   const newText = newDoc.textContent;
   
@@ -42,33 +41,38 @@ const findDocumentChanges = (oldDoc: ProseMirrorNode, newDoc: ProseMirrorNode): 
     newEnd--;
   }
   
-  // Determine change type and create change object
+  // Determine change type
   const deletedText = oldText.slice(start, oldEnd);
   const insertedText = newText.slice(start, newEnd);
   
-  if (deletedText && insertedText) {
-    // Replacement
-    changes.push({
-      type: 'replace',
-      from: start,
-      to: start + deletedText.length,
-      content: insertedText,
-      deletedContent: deletedText,
-    });
-  } else if (deletedText) {
-    // Deletion
-    changes.push({
-      type: 'delete',
-      from: start,
-      to: start + deletedText.length,
-      deletedContent: deletedText,
-    });
-  } else if (insertedText) {
-    // Insertion
+  if (insertedText && !deletedText) {
+    // Pure insertion
     changes.push({
       type: 'insert',
       from: start,
+      to: start + insertedText.length,
+      content: insertedText,
+    });
+  } else if (deletedText && !insertedText) {
+    // Pure deletion - store metadata only, don't re-insert
+    changes.push({
+      type: 'delete',
+      from: start,
       to: start,
+      deletedContent: deletedText,
+    });
+  } else if (deletedText && insertedText) {
+    // Replacement - treat as deletion (metadata) + insertion (marked)
+    changes.push({
+      type: 'delete',
+      from: start,
+      to: start,
+      deletedContent: deletedText,
+    });
+    changes.push({
+      type: 'insert',
+      from: start,
+      to: start + insertedText.length,
       content: insertedText,
     });
   }
@@ -93,7 +97,7 @@ const findPositionInNewDoc = (newDoc: ProseMirrorNode, textPosition: number): nu
     return true;
   });
   
-  return Math.max(1, pos); // Ensure position is at least 1
+  return Math.max(1, pos);
 };
 
 const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =>
@@ -115,8 +119,8 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
       
       const { schema } = newState;
       
-      // Check if deletion and addition marks exist
-      if (!schema.marks.deletion || !schema.marks.addition) {
+      // Check if addition mark exists
+      if (!schema.marks.addition) {
         return null;
       }
       
@@ -130,7 +134,7 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
       const tr = newState.tr;
       let hasChanges = false;
       
-      // Process each change atomically
+      // Process each change - ONLY ADD MARKS, NO STRUCTURAL CHANGES
       changes.forEach((change) => {
         const changeId = uuidv4();
         const timestamp = new Date().toISOString();
@@ -140,67 +144,35 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
           const startPos = findPositionInNewDoc(newState.doc, change.from);
           const endPos = startPos + change.content.length;
           
-          console.log('Marking insertion:', { content: change.content, startPos, endPos });
-          
-          const additionMark = schema.marks.addition.create({
-            changeId,
-            userInitials: options.userInitials,
-            timestamp,
-          });
-          
-          tr.addMark(startPos, endPos, additionMark);
-          hasChanges = true;
+          // Ensure positions are valid
+          if (startPos >= 1 && endPos <= newState.doc.content.size && startPos < endPos) {
+            console.log('Marking insertion:', { content: change.content, startPos, endPos });
+            
+            const additionMark = schema.marks.addition.create({
+              changeId,
+              userInitials: options.userInitials,
+              timestamp,
+            });
+            
+            tr.addMark(startPos, endPos, additionMark);
+            hasChanges = true;
+          }
           
         } else if (change.type === 'delete' && change.deletedContent) {
-          // Handle deletion - insert the deleted text with deletion mark
-          const insertPos = findPositionInNewDoc(newState.doc, change.from);
-          
-          console.log('Marking deletion:', { content: change.deletedContent, insertPos });
-          
-          const deletionMark = schema.marks.deletion.create({
+          // Handle deletion - DO NOT re-insert text, only log metadata
+          console.log('Deletion detected (metadata only):', { 
+            content: change.deletedContent, 
+            position: change.from,
             changeId,
             userInitials: options.userInitials,
-            timestamp,
-            originalText: change.deletedContent,
+            timestamp 
           });
           
-          const deletedNode = schema.text(change.deletedContent, [deletionMark]);
-          tr.insert(insertPos, deletedNode);
-          hasChanges = true;
+          // Store deletion metadata for future use (could be used for side panel, etc.)
+          // For now, we just log it - no structural changes to the document
           
-        } else if (change.type === 'replace' && change.content && change.deletedContent) {
-          // Handle replacement - insert deletion mark then apply addition mark
-          const insertPos = findPositionInNewDoc(newState.doc, change.from);
-          
-          console.log('Marking replacement:', { 
-            deleted: change.deletedContent, 
-            inserted: change.content,
-            insertPos 
-          });
-          
-          // First, insert the deleted text with deletion mark
-          const deletionMark = schema.marks.deletion.create({
-            changeId: uuidv4(),
-            userInitials: options.userInitials,
-            timestamp,
-            originalText: change.deletedContent,
-          });
-          
-          const deletedNode = schema.text(change.deletedContent, [deletionMark]);
-          tr.insert(insertPos, deletedNode);
-          
-          // Then, apply addition mark to the replacement text
-          const replacementStartPos = insertPos + deletedNode.nodeSize;
-          const replacementEndPos = replacementStartPos + change.content.length;
-          
-          const additionMark = schema.marks.addition.create({
-            changeId,
-            userInitials: options.userInitials,
-            timestamp,
-          });
-          
-          tr.addMark(replacementStartPos, replacementEndPos, additionMark);
-          hasChanges = true;
+          // TODO: Could store in plugin state for retrieval by UI components
+          // TODO: Could add deletion marks to adjacent content as visual indicators
         }
       });
       
@@ -208,10 +180,7 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
         // Mark this transaction as a tracking change to prevent infinite recursion
         tr.setMeta('isTrackingChange', true);
         
-        // Let this transaction be part of the history so undo/redo works properly
-        // The tracking marks will be undone together with the original content change
-        
-        console.log('Returning atomic tracking transaction');
+        console.log('Returning mark-only tracking transaction');
         return tr;
       }
       

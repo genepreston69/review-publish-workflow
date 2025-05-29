@@ -9,7 +9,6 @@ import BulletList from '@tiptap/extension-bullet-list';
 import OrderedList from '@tiptap/extension-ordered-list';
 import { Suggestion } from '../tiptap-extensions/SuggestionMark';
 import { Addition } from '../tiptap-extensions/AdditionMark';
-import { Deletion } from '../tiptap-extensions/DeletionMark';
 import { ChangeTrackingExtension, ChangeTrackingOptions } from '../tiptap-extensions/ChangeTrackingPlugin';
 import { useMemo } from 'react';
 import { isValidTipTapJson, migrateHtmlToJson } from '@/utils/trackingUtils';
@@ -45,7 +44,7 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
     return content;
   }, [content]);
 
-  // Create extensions array - always include change tracking extension
+  // Create extensions array - simplified to only include addition marks
   const extensions = useMemo(() => {
     return [
       StarterKit.configure({
@@ -53,7 +52,7 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
         bulletList: false,
         orderedList: false,
         listItem: false,
-        // Configure history with optimized settings for change tracking
+        // Configure history with standard settings - no custom prevention
         history: {
           depth: 100,
           newGroupDelay: 500,
@@ -87,10 +86,9 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
       }),
       // New unified suggestion system
       Suggestion,
-      // Keep legacy extensions for backward compatibility
+      // Keep addition mark for insertions
       Addition,
-      Deletion,
-      // Always include change tracking extension, controlled by options
+      // Change tracking extension - now only handles marks, no structural changes
       ChangeTrackingExtension.configure(trackingOptions),
     ];
   }, [trackingOptions]);
@@ -110,7 +108,7 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
         style: 'line-height: 1.8;',
       },
     },
-    // Optimized parse options for change tracking
+    // Standard parse options
     parseOptions: {
       preserveWhitespace: 'full',
     },
