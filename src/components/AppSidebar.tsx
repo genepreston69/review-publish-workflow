@@ -26,8 +26,9 @@ export function AppSidebar() {
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
   const isSuperAdmin = userRole === 'super-admin';
   const isReadOnly = userRole === 'read-only';
+  const hasAdminAccess = !isReadOnly; // editors, publishers, and super-admins
 
-  // Policy items - HR Policies now available for all users
+  // Policy items - available to all users
   const policyItems = [
     {
       id: "hr-policies",
@@ -54,12 +55,16 @@ export function AppSidebar() {
       title: "Review Policies",
       icon: FileCheck,
     }] : []),
+  ];
+
+  // Admin-only policy items
+  const adminPolicyItems = hasAdminAccess ? [
     {
       id: "policy-manuals",
       title: "Policy Manuals",
       icon: BookOpen,
     },
-  ];
+  ] : [];
 
   // Admin items (super-admin only)
   const adminItems = isSuperAdmin ? [
@@ -130,6 +135,7 @@ export function AppSidebar() {
       
       <SidebarContent>
         {renderMenuSection(policyItems, "Policies")}
+        {renderMenuSection(adminPolicyItems, "Tools")}
         {renderMenuSection(adminItems, "Administration")}
       </SidebarContent>
 
