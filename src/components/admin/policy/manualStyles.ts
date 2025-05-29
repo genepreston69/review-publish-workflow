@@ -1,3 +1,4 @@
+
 export const getManualStyles = (): string => {
   return `
     /* Print-optimized styles */
@@ -84,7 +85,7 @@ export const getManualStyles = (): string => {
         text-decoration: none !important;
       }
 
-      /* Improved page footer positioning - prevent bleeding */
+      /* STANDARDIZED PAGE FOOTER - Bottom Right for ALL pages except cover */
       .page-footer {
         position: absolute !important;
         bottom: 0.25in !important;
@@ -96,8 +97,13 @@ export const getManualStyles = (): string => {
         z-index: 1000;
         padding: 0 !important;
         margin: 0 !important;
-        font-size: 10pt;
-        color: #666;
+      }
+
+      .page-number {
+        font-family: Arial, Helvetica, sans-serif !important;
+        font-size: 10pt !important;
+        color: #666 !important;
+        font-weight: normal !important;
       }
 
       /* Ensure content doesn't overlap with footer */
@@ -249,7 +255,7 @@ export const getManualStyles = (): string => {
       color: #1565c0;
     }
 
-    /* Page Footer Styles - Improved positioning */
+    /* STANDARDIZED PAGE FOOTER - Bottom Right for ALL pages except cover */
     .page-footer {
       position: absolute;
       bottom: 0.5in;
@@ -264,9 +270,10 @@ export const getManualStyles = (): string => {
     }
     
     .page-number {
+      font-family: Arial, Helvetica, sans-serif;
       font-size: 10pt;
       color: #666;
-      font-weight: 500;
+      font-weight: normal;
     }
     
     /* TOC Table Styles - Board Standard */

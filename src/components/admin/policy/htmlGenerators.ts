@@ -1,3 +1,4 @@
+
 import { Policy, ManualType } from './types';
 
 const stripHtml = (html: string | null): string => {
@@ -31,8 +32,9 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
   console.log('Generating TOC for policies:', policies.length, 'policies');
   console.log('TOC will span', tocPages, 'pages');
   
-  // Calculate the actual page where policies start: Cover (1) + TOC pages + 1
-  let actualPolicyPageNumber = 1 + tocPages + 1;
+  // TOC starts at page 1 (after unnumbered cover)
+  // Policies start after TOC pages: page (tocPages + 1)
+  let policyStartPage = tocPages + 1;
   
   // Generate TOC rows with correct page numbers
   let tocRows = '';
@@ -40,41 +42,54 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
   policies.forEach((policy, index) => {
     const policyTitle = policy.name || 'Untitled Policy';
     const policyNumber = policy.policy_number || 'N/A';
-    const actualPageNumber = actualPolicyPageNumber + index;
+    const policyPageNumber = policyStartPage + index;
     
-    console.log(`TOC Entry ${index + 1}: ${policyNumber} - ${policyTitle} (Actual Page ${actualPageNumber})`);
+    console.log(`TOC Entry ${index + 1}: ${policyNumber} - ${policyTitle} (Page ${policyPageNumber})`);
     
     tocRows += `<tr class="toc-row">
       <td class="toc-policy-number">${policyNumber}</td>
       <td class="toc-policy-title">
         <a href="#policy-${policy.id}" class="toc-link">${policyTitle}</a>
       </td>
-      <td class="toc-page-number">${actualPageNumber}</td>
+      <td class="toc-page-number">${policyPageNumber}</td>
     </tr>`;
   });
 
-  // Generate single TOC (not multiple pages for now - keeping it simple)
-  const tocContent = `
-    <div class="toc-page">
-      <div class="toc-content">
-        <h1 class="toc-main-title">Table of Contents</h1>
-        <div class="toc-table-container">
-          <table class="toc-table">
-            <thead>
-              <tr>
-                <th>Policy Number</th>
-                <th>Policy Title</th>
-                <th>Page</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${tocRows}
-            </tbody>
-          </table>
+  // Generate TOC pages with page numbers in footer
+  let tocContent = '';
+  
+  for (let i = 0; i < tocPages; i++) {
+    const isFirstTocPage = i === 0;
+    const pageBreakClass = isFirstTocPage ? '' : 'toc-page-break';
+    const currentTocPageNumber = i + 1; // TOC pages start at 1
+    
+    tocContent += `
+      <div class="toc-page ${pageBreakClass}">
+        <div class="toc-content">
+          ${isFirstTocPage ? '<h1 class="toc-main-title">Table of Contents</h1>' : ''}
+          <div class="toc-table-container">
+            <table class="toc-table">
+              ${isFirstTocPage ? `
+                <thead>
+                  <tr>
+                    <th>Policy Number</th>
+                    <th>Policy Title</th>
+                    <th>Page</th>
+                  </tr>
+                </thead>
+              ` : ''}
+              <tbody>
+                ${i === 0 ? tocRows : ''}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="page-footer">
+          <span class="page-number">${currentTocPageNumber}</span>
         </div>
       </div>
-    </div>
-  `;
+    `;
+  }
 
   return tocContent;
 };
@@ -82,14 +97,14 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
 export const generatePolicyContent = (type: ManualType, policies: Policy[], totalPages: number, tocPages: number): string => {
   console.log('Generating policy content for policies:', policies.length, 'policies');
   
-  // Calculate the actual starting page for policies: Cover (1) + TOC pages + 1
-  let actualPageNumber = 1 + tocPages + 1;
+  // Policy pages start after TOC pages: page (tocPages + 1)
+  let policyStartPage = tocPages + 1;
   
   let policyContent = '';
   
   policies.forEach((policy, index) => {
-    const currentPageNumber = actualPageNumber + index;
-    console.log(`Policy Content ${index + 1}: ${policy.policy_number} - ${policy.name} (Actual Page ${currentPageNumber})`);
+    const currentPageNumber = policyStartPage + index;
+    console.log(`Policy Content ${index + 1}: ${policy.policy_number} - ${policy.name} (Page ${currentPageNumber})`);
     
     policyContent += `
       <div class="policy-page" id="policy-${policy.id}">
