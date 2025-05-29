@@ -81,8 +81,9 @@ export function RichTextEditor({
     }
   }, [content]);
 
-  // Create tracking options - always provide options but control enabled state
-  const trackingOptions: ChangeTrackingOptions = useMemo(() => {
+  // Create tracking options
+  const trackingOptions: ChangeTrackingOptions | undefined = useMemo(() => {
+    if (!trackingEnabled) return undefined;
     return {
       userInitials,
       enabled: trackingEnabled,
@@ -142,15 +143,6 @@ export function RichTextEditor({
 
   const toggleTracking = () => {
     setTrackingEnabled(!trackingEnabled);
-    
-    // Update the plugin options in real-time
-    const changeTrackingExtension = editor.extensionManager.extensions.find(
-      ext => ext.name === 'changeTracking'
-    );
-    
-    if (changeTrackingExtension) {
-      changeTrackingExtension.options.enabled = !trackingEnabled;
-    }
   };
 
   return (

@@ -1,3 +1,4 @@
+
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -10,7 +11,7 @@ import OrderedList from '@tiptap/extension-ordered-list';
 import { Suggestion } from '../tiptap-extensions/SuggestionMark';
 import { Addition } from '../tiptap-extensions/AdditionMark';
 import { Deletion } from '../tiptap-extensions/DeletionMark';
-import { ChangeTrackingExtension, ChangeTrackingOptions } from '../tiptap-extensions/ChangeTrackingPlugin';
+import { createChangeTrackingPlugin, ChangeTrackingOptions } from '../tiptap-extensions/ChangeTrackingPlugin';
 import { useMemo } from 'react';
 import { isValidTipTapJson, migrateHtmlToJson } from '@/utils/trackingUtils';
 
@@ -18,7 +19,7 @@ interface UseEditorSetupProps {
   content: string;
   onChange: (content: string) => void;
   isJsonMode: boolean;
-  trackingOptions: ChangeTrackingOptions;
+  trackingOptions?: ChangeTrackingOptions;
 }
 
 export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions }: UseEditorSetupProps) {
@@ -45,9 +46,8 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
     return content;
   }, [content]);
 
-  // Create extensions array - always include change tracking extension
-  const extensions = useMemo(() => {
-    return [
+  const editor = useEditor({
+    extensions: [
       StarterKit.configure({
         // Disable default list extensions to configure them separately
         bulletList: false,
@@ -85,13 +85,7 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
       // Keep legacy extensions for backward compatibility
       Addition,
       Deletion,
-      // Always include change tracking extension, controlled by options
-      ChangeTrackingExtension.configure(trackingOptions),
-    ];
-  }, [trackingOptions]);
-
-  const editor = useEditor({
-    extensions,
+    ],
     content: getInitialContent,
     onUpdate: ({ editor }) => {
       const updatedContent = isJsonMode 
@@ -105,11 +99,21 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
         style: 'line-height: 1.8;',
       },
     },
-    // Add parse options for better tracking support
-    parseOptions: {
-      preserveWhitespace: 'full',
-    },
-  }, [extensions, getInitialContent, isJsonMode, onChange]);
+    // Add the change tracking plugin if tracking options are provided
+    ...(trackingOptions && {
+      parseOptions: {
+        preserveWhitespace: 'full',
+      },
+    }),
+  }, [getInitialContent, isJsonMode, onChange, trackingOptions]);
+
+  // Add the change tracking plugin after editor creation
+  useMemo(() => {
+    if (editor && trackingOptions) {
+      const plugin = createChangeTrackingPlugin(trackingOptions);
+      editor.registerPlugin(plugin);
+    }
+  }, [editor, trackingOptions]);
 
   return editor;
 }
