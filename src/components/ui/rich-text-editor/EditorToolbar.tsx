@@ -14,9 +14,7 @@ import {
   Redo,
   AlignLeft,
   AlignCenter,
-  AlignRight,
-  Eye,
-  EyeOff
+  AlignRight
 } from 'lucide-react';
 import { Editor } from '@tiptap/react';
 import { cn } from '@/lib/utils';
@@ -292,11 +290,11 @@ export function EditorToolbar({
             <TooltipTrigger asChild>
               <Button
                 type="button"
-                variant={trackingEnabled ? "default" : "ghost"}
+                variant={trackingEnabled ? "default" : "outline"}
                 size="sm"
                 onClick={onToggleTracking}
               >
-                {trackingEnabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                Track Changes
               </Button>
             </TooltipTrigger>
             <TooltipContent>
