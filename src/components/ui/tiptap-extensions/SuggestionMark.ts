@@ -10,6 +10,10 @@ export interface SuggestionAttributes {
   changeType: 'insert' | 'delete' | 'replace';
 }
 
+export interface SuggestionOptions {
+  HTMLAttributes: Record<string, any>;
+}
+
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     suggestion: {
@@ -19,7 +23,7 @@ declare module '@tiptap/core' {
   }
 }
 
-export const Suggestion = Mark.create<{}, SuggestionAttributes>({
+export const Suggestion = Mark.create<SuggestionOptions, SuggestionAttributes>({
   name: 'suggestion',
 
   addOptions() {
