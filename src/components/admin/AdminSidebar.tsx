@@ -11,7 +11,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Shield, Users, Link, BarChart3, Settings, Plus, FileText, FileClock, FileCheck } from 'lucide-react';
+import { Users, Link, BarChart3, Settings, Plus, FileText, FileClock, FileCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const adminItems = [
@@ -75,9 +75,12 @@ export function AdminSidebar({ onTabChange, activeTab }: AdminSidebarProps) {
   return (
     <Sidebar>
       <SidebarHeader className="border-b p-4">
-        <div className="flex items-center gap-2">
-          <Shield className="w-6 h-6 text-purple-600" />
-          <span className="font-semibold text-lg">Admin Panel</span>
+        <div className="flex items-center">
+          <img 
+            src="/lovable-uploads/574646d6-6de7-444f-a9a2-327c1a816521.png" 
+            alt="Recovery Point West Virginia" 
+            className="h-8 w-auto"
+          />
         </div>
       </SidebarHeader>
       

@@ -1,4 +1,3 @@
-
 import {
   Sidebar,
   SidebarContent,
@@ -12,7 +11,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { 
-  Shield, Users, FileText, FileClock, FileCheck, Plus, BookOpen, 
+  Users, FileText, FileClock, FileCheck, Plus, BookOpen, 
   Building, Eye, CheckCircle, BarChart3, Settings 
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -125,11 +124,12 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="border-b p-4">
-        <div className="flex items-center gap-2">
-          <Shield className="w-6 h-6 text-purple-600" />
-          <span className="font-semibold text-lg">
-            {isReadOnly ? 'Policy Portal' : 'Content Management'}
-          </span>
+        <div className="flex items-center">
+          <img 
+            src="/lovable-uploads/574646d6-6de7-444f-a9a2-327c1a816521.png" 
+            alt="Recovery Point West Virginia" 
+            className="h-8 w-auto"
+          />
         </div>
       </SidebarHeader>
       

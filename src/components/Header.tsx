@@ -28,9 +28,6 @@ export const Header = () => {
                 alt="Recovery Point West Virginia" 
                 className="h-8 w-auto"
               />
-              <span className="text-xl font-bold text-gray-900">
-                Content Management System
-              </span>
             </Link>
           </div>
           {currentUser && userRole && (
