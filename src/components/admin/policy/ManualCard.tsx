@@ -1,38 +1,69 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Printer } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileText, Users, Building2, Loader2, Eye, Download } from 'lucide-react';
 
 interface ManualCardProps {
   type: 'HR' | 'Facility';
   isGenerating: boolean;
   onGenerate: (type: 'HR' | 'Facility') => void;
+  onPreview?: (type: 'HR' | 'Facility') => void;
 }
 
-export function ManualCard({ type, isGenerating, onGenerate }: ManualCardProps) {
-  const iconColor = type === 'HR' ? 'text-blue-600' : 'text-green-600';
+export function ManualCard({ type, isGenerating, onGenerate, onPreview }: ManualCardProps) {
+  const isHR = type === 'HR';
   
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileText className={`h-5 w-5 ${iconColor}`} />
+          {isHR ? <Users className="w-5 h-5" /> : <Building2 className="w-5 h-5" />}
           {type} Policy Manual
         </CardTitle>
+        <CardDescription>
+          {isHR 
+            ? "Human Resources policies and procedures"
+            : "Facility operations and safety policies"
+          }
+        </CardDescription>
       </CardHeader>
+      
       <CardContent className="space-y-4">
-        <p className="text-sm text-gray-600">
-          Generate a professional {type.toLowerCase()} policy manual with official Recovery Point West Virginia branding, 
-          cover page, table of contents, and board-ready formatting.
-        </p>
-        <Button
-          onClick={() => onGenerate(type)}
-          disabled={isGenerating}
-          className="w-full"
-        >
-          <Printer className="w-4 h-4 mr-2" />
-          {isGenerating ? 'Generating...' : `Generate ${type} Manual`}
-        </Button>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <FileText className="w-4 h-4" />
+          Includes all published {type.toLowerCase()} policies with official branding
+        </div>
+        
+        <div className="flex gap-2">
+          {onPreview && (
+            <Button
+              onClick={() => onPreview(type)}
+              disabled={isGenerating}
+              variant="outline"
+              className="flex-1"
+            >
+              {isGenerating ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Eye className="w-4 h-4 mr-2" />
+              )}
+              Preview
+            </Button>
+          )}
+          
+          <Button
+            onClick={() => onGenerate(type)}
+            disabled={isGenerating}
+            className="flex-1"
+          >
+            {isGenerating ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            ) : (
+              <Download className="w-4 h-4 mr-2" />
+            )}
+            Generate & Print
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
