@@ -22,8 +22,15 @@ export const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            <Link to="/" className="text-xl font-bold text-gray-900 hover:text-gray-700">
-              Content Management System
+            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <img 
+                src="/lovable-uploads/574646d6-6de7-444f-a9a2-327c1a816521.png" 
+                alt="Recovery Point West Virginia" 
+                className="h-8 w-auto"
+              />
+              <span className="text-xl font-bold text-gray-900">
+                Content Management System
+              </span>
             </Link>
           </div>
           {currentUser && userRole && (
