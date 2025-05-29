@@ -79,14 +79,13 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
   }, [auth?.currentUser]);
 
   // Determine if content is JSON or HTML and prepare initial content
-  const initialContent = (() => {
+  const getInitialContent = () => {
     if (!content) return '';
     
     // Try to parse as JSON first
     try {
       const parsed = JSON.parse(content);
       if (isValidTipTapJson(parsed)) {
-        setIsJsonMode(true);
         return parsed;
       }
     } catch {
@@ -95,14 +94,32 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
     
     // If it's HTML, migrate to JSON format
     if (content.includes('<') && content.includes('>')) {
-      const migratedJson = migrateHtmlToJson(content);
-      setIsJsonMode(true);
-      return migratedJson;
+      return migrateHtmlToJson(content);
     }
     
     // Plain text
     return content;
-  })();
+  };
+
+  // Set JSON mode based on content type
+  useEffect(() => {
+    if (!content) return;
+    
+    try {
+      const parsed = JSON.parse(content);
+      if (isValidTipTapJson(parsed)) {
+        setIsJsonMode(true);
+        return;
+      }
+    } catch {
+      // Not JSON
+    }
+    
+    // If it's HTML, set JSON mode
+    if (content.includes('<') && content.includes('>')) {
+      setIsJsonMode(true);
+    }
+  }, [content]);
 
   const editor = useEditor({
     extensions: [
@@ -125,7 +142,7 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
       Addition,
       Deletion,
     ],
-    content: initialContent,
+    content: getInitialContent(),
     onUpdate: ({ editor }) => {
       const updatedContent = isJsonMode 
         ? JSON.stringify(editor.getJSON())
