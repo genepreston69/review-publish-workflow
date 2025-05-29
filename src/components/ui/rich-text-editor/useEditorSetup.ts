@@ -1,4 +1,3 @@
-
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { History } from '@tiptap/extension-history';
@@ -62,11 +61,6 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
       History.configure({
         depth: 100,
         newGroupDelay: 500,
-        // Ensure tracking transactions are properly handled
-        filterTransaction: (transaction) => {
-          // Don't add tracking transactions to history separately
-          return !transaction.getMeta('isTrackingTransaction');
-        },
       }),
       // Configure list extensions separately for better control
       ListItem.configure({

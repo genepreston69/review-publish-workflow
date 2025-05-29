@@ -46,7 +46,8 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
         
         // Analyze the steps to detect insertions and deletions
         for (const step of transaction.steps) {
-          if (step.jsonID === 'replace') {
+          // Check if this is a replace step using the step's constructor name
+          if (step.constructor.name === 'ReplaceStep') {
             const replaceStep = step as any;
             const { from, to, slice } = replaceStep;
             
@@ -122,8 +123,8 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
       if (hasChanges) {
         // Mark this as a tracking transaction to avoid infinite loops
         tr.setMeta('isTrackingTransaction', true);
-        // Group with the original transaction for proper undo behavior
-        tr.setMeta('addToHistory', false);
+        // Don't group with history to maintain proper undo behavior
+        tr.setMeta('addToHistory', true);
         return tr;
       }
       
