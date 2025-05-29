@@ -10,6 +10,9 @@ export interface ChangeTrackingOptions {
 export const changeTrackingPluginKey = new PluginKey('changeTracking');
 
 export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
+  let inputTimer: NodeJS.Timeout | null = null;
+  let pendingInput: { from: number; to: number; text: string } | null = null;
+
   return new Plugin({
     key: changeTrackingPluginKey,
     props: {
@@ -18,61 +21,87 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
 
         console.log('handleTextInput called:', { from, to, text, textLength: text.length });
 
-        const { state, dispatch } = view;
-        const { tr } = state;
-        
-        // If text is being replaced (to > from), handle as replacement
-        if (to > from) {
-          const deletedText = state.doc.textBetween(from, to);
-          console.log('Replacement detected:', { deletedText, newText: text });
-          
-          if (deletedText.trim()) {
-            // Insert the new text
-            tr.insertText(text, from, to);
-            const insertEnd = from + text.length;
-            
-            console.log('Applying replacement mark from', from, 'to', insertEnd);
-            
-            // Apply suggestion mark to the ENTIRE inserted text range in one operation
-            tr.addMark(
-              from,
-              insertEnd,
-              state.schema.marks.suggestion.create({
-                changeId: generateChangeId(),
-                userInitials: options.userInitials,
-                timestamp: new Date().toISOString(),
-                originalText: deletedText,
-                suggestedText: text,
-                changeType: 'replace',
-              })
-            );
-
-            dispatch(tr);
-            return true;
-          }
+        // Clear any existing timer
+        if (inputTimer) {
+          clearTimeout(inputTimer);
         }
 
-        console.log('Insert detected, applying mark from', from, 'to', from + text.length);
+        // If we have pending input, merge it with the current input
+        if (pendingInput && pendingInput.to === from) {
+          // Extend the pending input
+          pendingInput.text += text;
+          pendingInput.to = from + text.length;
+        } else {
+          // Start new pending input
+          pendingInput = { from, to: from + text.length, text };
+        }
 
-        // Insert the new text
-        tr.insertText(text, from, to);
-        const insertEnd = from + text.length;
-        
-        // Apply suggestion mark to the ENTIRE inserted text range in one operation
-        tr.addMark(
-          from,
-          insertEnd,
-          state.schema.marks.suggestion.create({
-            changeId: generateChangeId(),
-            userInitials: options.userInitials,
-            timestamp: new Date().toISOString(),
-            originalText: '',
-            suggestedText: text,
-            changeType: 'insert',
-          })
-        );
+        // Set a timer to process the input after a short delay
+        inputTimer = setTimeout(() => {
+          if (!pendingInput) return;
 
-        dispatch(tr);
+          const { state, dispatch } = view;
+          const { tr } = state;
+          
+          const finalFrom = pendingInput.from;
+          const finalTo = pendingInput.to;
+          const finalText = pendingInput.text;
+
+          console.log('Processing batched input:', { finalFrom, finalTo, finalText });
+
+          // Check if this is a replacement (original to > from)
+          if (to > from) {
+            const deletedText = state.doc.textBetween(from, to);
+            console.log('Replacement detected:', { deletedText, newText: finalText });
+            
+            if (deletedText.trim()) {
+              // Insert the new text
+              tr.insertText(finalText, from, to);
+              const insertEnd = from + finalText.length;
+              
+              console.log('Applying replacement mark from', from, 'to', insertEnd);
+              
+              // Apply suggestion mark to the ENTIRE inserted text range
+              tr.addMark(
+                from,
+                insertEnd,
+                state.schema.marks.suggestion.create({
+                  changeId: generateChangeId(),
+                  userInitials: options.userInitials,
+                  timestamp: new Date().toISOString(),
+                  originalText: deletedText,
+                  suggestedText: finalText,
+                  changeType: 'replace',
+                })
+              );
+
+              dispatch(tr);
+              pendingInput = null;
+              return;
+            }
+          }
+
+          console.log('Insert detected, applying mark from', finalFrom, 'to', finalTo);
+
+          // Apply suggestion mark to the ENTIRE inserted text range
+          tr.addMark(
+            finalFrom,
+            finalTo,
+            state.schema.marks.suggestion.create({
+              changeId: generateChangeId(),
+              userInitials: options.userInitials,
+              timestamp: new Date().toISOString(),
+              originalText: '',
+              suggestedText: finalText,
+              changeType: 'insert',
+            })
+          );
+
+          dispatch(tr);
+          pendingInput = null;
+        }, 100); // 100ms delay to batch rapid inputs
+
+        // Always return true to prevent default handling
         return true;
       },
 
@@ -93,7 +122,7 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
             if (deletedText.trim()) {
               const { tr } = state;
               
-              // Apply suggestion mark to the ENTIRE selected range in one operation
+              // Apply suggestion mark to the ENTIRE selected range
               tr.addMark(
                 from,
                 to,
