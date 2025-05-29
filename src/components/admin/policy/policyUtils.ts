@@ -2,12 +2,19 @@
 // Function to strip HTML tags from text
 export const stripHtml = (html: string | null): string => {
   if (!html) return '';
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  return doc.body.textContent || '';
+  
+  // Create a temporary div element to parse HTML
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+  
+  // Get text content and clean up extra whitespace
+  const textContent = tempDiv.textContent || tempDiv.innerText || '';
+  return textContent.replace(/\s+/g, ' ').trim();
 };
 
 export const getStatusColor = (status: string | null) => {
-  switch (status?.toLowerCase()) {
+  const cleanStatus = stripHtml(status);
+  switch (cleanStatus?.toLowerCase()) {
     case 'active':
     case 'published':
       return 'bg-green-100 text-green-800';
