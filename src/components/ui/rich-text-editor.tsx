@@ -1,14 +1,13 @@
-
 import { EditorContent } from '@tiptap/react';
 import { useAuth } from '@/hooks/useAuth';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getUserInitials, isValidTipTapJson } from '@/utils/trackingUtils';
 import { cn } from '@/lib/utils';
 import { EditorToolbar } from './rich-text-editor/EditorToolbar';
 import { EditorStyles } from './rich-text-editor/EditorStyles';
 import { useEditorSetup } from './rich-text-editor/useEditorSetup';
-import { ChangeTrackingOptions } from './tiptap-extensions/ChangeTrackingPlugin';
+import { useChangeTracking } from './rich-text-editor/useChangeTracking';
 
 interface RichTextEditorProps {
   content: string;
@@ -50,6 +49,7 @@ export function RichTextEditor({
           return;
         }
 
+        // For now, generate initials from name/email since the column doesn't exist yet
         const initials = getUserInitials(profile?.name, profile?.email || auth.currentUser.email);
         setUserInitials(initials);
       } catch (error) {
@@ -81,21 +81,10 @@ export function RichTextEditor({
     }
   }, [content]);
 
-  // Create tracking options
-  const trackingOptions: ChangeTrackingOptions | undefined = useMemo(() => {
-    if (!trackingEnabled) return undefined;
-    return {
-      userInitials,
-      enabled: trackingEnabled,
-    };
-  }, [trackingEnabled, userInitials]);
+  const editor = useEditorSetup({ content, onChange, isJsonMode });
 
-  const editor = useEditorSetup({ 
-    content, 
-    onChange, 
-    isJsonMode, 
-    trackingOptions 
-  });
+  // Use change tracking hook
+  useChangeTracking({ editor, userInitials, trackingEnabled });
 
   if (!editor) {
     return null;
