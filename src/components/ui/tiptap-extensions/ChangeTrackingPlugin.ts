@@ -1,7 +1,7 @@
 
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from 'prosemirror-state';
-import { Step } from 'prosemirror-transform';
+import { ReplaceStep } from 'prosemirror-transform';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface ChangeTrackingOptions {
@@ -39,22 +39,19 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
         if (!transaction.docChanged) continue;
         
         // Analyze steps to determine what changed
-        transaction.steps.forEach((step, stepIndex) => {
-          const stepType = step.constructor.name;
-          console.log('Processing step:', stepType, step);
-          
-          // Handle text insertion/replacement
-          if (stepType === 'ReplaceStep' || stepType === 'ReplaceAroundStep') {
-            const stepJson = step.toJSON();
-            const from = stepJson.from;
-            const to = stepJson.to;
-            const slice = stepJson.slice;
+        transaction.steps.forEach((step) => {
+          if (step instanceof ReplaceStep) {
+            const { from, to, slice } = step;
             
-            // Check if this is a deletion (content removed)
-            if (from < to && (!slice || !slice.content || slice.content.length === 0)) {
-              // This is a deletion - get the deleted text from old state
+            console.log('Processing ReplaceStep:', { from, to, sliceSize: slice.size });
+            
+            // Handle deletions (content removed)
+            if (from < to && slice.size === 0) {
+              // This is a pure deletion
               const deletedText = oldState.doc.textBetween(from, to, '\0', '\0');
-              if (deletedText) {
+              if (deletedText.trim()) {
+                console.log('Marking deletion:', deletedText);
+                
                 const deletionMark = schema.marks.deletion.create({
                   changeId: uuidv4(),
                   userInitials: options.userInitials,
@@ -62,30 +59,56 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
                   originalText: deletedText,
                 });
                 
-                // Insert the deleted text with deletion mark
+                // Insert the deleted text with deletion mark at the deletion point
                 const deletedNode = schema.text(deletedText, [deletionMark]);
                 tr.insert(from, deletedNode);
                 hasChanges = true;
               }
             }
-            
-            // Check if this is an insertion (content added)
-            if (slice && slice.content && slice.content.length > 0) {
-              // Calculate the position where new content was added
-              const insertPos = from;
-              const insertedText = newState.doc.textBetween(insertPos, insertPos + slice.size, '\0', '\0');
+            // Handle insertions (content added)
+            else if (slice.size > 0) {
+              // Calculate what was actually inserted
+              const insertedContent = slice.content;
+              let insertPos = from;
               
-              if (insertedText) {
-                const additionMark = schema.marks.addition.create({
-                  changeId: uuidv4(),
-                  userInitials: options.userInitials,
-                  timestamp: new Date().toISOString(),
-                });
-                
-                // Apply addition mark to the inserted content
-                tr.addMark(insertPos, insertPos + slice.size, additionMark);
-                hasChanges = true;
+              // If there was also a deletion (replacement), handle it first
+              if (from < to) {
+                const deletedText = oldState.doc.textBetween(from, to, '\0', '\0');
+                if (deletedText.trim()) {
+                  console.log('Marking replacement deletion:', deletedText);
+                  
+                  const deletionMark = schema.marks.deletion.create({
+                    changeId: uuidv4(),
+                    userInitials: options.userInitials,
+                    timestamp: new Date().toISOString(),
+                    originalText: deletedText,
+                  });
+                  
+                  const deletedNode = schema.text(deletedText, [deletionMark]);
+                  tr.insert(insertPos, deletedNode);
+                  insertPos += deletedNode.nodeSize;
+                  hasChanges = true;
+                }
               }
+              
+              // Mark the inserted content
+              insertedContent.forEach((node, nodeOffset) => {
+                if (node.isText && node.text && node.text.trim()) {
+                  console.log('Marking addition:', node.text);
+                  
+                  const additionMark = schema.marks.addition.create({
+                    changeId: uuidv4(),
+                    userInitials: options.userInitials,
+                    timestamp: new Date().toISOString(),
+                  });
+                  
+                  // Apply addition mark to the inserted text
+                  const textStart = insertPos + nodeOffset;
+                  const textEnd = textStart + node.text.length;
+                  tr.addMark(textStart, textEnd, additionMark);
+                  hasChanges = true;
+                }
+              });
             }
           }
         });
@@ -94,6 +117,8 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
       if (hasChanges) {
         // Mark this transaction as a tracking change to prevent infinite recursion
         tr.setMeta('isTrackingChange', true);
+        // Don't add to history - let the original transaction handle history
+        tr.setMeta('addToHistory', false);
         return tr;
       }
       
