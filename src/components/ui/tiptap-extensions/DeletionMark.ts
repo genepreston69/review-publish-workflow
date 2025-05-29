@@ -106,15 +106,15 @@ export const Deletion = Mark.create<DeletionOptions>({
         },
         0, // Content goes here
       ],
-      userInitials ? [
+      ...(userInitials ? [[
         'sup',
         {
           class: 'tracked-initials',
           style: 'font-size: 0.7em; color: #666; font-weight: normal; margin-left: 2px;'
         },
         `[${userInitials}]`
-      ] : null,
-    ].filter(Boolean);
+      ]] : []),
+    ];
   },
 
   addCommands() {

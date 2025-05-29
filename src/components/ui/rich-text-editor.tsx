@@ -41,7 +41,7 @@ interface RichTextEditorProps {
 }
 
 export function RichTextEditor({ content, onChange, placeholder, className, context }: RichTextEditorProps) {
-  const { user } = useAuth();
+  const auth = useAuth();
   const [userInitials, setUserInitials] = useState<string>('U');
   const [trackingEnabled, setTrackingEnabled] = useState<boolean>(true);
   const [isJsonMode, setIsJsonMode] = useState<boolean>(false);
@@ -49,30 +49,32 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
   // Load user initials from profile
   useEffect(() => {
     const loadUserInitials = async () => {
-      if (!user?.id) return;
+      if (!auth?.user?.id) return;
 
       try {
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
-          .select('initials, name, email')
-          .eq('id', user.id)
+          .select('name, email')
+          .eq('id', auth.user.id)
           .single();
 
-        if (profile?.initials) {
-          setUserInitials(profile.initials);
-        } else {
-          // Fallback to generating initials
-          const initials = getUserInitials(profile?.name, profile?.email || user.email);
-          setUserInitials(initials);
+        if (error) {
+          console.error('Error loading profile:', error);
+          setUserInitials(getUserInitials(undefined, auth.user.email));
+          return;
         }
+
+        // For now, generate initials from name/email since the column doesn't exist yet
+        const initials = getUserInitials(profile?.name, profile?.email || auth.user.email);
+        setUserInitials(initials);
       } catch (error) {
         console.error('Error loading user initials:', error);
-        setUserInitials(getUserInitials(undefined, user.email));
+        setUserInitials(getUserInitials(undefined, auth.user.email));
       }
     };
 
     loadUserInitials();
-  }, [user]);
+  }, [auth?.user]);
 
   // Determine if content is JSON or HTML and prepare initial content
   const initialContent = (() => {
@@ -348,7 +350,7 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
         placeholder={placeholder}
       />
       
-      <style jsx global>{`
+      <style>{`
         .tracked-addition {
           position: relative;
         }
