@@ -38,11 +38,23 @@ export function useAppNavigation() {
   // Update active section when URL changes
   useEffect(() => {
     const newSection = getDefaultSection();
-    setActiveSection(newSection);
+    console.log('=== NAVIGATION HOOK URL CHANGE ===');
+    console.log('New section from URL:', newSection);
+    console.log('Current activeSection:', activeSection);
+    if (newSection !== activeSection) {
+      setActiveSection(newSection);
+      console.log('Updated activeSection to:', newSection);
+    }
   }, [searchParams, location.pathname, userRole]);
 
   const navigateToSection = (sectionId: string) => {
+    console.log('=== NAVIGATE TO SECTION ===');
+    console.log('Navigating to:', sectionId);
+    console.log('Current activeSection before:', activeSection);
+    
+    // Update the active section immediately
     setActiveSection(sectionId);
+    console.log('Set activeSection to:', sectionId);
     
     // Determine if this is an admin section or main dashboard section
     const adminSections = [
@@ -51,8 +63,10 @@ export function useAppNavigation() {
     ];
     
     if (adminSections.includes(sectionId)) {
+      console.log('Navigating to admin section:', `/admin?tab=${sectionId}`);
       navigate(`/admin?tab=${sectionId}`);
     } else {
+      console.log('Navigating to main section:', `/?section=${sectionId}`);
       navigate(`/?section=${sectionId}`);
     }
   };
