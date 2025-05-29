@@ -34,7 +34,7 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
           return false;
         }
         
-        // Create a transaction that can be undone
+        // Create a transaction
         let transaction = tr;
         
         // If text is being replaced (to > from), handle as replacement
@@ -63,8 +63,6 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
 
             transaction = transaction.addMark(to, insertEnd, additionMark);
             
-            // Set metadata to allow history tracking
-            transaction = transaction.setMeta('addToHistory', true);
             dispatch(transaction);
             return true;
           }
@@ -82,8 +80,6 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
 
         transaction = transaction.addMark(from, insertEnd, additionMark);
         
-        // Set metadata to allow history tracking
-        transaction = transaction.setMeta('addToHistory', true);
         dispatch(transaction);
         return true;
       },
@@ -92,7 +88,7 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
         // Only intercept when tracking is enabled
         if (!options.enabled) return false;
         
-        // Don't intercept undo/redo shortcuts
+        // IMPORTANT: Don't intercept undo/redo shortcuts at all when tracking is enabled
         if ((event.ctrlKey || event.metaKey) && (event.key === 'z' || event.key === 'y')) {
           return false;
         }
@@ -141,8 +137,6 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
               transaction = transaction.setSelection(TextSelection.create(transaction.doc, newPos));
             }
             
-            // Set metadata to allow history tracking
-            transaction = transaction.setMeta('addToHistory', true);
             dispatch(transaction);
             return true;
           }
@@ -171,8 +165,6 @@ const createChangeTrackingProseMirrorPlugin = (options: ChangeTrackingOptions) =
               transaction = transaction.setSelection(TextSelection.create(transaction.doc, newPos));
             }
             
-            // Set metadata to allow history tracking
-            transaction = transaction.setMeta('addToHistory', true);
             dispatch(transaction);
             return true;
           }

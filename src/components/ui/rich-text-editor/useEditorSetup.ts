@@ -1,6 +1,7 @@
 
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import { History } from '@tiptap/extension-history';
 import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import Underline from '@tiptap/extension-underline';
@@ -54,11 +55,13 @@ export function useEditorSetup({ content, onChange, isJsonMode, trackingOptions 
         bulletList: false,
         orderedList: false,
         listItem: false,
-        // Ensure history is enabled for undo/redo
-        history: {
-          depth: 100,
-          newGroupDelay: 500,
-        },
+        // Disable default history to configure it separately
+        history: false,
+      }),
+      // Configure history extension explicitly
+      History.configure({
+        depth: 100,
+        newGroupDelay: 500,
       }),
       // Configure list extensions separately for better control
       ListItem.configure({
