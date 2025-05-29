@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { DashboardTabs } from './DashboardTabs';
 import { ContentCard } from './ContentCard';
+import { PolicyManualGenerator } from './admin/policy/PolicyManualGenerator';
 import { useAuth } from '@/hooks/useAuth';
 import { Content } from '@/types/content';
 import { Plus, Loader2 } from 'lucide-react';
@@ -272,6 +273,10 @@ export const Dashboard = () => {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="policy-manuals" className="mt-6">
+          <PolicyManualGenerator />
         </TabsContent>
       </Tabs>
     </div>
