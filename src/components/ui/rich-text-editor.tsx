@@ -1,3 +1,4 @@
+
 import { EditorContent } from '@tiptap/react';
 import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
@@ -8,7 +9,6 @@ import { EditorToolbar } from './rich-text-editor/EditorToolbar';
 import { EditorStyles } from './rich-text-editor/EditorStyles';
 import { useEditorSetup } from './rich-text-editor/useEditorSetup';
 import { useChangeTracking } from './rich-text-editor/useChangeTracking';
-import { createPortal } from 'react-dom';
 
 interface RichTextEditorProps {
   content: string;
@@ -16,15 +16,13 @@ interface RichTextEditorProps {
   placeholder?: string;
   className?: string;
   context?: string;
-  globalFixed?: boolean;
 }
 
-export function RichTextEditor({ content, onChange, placeholder, className, context, globalFixed = false }: RichTextEditorProps) {
+export function RichTextEditor({ content, onChange, placeholder, className, context }: RichTextEditorProps) {
   const auth = useAuth();
   const [userInitials, setUserInitials] = useState<string>('U');
   const [trackingEnabled, setTrackingEnabled] = useState<boolean>(true);
   const [isJsonMode, setIsJsonMode] = useState<boolean>(false);
-  const [isFocused, setIsFocused] = useState<boolean>(false);
 
   // Load user initials from profile
   useEffect(() => {
@@ -129,27 +127,8 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
     setTrackingEnabled(!trackingEnabled);
   };
 
-  const handleFocus = () => {
-    setIsFocused(true);
-  };
-
-  const handleBlur = () => {
-    // Small delay to check if focus moved to toolbar
-    setTimeout(() => {
-      const activeElement = document.activeElement;
-      const isToolbarElement = activeElement?.closest('[data-global-toolbar]');
-      if (!isToolbarElement) {
-        setIsFocused(false);
-      }
-    }, 100);
-  };
-
-  const toolbar = (
-    <div 
-      className="bg-white border-b shadow-sm p-2" 
-      data-global-toolbar
-      onMouseDown={(e) => e.preventDefault()} // Prevent blur when clicking toolbar
-    >
+  return (
+    <div className={cn("border rounded-md", className)}>
       <EditorToolbar
         editor={editor}
         trackingEnabled={trackingEnabled}
@@ -159,42 +138,12 @@ export function RichTextEditor({ content, onChange, placeholder, className, cont
         getPlainText={getPlainText}
         context={context}
       />
+      <EditorContent 
+        editor={editor} 
+        className="min-h-[200px]"
+        placeholder={placeholder}
+      />
+      <EditorStyles />
     </div>
-  );
-
-  return (
-    <>
-      {globalFixed && isFocused && createPortal(
-        <div className="fixed top-0 left-0 right-0 z-50">
-          {toolbar}
-        </div>,
-        document.body
-      )}
-      
-      <div 
-        className={cn(
-          "border rounded-md flex flex-col", 
-          className,
-          globalFixed && isFocused && "mt-[60px]" // Add margin when global toolbar is shown
-        )}
-      >
-        {!globalFixed && (
-          <div className="sticky top-0 z-10 bg-white border-b rounded-t-md">
-            {toolbar}
-          </div>
-        )}
-        
-        <div className="flex-1 overflow-auto">
-          <EditorContent 
-            editor={editor} 
-            className="min-h-[200px]"
-            placeholder={placeholder}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-          />
-        </div>
-        <EditorStyles />
-      </div>
-    </>
   );
 }
