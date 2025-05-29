@@ -24,9 +24,6 @@ export const generateCoverPage = (type: ManualType, compilationDate: string, tot
           www.recoverypointwv.com
         </div>
       </div>
-      <div class="page-footer">
-        <span class="page-number">Page 1 of ${totalPages}</span>
-      </div>
     </div>
   `;
 };
@@ -35,8 +32,8 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
   console.log('Generating TOC for policies:', policies.length, 'policies');
   console.log('TOC will span', tocPages, 'pages');
   
-  // Calculate starting page for policies (cover + TOC pages + 1)
-  let policyStartPage = 1 + tocPages + 1;
+  // Policy pages start at page 1 (not continuing from cover/TOC)
+  let policyPageNumber = 1;
   
   // Generate TOC rows
   let tocRows = '';
@@ -44,22 +41,22 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
   policies.forEach((policy, index) => {
     const policyTitle = policy.name || 'Untitled Policy';
     const policyNumber = policy.policy_number || 'N/A';
-    const policyPage = policyStartPage + index;
     
-    console.log(`TOC Entry ${index + 1}: ${policyNumber} - ${policyTitle} (Page ${policyPage})`);
+    console.log(`TOC Entry ${index + 1}: ${policyNumber} - ${policyTitle} (Page ${policyPageNumber})`);
     
     tocRows += `<tr class="toc-row">
       <td class="toc-policy-number">${policyNumber}</td>
       <td class="toc-policy-title">
         <a href="#policy-${policy.id}" class="toc-link">${policyTitle}</a>
       </td>
-      <td class="toc-page-number">${policyPage}</td>
+      <td class="toc-page-number">${policyPageNumber}</td>
     </tr>`;
+    
+    policyPageNumber++;
   });
 
-  // Generate TOC pages with correct page numbering
+  // Generate TOC pages without page numbers
   let tocContent = '';
-  let currentTocPage = 2; // TOC starts on page 2
   
   for (let i = 0; i < tocPages; i++) {
     const isFirstTocPage = i === 0;
@@ -86,12 +83,8 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
             </table>
           </div>
         </div>
-        <div class="page-footer">
-          <span class="page-number">Page ${currentTocPage} of ${totalPages}</span>
-        </div>
       </div>
     `;
-    currentTocPage++;
   }
 
   return tocContent;
@@ -100,8 +93,8 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
 export const generatePolicyContent = (type: ManualType, policies: Policy[], totalPages: number, tocPages: number): string => {
   console.log('Generating policy content for policies:', policies.length, 'policies');
   
-  // Calculate starting page for policies (cover + TOC pages + 1)
-  let pageNumber = 1 + tocPages + 1;
+  // Policy pages start at page 1
+  let pageNumber = 1;
   
   let policyContent = '';
   
@@ -167,7 +160,7 @@ export const generatePolicyContent = (type: ManualType, policies: Policy[], tota
         </div>
 
         <div class="page-footer">
-          <span class="page-number">Page ${pageNumber} of ${totalPages}</span>
+          <span class="page-number">${pageNumber}</span>
         </div>
       </div>
     `;
