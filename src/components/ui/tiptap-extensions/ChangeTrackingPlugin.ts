@@ -1,6 +1,5 @@
 
 import { Plugin, PluginKey } from '@tiptap/pm/state';
-import { Editor } from '@tiptap/react';
 import { generateChangeId } from '@/utils/trackingUtils';
 
 export interface ChangeTrackingOptions {
@@ -24,10 +23,11 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
         if (to > from) {
           const deletedText = state.doc.textBetween(from, to);
           if (deletedText.trim()) {
-            // This is a replacement operation
+            // Insert the new text
             tr.insertText(text, from, to);
             const insertEnd = from + text.length;
             
+            // Apply suggestion mark to the entire inserted text range
             tr.addMark(
               from,
               insertEnd,
@@ -46,10 +46,11 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
           }
         }
 
-        // Insert the new text with insertion suggestion
+        // Insert the new text
         tr.insertText(text, from, to);
         const insertEnd = from + text.length;
         
+        // Apply suggestion mark to the entire inserted text range
         tr.addMark(
           from,
           insertEnd,
@@ -82,7 +83,7 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
             if (deletedText.trim()) {
               const { tr } = state;
               
-              // Mark the selected text as deleted instead of removing it
+              // Apply suggestion mark to the entire selected range
               tr.addMark(
                 from,
                 to,
@@ -109,10 +110,10 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
 }
 
 export class ChangeTrackingExtension {
-  private editor: Editor;
+  private editor: any;
   private options: ChangeTrackingOptions;
 
-  constructor(editor: Editor, options: ChangeTrackingOptions) {
+  constructor(editor: any, options: ChangeTrackingOptions) {
     this.editor = editor;
     this.options = options;
   }
