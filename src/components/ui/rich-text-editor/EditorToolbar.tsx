@@ -42,6 +42,34 @@ export function EditorToolbar({
 }: EditorToolbarProps) {
   const borderClass = position === 'top' ? 'border-b' : 'border-t';
   
+  const handleBulletListClick = () => {
+    console.log('Bullet list button clicked');
+    console.log('Editor can toggle bullet list:', editor.can().toggleBulletList());
+    console.log('Current bullet list state:', editor.isActive('bulletList'));
+    
+    try {
+      editor.chain().focus().toggleBulletList().run();
+      console.log('Bullet list command executed');
+      console.log('New bullet list state:', editor.isActive('bulletList'));
+    } catch (error) {
+      console.error('Error toggling bullet list:', error);
+    }
+  };
+
+  const handleOrderedListClick = () => {
+    console.log('Ordered list button clicked');
+    console.log('Editor can toggle ordered list:', editor.can().toggleOrderedList());
+    console.log('Current ordered list state:', editor.isActive('orderedList'));
+    
+    try {
+      editor.chain().focus().toggleOrderedList().run();
+      console.log('Ordered list command executed');
+      console.log('New ordered list state:', editor.isActive('orderedList'));
+    } catch (error) {
+      console.error('Error toggling ordered list:', error);
+    }
+  };
+  
   return (
     <div className={cn("p-2 flex flex-wrap gap-1 justify-between", borderClass)}>
       <div className="flex flex-wrap gap-1">
@@ -86,7 +114,7 @@ export function EditorToolbar({
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          onClick={handleBulletListClick}
           className={editor.isActive('bulletList') ? 'bg-gray-200' : ''}
           title="Bullet List"
         >
@@ -96,7 +124,7 @@ export function EditorToolbar({
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          onClick={handleOrderedListClick}
           className={editor.isActive('orderedList') ? 'bg-gray-200' : ''}
           title="Numbered List"
         >

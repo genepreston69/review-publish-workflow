@@ -5,6 +5,9 @@ import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
+import ListItem from '@tiptap/extension-list-item';
+import BulletList from '@tiptap/extension-bullet-list';
+import OrderedList from '@tiptap/extension-ordered-list';
 import { Addition } from '../tiptap-extensions/AdditionMark';
 import { Deletion } from '../tiptap-extensions/DeletionMark';
 import { useMemo } from 'react';
@@ -43,13 +46,29 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        bulletList: {
-          keepMarks: true,
-          keepAttributes: false,
+        // Disable default list extensions to configure them separately
+        bulletList: false,
+        orderedList: false,
+        listItem: false,
+      }),
+      // Configure list extensions separately for better control
+      ListItem.configure({
+        HTMLAttributes: {
+          class: 'editor-list-item',
         },
-        orderedList: {
-          keepMarks: true,
-          keepAttributes: false,
+      }),
+      BulletList.configure({
+        keepMarks: true,
+        keepAttributes: false,
+        HTMLAttributes: {
+          class: 'editor-bullet-list',
+        },
+      }),
+      OrderedList.configure({
+        keepMarks: true,
+        keepAttributes: false,
+        HTMLAttributes: {
+          class: 'editor-ordered-list',
         },
       }),
       TextStyle,
