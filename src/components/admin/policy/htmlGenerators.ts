@@ -1,5 +1,7 @@
 
 import { Policy, ManualType } from './types';
+import { MANUAL_CONSTANTS } from './manualConstants';
+import { calculateTocPages, calculatePolicyStartPage } from './pageCalculationUtils';
 
 const stripHtml = (html: string | null): string => {
   if (!html) return '';
@@ -14,14 +16,14 @@ export const generateCoverPage = (type: ManualType, compilationDate: string, tot
     <!-- Cover Page -->
     <div class="cover-page">
       <div class="cover-content">
-        <img src="/lovable-uploads/07b7c8f7-302d-4fa4-add8-69e1b84285ac.png" alt="Recovery Point West Virginia Logo" class="cover-logo">
+        <img src="${MANUAL_CONSTANTS.LOGO_PATH}" alt="Recovery Point West Virginia Logo" class="cover-logo">
         <h1 class="cover-title">${manualTitle}</h1>
         <p class="cover-subtitle">Comprehensive Policy Collection</p>
         <p class="compilation-date">Compiled on ${compilationDate}</p>
         <div class="organization-info">
-          Recovery Point West Virginia<br>
-          1007 Washington Street East, Charleston, WV 25301<br>
-          www.recoverypointwv.com
+          ${MANUAL_CONSTANTS.ORGANIZATION.name}<br>
+          ${MANUAL_CONSTANTS.ORGANIZATION.address}<br>
+          ${MANUAL_CONSTANTS.ORGANIZATION.website}
         </div>
       </div>
     </div>
@@ -29,22 +31,14 @@ export const generateCoverPage = (type: ManualType, compilationDate: string, tot
 };
 
 export const generateTableOfContents = (policies: Policy[], totalPages: number, tocPages: number): string => {
-  console.log('Generating TOC for policies:', policies.length, 'policies');
-  console.log('TOC will span', tocPages, 'pages');
+  const policyStartPage = calculatePolicyStartPage(tocPages);
   
-  // TOC starts at page 1 (after unnumbered cover)
-  // Policies start after TOC pages: page (tocPages + 1)
-  let policyStartPage = tocPages + 1;
-  
-  // Generate all TOC rows as one continuous table
   let allTocRows = '';
   
   policies.forEach((policy, index) => {
     const policyTitle = policy.name || 'Untitled Policy';
     const policyNumber = policy.policy_number || 'N/A';
     const policyPageNumber = policyStartPage + index;
-    
-    console.log(`TOC Entry ${index + 1}: ${policyNumber} - ${policyTitle} (Page ${policyPageNumber})`);
     
     allTocRows += `<tr class="toc-row">
       <td class="toc-policy-number">${policyNumber}</td>
@@ -55,8 +49,6 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
     </tr>`;
   });
 
-  // Generate single continuous TOC that will break naturally across pages
-  // The CSS print styles will handle page breaks automatically
   const tocContent = `
     <div class="toc-page">
       <div class="toc-content">
@@ -83,16 +75,12 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
 };
 
 export const generatePolicyContent = (type: ManualType, policies: Policy[], totalPages: number, tocPages: number): string => {
-  console.log('Generating policy content for policies:', policies.length, 'policies');
-  
-  // Policy pages start after TOC pages: page (tocPages + 1)
-  let policyStartPage = tocPages + 1;
+  const policyStartPage = calculatePolicyStartPage(tocPages);
   
   let policyContent = '';
   
   policies.forEach((policy, index) => {
     const currentPageNumber = policyStartPage + index;
-    console.log(`Policy Content ${index + 1}: ${policy.policy_number} - ${policy.name} (Page ${currentPageNumber})`);
     
     policyContent += `
       <div class="policy-page">
@@ -101,8 +89,8 @@ export const generatePolicyContent = (type: ManualType, policies: Policy[], tota
         
         <div class="page-header">
           <div class="header-content">
-            <img src="/lovable-uploads/07b7c8f7-302d-4fa4-add8-69e1b84285ac.png" alt="Recovery Point West Virginia Logo" class="header-logo">
-            <span class="header-text">Recovery Point West Virginia ${type} Policy Manual</span>
+            <img src="${MANUAL_CONSTANTS.LOGO_PATH}" alt="Recovery Point West Virginia Logo" class="header-logo">
+            <span class="header-text">${MANUAL_CONSTANTS.ORGANIZATION.name} ${type} Policy Manual</span>
           </div>
         </div>
         
@@ -158,6 +146,5 @@ export const generatePolicyContent = (type: ManualType, policies: Policy[], tota
     `;
   });
 
-  console.log('Total policy pages generated:', policies.length);
   return policyContent;
 };
