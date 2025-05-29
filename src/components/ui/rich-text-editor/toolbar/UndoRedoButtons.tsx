@@ -1,0 +1,49 @@
+
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Undo, Redo } from 'lucide-react';
+import { Editor } from '@tiptap/react';
+
+interface UndoRedoButtonsProps {
+  editor: Editor;
+}
+
+export function UndoRedoButtons({ editor }: UndoRedoButtonsProps) {
+  return (
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().undo().run()}
+            disabled={!editor.can().undo()}
+          >
+            <Undo className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Undo (Ctrl+Z)</p>
+        </TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().redo().run()}
+            disabled={!editor.can().redo()}
+          >
+            <Redo className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Redo (Ctrl+Y)</p>
+        </TooltipContent>
+      </Tooltip>
+    </>
+  );
+}
