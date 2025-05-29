@@ -2,6 +2,7 @@
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from 'prosemirror-state';
 import { Step } from 'prosemirror-transform';
+import { ReplaceStep } from 'prosemirror-transform';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface ChangeTrackingOptions {
@@ -13,21 +14,33 @@ export const changeTrackingPluginKey = new PluginKey('changeTracking');
 
 // Helper to check if a step is an insertion
 const isInsertStep = (step: Step): boolean => {
-  return step.jsonID === 'replace' && (step as any).slice?.size > 0;
+  if (step instanceof ReplaceStep) {
+    return step.slice.size > 0;
+  }
+  return false;
 };
 
 // Helper to check if a step is a deletion
 const isDeletionStep = (step: Step): boolean => {
-  return step.jsonID === 'replace' && (step as any).slice?.size === 0 && (step as any).to > (step as any).from;
+  if (step instanceof ReplaceStep) {
+    return step.slice.size === 0 && step.to > step.from;
+  }
+  return false;
 };
 
 // Helper to get step details
 const getStepDetails = (step: Step) => {
-  const stepData = step as any;
+  if (step instanceof ReplaceStep) {
+    return {
+      from: step.from,
+      to: step.to,
+      slice: step.slice,
+    };
+  }
   return {
-    from: stepData.from || 0,
-    to: stepData.to || 0,
-    slice: stepData.slice,
+    from: 0,
+    to: 0,
+    slice: null,
   };
 };
 
