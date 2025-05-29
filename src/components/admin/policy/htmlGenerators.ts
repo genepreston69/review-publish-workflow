@@ -35,7 +35,7 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
   // Policies start after TOC pages: page (tocPages + 1)
   let policyStartPage = tocPages + 1;
   
-  // Generate all TOC rows first
+  // Generate all TOC rows as one continuous table
   let allTocRows = '';
   
   policies.forEach((policy, index) => {
@@ -54,60 +54,29 @@ export const generateTableOfContents = (policies: Policy[], totalPages: number, 
     </tr>`;
   });
 
-  // Calculate entries per page (leaving room for header on first page)
-  const entriesPerPage = 20;
-  const entriesOnFirstPage = entriesPerPage - 1; // Account for header
-  const entriesOnSubsequentPages = entriesPerPage;
-
-  // Split TOC rows into chunks for each page
-  const tocRowArray = allTocRows.match(/<tr class="toc-row">.*?<\/tr>/gs) || [];
-  const tocChunks: string[] = [];
-  
-  // First page chunk (with header space)
-  if (tocRowArray.length > 0) {
-    tocChunks.push(tocRowArray.slice(0, entriesOnFirstPage).join(''));
-    
-    // Subsequent page chunks
-    let remaining = tocRowArray.slice(entriesOnFirstPage);
-    while (remaining.length > 0) {
-      tocChunks.push(remaining.slice(0, entriesOnSubsequentPages).join(''));
-      remaining = remaining.slice(entriesOnSubsequentPages);
-    }
-  }
-
-  // Generate TOC pages with distributed content
-  let tocContent = '';
-  
-  for (let i = 0; i < tocPages; i++) {
-    const isFirstTocPage = i === 0;
-    const isLastTocPage = i === tocPages - 1;
-    const pageBreakClass = isFirstTocPage ? '' : 'toc-page-break';
-    const lastPageBreakClass = isLastTocPage ? 'toc-final-page-break' : '';
-    
-    const currentChunk = tocChunks[i] || '';
-    
-    tocContent += `
-      <div class="toc-page ${pageBreakClass} ${lastPageBreakClass}">
-        <div class="toc-content">
-          ${isFirstTocPage ? '<h1 class="toc-main-title">Table of Contents</h1>' : ''}
-          <div class="toc-table-container">
-            <table class="toc-table">
-              <thead>
-                <tr>
-                  <th>Policy Number</th>
-                  <th>Policy Title</th>
-                  <th>Page</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${currentChunk}
-              </tbody>
-            </table>
-          </div>
+  // Generate single continuous TOC that will break naturally across pages
+  // The CSS print styles will handle page breaks automatically
+  const tocContent = `
+    <div class="toc-page">
+      <div class="toc-content">
+        <h1 class="toc-main-title">Table of Contents</h1>
+        <div class="toc-table-container">
+          <table class="toc-table">
+            <thead>
+              <tr>
+                <th>Policy Number</th>
+                <th>Policy Title</th>
+                <th>Page</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${allTocRows}
+            </tbody>
+          </table>
         </div>
       </div>
-    `;
-  }
+    </div>
+  `;
 
   return tocContent;
 };

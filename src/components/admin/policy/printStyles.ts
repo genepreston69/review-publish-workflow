@@ -88,11 +88,6 @@ export const getPrintStyles = (): string => {
         padding-bottom: 0;
       }
       
-      /* Force page break after final TOC page */
-      .toc-final-page-break {
-        page-break-after: always;
-      }
-      
       .policy-section {
         page-break-inside: avoid;
       }
@@ -101,11 +96,16 @@ export const getPrintStyles = (): string => {
         page-break-inside: avoid;
       }
       
-      /* TOC Table Print Styles */
+      /* Enhanced TOC Table Print Styles for Natural Page Flow */
       .toc-page {
-        page-break-after: auto;
+        page-break-after: always; /* Force break after TOC to start policies on new page */
         min-height: auto;
         max-height: none;
+      }
+
+      .toc-main-title {
+        page-break-after: avoid;
+        margin-bottom: 1em;
       }
 
       .toc-table-container {
@@ -114,19 +114,22 @@ export const getPrintStyles = (): string => {
       }
 
       .toc-table {
-        page-break-inside: auto;
+        page-break-inside: auto; /* Allow table to break across pages */
         border-collapse: collapse;
         width: 100%;
+        table-layout: fixed;
       }
 
+      /* Critical: Make headers repeat on each page */
       .toc-table thead {
-        display: table-header-group;
+        display: table-header-group; /* This makes headers repeat on each page */
       }
 
       .toc-table tbody {
         display: table-row-group;
       }
 
+      /* Prevent individual rows from breaking */
       .toc-row {
         page-break-inside: avoid;
         break-inside: avoid;
@@ -135,10 +138,17 @@ export const getPrintStyles = (): string => {
       .toc-table td, .toc-table th {
         page-break-inside: avoid;
         break-inside: avoid;
+        padding: 8px 12px;
+        border-bottom: 1px solid #e5e7eb;
       }
 
+      /* Remove manual page break classes since we want natural flow */
       .toc-page-break {
-        page-break-before: always;
+        page-break-before: auto; /* Let CSS decide when to break */
+      }
+
+      .toc-final-page-break {
+        page-break-after: always; /* Only force break after final TOC */
       }
 
       .toc-link {
@@ -160,6 +170,35 @@ export const getPrintStyles = (): string => {
       .cover-content {
         margin-bottom: 0 !important;
         padding-bottom: 0 !important;
+      }
+
+      /* Optimize table spacing for maximum entries per page */
+      .toc-table th {
+        font-weight: bold;
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-size: 12pt;
+        padding: 6px 12px;
+      }
+
+      .toc-table td {
+        font-size: 11pt;
+        padding: 4px 12px;
+        line-height: 1.3;
+      }
+
+      /* Column widths for better space utilization */
+      .toc-policy-number {
+        width: 15%;
+      }
+
+      .toc-policy-title {
+        width: 70%;
+      }
+
+      .toc-page-number {
+        width: 15%;
+        text-align: right;
       }
     }
   `;
