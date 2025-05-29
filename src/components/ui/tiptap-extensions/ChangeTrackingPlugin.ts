@@ -1,5 +1,6 @@
 
 import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { Selection } from '@tiptap/pm/state';
 import { Editor } from '@tiptap/react';
 import { generateChangeId } from '@/utils/trackingUtils';
 
@@ -97,7 +98,7 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
               );
 
               // Move cursor to the end of the marked text
-              tr.setSelection(state.selection.constructor.near(tr.doc.resolve(to)));
+              tr.setSelection(Selection.near(tr.doc.resolve(to)));
 
               view.dispatch(tr);
               
@@ -140,7 +141,7 @@ export function createChangeTrackingPlugin(options: ChangeTrackingOptions) {
 
                 // Move cursor to the appropriate position
                 const newPos = event.key === 'Backspace' ? deleteFrom : deleteTo;
-                tr.setSelection(state.selection.constructor.near(tr.doc.resolve(newPos)));
+                tr.setSelection(Selection.near(tr.doc.resolve(newPos)));
 
                 view.dispatch(tr);
                 
