@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { Edit, CheckCircle, XCircle } from 'lucide-react';
+import { Edit, CheckCircle, XCircle, Printer } from 'lucide-react';
 
 interface FormViewModalProps {
   formId: string;
@@ -40,6 +40,142 @@ export function FormViewModal({ formId, onClose, onEdit, onUpdateStatus }: FormV
       default:
         return 'secondary';
     }
+  };
+
+  const handlePrint = () => {
+    if (!form) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const printHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Form - ${form.name || 'Untitled Form'}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            .form-header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #1565c0;
+              padding-bottom: 20px;
+            }
+            .form-title {
+              font-size: 24px;
+              font-weight: bold;
+              color: #1565c0;
+              margin-bottom: 10px;
+              text-transform: uppercase;
+            }
+            .form-metadata {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 20px;
+              margin-bottom: 30px;
+              padding: 20px;
+              background-color: #f8f9fa;
+              border-radius: 8px;
+            }
+            .metadata-item {
+              margin-bottom: 10px;
+            }
+            .metadata-label {
+              font-weight: bold;
+              color: #666;
+              font-size: 12px;
+              text-transform: uppercase;
+            }
+            .metadata-value {
+              font-size: 14px;
+              margin-top: 4px;
+            }
+            .form-content {
+              margin-top: 30px;
+            }
+            .section-title {
+              font-size: 18px;
+              font-weight: bold;
+              color: #1565c0;
+              margin: 30px 0 15px 0;
+              text-transform: uppercase;
+              border-bottom: 1px solid #1565c0;
+              padding-bottom: 5px;
+            }
+            .content-section {
+              margin-bottom: 30px;
+              padding: 20px;
+              border: 1px solid #e5e7eb;
+              border-radius: 8px;
+            }
+            @media print {
+              body {
+                margin: 0;
+                padding: 20px;
+              }
+              .no-print {
+                display: none;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="form-header">
+            <div class="form-title">${form.name || 'Untitled Form'}</div>
+            <div>Form Number: ${form.form_number || 'Not assigned'} | Type: ${form.form_type}</div>
+          </div>
+
+          <div class="form-metadata">
+            ${form.purpose ? `
+              <div class="metadata-item">
+                <div class="metadata-label">Purpose</div>
+                <div class="metadata-value">${form.purpose}</div>
+              </div>
+            ` : ''}
+            ${form.reviewer ? `
+              <div class="metadata-item">
+                <div class="metadata-label">Reviewer</div>
+                <div class="metadata-value">${form.reviewer}</div>
+              </div>
+            ` : ''}
+            <div class="metadata-item">
+              <div class="metadata-label">Created</div>
+              <div class="metadata-value">${new Date(form.created_at).toLocaleDateString()}</div>
+            </div>
+            <div class="metadata-item">
+              <div class="metadata-label">Status</div>
+              <div class="metadata-value">${form.status || 'draft'}</div>
+            </div>
+          </div>
+
+          ${form.form_content ? `
+            <div class="form-content">
+              <div class="section-title">Form Content</div>
+              <div class="content-section">
+                ${form.form_content}
+              </div>
+            </div>
+          ` : ''}
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
+    
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+    };
   };
 
   if (isLoading) {
@@ -89,6 +225,15 @@ export function FormViewModal({ formId, onClose, onEdit, onUpdateStatus }: FormV
               </div>
             </div>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+              >
+                <Printer className="w-4 h-4 mr-1" />
+                Print
+              </Button>
+              
               <Button
                 variant="outline"
                 size="sm"
