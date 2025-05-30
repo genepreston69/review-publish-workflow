@@ -7,7 +7,6 @@ import { FormattingButtons } from './toolbar/FormattingButtons';
 import { ListButtons } from './toolbar/ListButtons';
 import { AlignmentButtons } from './toolbar/AlignmentButtons';
 import { UndoRedoButtons } from './toolbar/UndoRedoButtons';
-import { TrackingButton } from './toolbar/TrackingButton';
 import { ToolbarDivider } from './toolbar/ToolbarDivider';
 
 interface EditorToolbarProps {
@@ -50,21 +49,9 @@ export function EditorToolbar({
           <ToolbarDivider />
           
           <UndoRedoButtons editor={editor} />
-          
-          <ToolbarDivider />
-          
-          <TrackingButton 
-            trackingEnabled={trackingEnabled} 
-            onToggleTracking={onToggleTracking} 
-          />
         </div>
         
         <div className="flex items-center gap-2">
-          {trackingEnabled && (
-            <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 rounded">
-              Tracking: {userInitials}
-            </span>
-          )}
           <AIWritingAssistant
             text={getPlainText()}
             onChange={onAITextChange}

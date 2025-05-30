@@ -50,7 +50,6 @@ export function RichTextEditor({
           return;
         }
 
-        // For now, generate initials from name/email since the column doesn't exist yet
         const initials = getUserInitials(profile?.name, profile?.email || auth.currentUser.email);
         setUserInitials(initials);
       } catch (error) {
@@ -76,7 +75,6 @@ export function RichTextEditor({
       // Not JSON
     }
     
-    // If it's HTML, set JSON mode
     if (content.includes('<') && content.includes('>')) {
       setIsJsonMode(true);
     }
@@ -95,7 +93,6 @@ export function RichTextEditor({
 
   // Handle AI-improved text
   const handleAITextChange = (improvedText: string) => {
-    // Convert plain text back to content
     const htmlContent = improvedText.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
     const wrappedContent = `<p>${htmlContent}</p>`;
     
