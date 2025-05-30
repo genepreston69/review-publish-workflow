@@ -12,16 +12,100 @@ interface PolicyViewContentProps {
   policy: Policy;
 }
 
+// Helper function to convert TipTap JSON to HTML
+const convertTipTapJsonToHtml = (content: string | null): string => {
+  if (!content) return '';
+  
+  // Try to parse as TipTap JSON
+  try {
+    const parsed = JSON.parse(content);
+    if (parsed.type === 'doc' && parsed.content) {
+      return convertTipTapNodeToHtml(parsed);
+    }
+  } catch (e) {
+    // If not JSON, return as is
+    return content;
+  }
+  
+  return content;
+};
+
+// Convert TipTap node structure to HTML
+const convertTipTapNodeToHtml = (node: any): string => {
+  if (!node) return '';
+  
+  let html = '';
+  
+  if (node.type === 'doc' && node.content) {
+    return node.content.map(convertTipTapNodeToHtml).join('');
+  }
+  
+  if (node.type === 'paragraph') {
+    const content = node.content ? node.content.map(convertTipTapNodeToHtml).join('') : '';
+    return `<p>${content}</p>`;
+  }
+  
+  if (node.type === 'heading') {
+    const level = node.attrs?.level || 1;
+    const content = node.content ? node.content.map(convertTipTapNodeToHtml).join('') : '';
+    return `<h${level}>${content}</h${level}>`;
+  }
+  
+  if (node.type === 'bulletList') {
+    const items = node.content ? node.content.map(convertTipTapNodeToHtml).join('') : '';
+    return `<ul>${items}</ul>`;
+  }
+  
+  if (node.type === 'orderedList') {
+    const items = node.content ? node.content.map(convertTipTapNodeToHtml).join('') : '';
+    return `<ol>${items}</ol>`;
+  }
+  
+  if (node.type === 'listItem') {
+    const content = node.content ? node.content.map(convertTipTapNodeToHtml).join('') : '';
+    return `<li>${content}</li>`;
+  }
+  
+  if (node.type === 'text') {
+    let text = node.text || '';
+    
+    // Apply marks (formatting)
+    if (node.marks) {
+      node.marks.forEach((mark: any) => {
+        if (mark.type === 'bold') {
+          text = `<strong>${text}</strong>`;
+        } else if (mark.type === 'italic') {
+          text = `<em>${text}</em>`;
+        } else if (mark.type === 'underline') {
+          text = `<u>${text}</u>`;
+        }
+      });
+    }
+    
+    return text;
+  }
+  
+  // For unknown types, try to process content if it exists
+  if (node.content) {
+    return node.content.map(convertTipTapNodeToHtml).join('');
+  }
+  
+  return '';
+};
+
 export function PolicyViewContent({ policy }: PolicyViewContentProps) {
-  // Helper function to safely render HTML content
-  const renderHtmlContent = (content: string | null): JSX.Element | null => {
+  // Helper function to safely render content
+  const renderContent = (content: string | null): JSX.Element | null => {
     if (!content) return null;
     
-    // Always render as HTML to preserve formatting
+    // Convert TipTap JSON to HTML if needed
+    const htmlContent = convertTipTapJsonToHtml(content);
+    
+    // Render the HTML content with proper styling
     return (
       <div 
         className="prose prose-sm max-w-none prose-headings:text-blue-600 prose-headings:font-bold prose-headings:uppercase prose-p:text-gray-800 prose-li:text-gray-800 prose-ul:list-disc prose-ol:list-decimal"
-        dangerouslySetInnerHTML={{ __html: content }} 
+        dangerouslySetInnerHTML={{ __html: htmlContent }} 
       />
     );
   };
@@ -44,7 +128,7 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
             PURPOSE
           </h2>
           <div className="text-justify leading-relaxed text-gray-800 policy-content">
-            {renderHtmlContent(policy.purpose)}
+            {renderContent(policy.purpose)}
           </div>
         </div>
       )}
@@ -56,7 +140,7 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
             POLICY
           </h2>
           <div className="text-justify leading-relaxed text-gray-800 policy-content">
-            {renderHtmlContent(policy.policy_text)}
+            {renderContent(policy.policy_text)}
           </div>
         </div>
       )}
@@ -68,7 +152,7 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
             PROCEDURE
           </h2>
           <div className="text-justify leading-relaxed text-gray-800 policy-content">
-            {renderHtmlContent(policy.procedure)}
+            {renderContent(policy.procedure)}
           </div>
         </div>
       )}
