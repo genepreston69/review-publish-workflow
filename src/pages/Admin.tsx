@@ -9,6 +9,7 @@ import { ContentModeration } from '@/components/admin/ContentModeration';
 import { FacilityPolicies } from '@/components/admin/FacilityPolicies';
 import { HRPolicies } from '@/components/admin/HRPolicies';
 import { CreatePolicy } from '@/components/admin/CreatePolicy';
+import { CreateForm } from '@/components/admin/CreateForm';
 import { DraftPolicies } from '@/components/admin/DraftPolicies';
 import { ReviewPolicies } from '@/components/admin/ReviewPolicies';
 import { PolicyManualGenerator } from '@/components/admin/policy/PolicyManualGenerator';
@@ -60,6 +61,14 @@ const Admin = () => {
         return <FacilityPolicies />;
       case 'policy-manuals':
         return <PolicyManualGenerator />;
+      case 'create-form':
+        return <CreateForm />;
+      case 'draft-forms':
+        return <div>Draft Forms - Coming Soon</div>;
+      case 'review-forms':
+        return <div>Review Forms - Coming Soon</div>;
+      case 'published-forms':
+        return <div>Published Forms - Coming Soon</div>;
       case 'users':
         return <UserManagement />;
       case 'assignments':

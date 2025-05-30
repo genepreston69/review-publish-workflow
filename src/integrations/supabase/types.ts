@@ -96,6 +96,42 @@ export type Database = {
           },
         ]
       }
+      Forms: {
+        Row: {
+          created_at: string
+          form_content: string | null
+          form_number: string | null
+          form_type: string
+          id: string
+          name: string | null
+          purpose: string | null
+          reviewer: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          form_content?: string | null
+          form_number?: string | null
+          form_type: string
+          id?: string
+          name?: string | null
+          purpose?: string | null
+          reviewer?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          form_content?: string | null
+          form_number?: string | null
+          form_type?: string
+          id?: string
+          name?: string | null
+          purpose?: string | null
+          reviewer?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       Policies: {
         Row: {
           created_at: string
@@ -196,6 +232,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_next_form_number: {
+        Args: { f_form_type: string }
+        Returns: string
+      }
       generate_next_policy_number: {
         Args: { p_policy_type: string }
         Returns: string

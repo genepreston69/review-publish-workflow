@@ -1,6 +1,6 @@
 
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, Link, BarChart3, FileText, Plus, FileClock, FileCheck, BookOpen } from 'lucide-react';
+import { Shield, Users, Link, BarChart3, FileText, Plus, FileClock, FileCheck, BookOpen, ClipboardList } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 export function AdminTabs() {
@@ -38,6 +38,29 @@ export function AdminTabs() {
     },
   ];
 
+  const formTabs = [
+    {
+      title: "Create Form",
+      icon: ClipboardList,
+      value: "create-form",
+    },
+    ...(isEditor ? [{
+      title: "Draft Forms",
+      icon: FileClock,
+      value: "draft-forms",
+    }] : []),
+    ...(canPublish && !isEditor ? [{
+      title: "Review Forms",
+      icon: FileCheck,
+      value: "review-forms",
+    }] : []),
+    {
+      title: "Published Forms",
+      icon: ClipboardList,
+      value: "published-forms",
+    },
+  ];
+
   const adminTabs = [
     {
       title: "User Management",
@@ -61,7 +84,7 @@ export function AdminTabs() {
     },
   ];
 
-  const allTabs = [...policyTabs, ...(isSuperAdmin ? adminTabs : [])];
+  const allTabs = [...policyTabs, ...formTabs, ...(isSuperAdmin ? adminTabs : [])];
 
   return (
     <div className="mb-6">
