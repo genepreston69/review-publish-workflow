@@ -20,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { AISuggestionDialog } from './ai-suggestion-dialog';
 
 interface AIWritingAssistantProps {
   text: string;
@@ -28,12 +29,21 @@ interface AIWritingAssistantProps {
   className?: string;
 }
 
+interface PendingSuggestion {
+  originalText: string;
+  suggestedText: string;
+  operationName: string;
+  operationDescription: string;
+}
+
 export function AIWritingAssistant({ text, onChange, context, className }: AIWritingAssistantProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingOperation, setLoadingOperation] = useState<string | null>(null);
+  const [pendingSuggestion, setPendingSuggestion] = useState<PendingSuggestion | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const callAIAssistant = async (operation: string, operationName: string) => {
+  const callAIAssistant = async (operation: string, operationName: string, operationDescription: string) => {
     if (!text.trim()) {
       toast({
         variant: "destructive",
@@ -59,12 +69,15 @@ export function AIWritingAssistant({ text, onChange, context, className }: AIWri
       }
 
       if (data?.improvedText) {
-        onChange(data.improvedText);
-        toast({
-          title: "AI Assistance Complete",
-          description: `Text ${operationName.toLowerCase()} completed successfully.`,
+        // Store suggestion for user review instead of auto-applying
+        setPendingSuggestion({
+          originalText: text,
+          suggestedText: data.improvedText,
+          operationName,
+          operationDescription
         });
-        console.log(`AI Writing Assistant - ${operationName} completed`);
+        setDialogOpen(true);
+        console.log(`AI Writing Assistant - ${operationName} completed, awaiting user decision`);
       } else {
         throw new Error('No improved text received');
       }
@@ -78,6 +91,28 @@ export function AIWritingAssistant({ text, onChange, context, className }: AIWri
     } finally {
       setIsLoading(false);
       setLoadingOperation(null);
+    }
+  };
+
+  const handleAcceptSuggestion = () => {
+    if (pendingSuggestion) {
+      onChange(pendingSuggestion.suggestedText);
+      toast({
+        title: "AI Suggestion Accepted",
+        description: `${pendingSuggestion.operationName} applied successfully.`,
+      });
+      setPendingSuggestion(null);
+    }
+  };
+
+  const handleRejectSuggestion = () => {
+    if (pendingSuggestion) {
+      toast({
+        title: "AI Suggestion Rejected",
+        description: `${pendingSuggestion.operationName} suggestion discarded.`,
+        variant: "destructive",
+      });
+      setPendingSuggestion(null);
     }
   };
 
@@ -127,68 +162,83 @@ export function AIWritingAssistant({ text, onChange, context, className }: AIWri
   ];
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={isLoading}
-          className={className}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              {loadingOperation === 'improve-writing' && 'Improving...'}
-              {loadingOperation === 'grammar-check' && 'Checking...'}
-              {loadingOperation === 'summarize' && 'Summarizing...'}
-              {loadingOperation === 'expand-content' && 'Expanding...'}
-              {loadingOperation === 'tone-formal' && 'Formalizing...'}
-              {loadingOperation === 'tone-casual' && 'Casualizing...'}
-              {loadingOperation === 'policy-language' && 'Converting...'}
-            </>
-          ) : (
-            <>
-              <Wand2 className="w-4 h-4 mr-2" />
-              AI Assistant
-            </>
-          )}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        {aiOperations.slice(0, 4).map((operation) => {
-          const Icon = operation.icon;
-          return (
-            <DropdownMenuItem
-              key={operation.key}
-              onClick={() => callAIAssistant(operation.key, operation.label)}
-              disabled={isLoading}
-            >
-              <Icon className="w-4 h-4 mr-2" />
-              <div className="flex flex-col">
-                <span className="font-medium">{operation.label}</span>
-                <span className="text-xs text-muted-foreground">{operation.description}</span>
-              </div>
-            </DropdownMenuItem>
-          );
-        })}
-        <DropdownMenuSeparator />
-        {aiOperations.slice(4).map((operation) => {
-          const Icon = operation.icon;
-          return (
-            <DropdownMenuItem
-              key={operation.key}
-              onClick={() => callAIAssistant(operation.key, operation.label)}
-              disabled={isLoading}
-            >
-              <Icon className="w-4 h-4 mr-2" />
-              <div className="flex flex-col">
-                <span className="font-medium">{operation.label}</span>
-                <span className="text-xs text-muted-foreground">{operation.description}</span>
-              </div>
-            </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isLoading}
+            className={className}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {loadingOperation === 'improve-writing' && 'Improving...'}
+                {loadingOperation === 'grammar-check' && 'Checking...'}
+                {loadingOperation === 'summarize' && 'Summarizing...'}
+                {loadingOperation === 'expand-content' && 'Expanding...'}
+                {loadingOperation === 'tone-formal' && 'Formalizing...'}
+                {loadingOperation === 'tone-casual' && 'Casualizing...'}
+                {loadingOperation === 'policy-language' && 'Converting...'}
+              </>
+            ) : (
+              <>
+                <Wand2 className="w-4 h-4 mr-2" />
+                AI Assistant
+              </>
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          {aiOperations.slice(0, 4).map((operation) => {
+            const Icon = operation.icon;
+            return (
+              <DropdownMenuItem
+                key={operation.key}
+                onClick={() => callAIAssistant(operation.key, operation.label, operation.description)}
+                disabled={isLoading}
+              >
+                <Icon className="w-4 h-4 mr-2" />
+                <div className="flex flex-col">
+                  <span className="font-medium">{operation.label}</span>
+                  <span className="text-xs text-muted-foreground">{operation.description}</span>
+                </div>
+              </DropdownMenuItem>
+            );
+          })}
+          <DropdownMenuSeparator />
+          {aiOperations.slice(4).map((operation) => {
+            const Icon = operation.icon;
+            return (
+              <DropdownMenuItem
+                key={operation.key}
+                onClick={() => callAIAssistant(operation.key, operation.label, operation.description)}
+                disabled={isLoading}
+              >
+                <Icon className="w-4 h-4 mr-2" />
+                <div className="flex flex-col">
+                  <span className="font-medium">{operation.label}</span>
+                  <span className="text-xs text-muted-foreground">{operation.description}</span>
+                </div>
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {pendingSuggestion && (
+        <AISuggestionDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          originalText={pendingSuggestion.originalText}
+          suggestedText={pendingSuggestion.suggestedText}
+          operationName={pendingSuggestion.operationName}
+          operationDescription={pendingSuggestion.operationDescription}
+          onAccept={handleAcceptSuggestion}
+          onReject={handleRejectSuggestion}
+        />
+      )}
+    </>
   );
 }
