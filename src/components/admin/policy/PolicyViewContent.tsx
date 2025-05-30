@@ -13,13 +13,30 @@ interface PolicyViewContentProps {
 }
 
 export function PolicyViewContent({ policy }: PolicyViewContentProps) {
-  // Helper function to format text content with proper paragraphs
-  const formatTextContent = (content: string | null): string => {
-    if (!content) return '';
+  // Helper function to safely render HTML content
+  const renderHtmlContent = (content: string | null): JSX.Element | null => {
+    if (!content) return null;
     
-    const cleanText = stripHtml(content);
-    // Split by common sentence endings and rejoin with proper spacing
-    return cleanText.replace(/\.\s+/g, '. ').trim();
+    // If content looks like TipTap JSON, try to extract and render it properly
+    if (content.includes('"type":') && content.includes('"content":')) {
+      try {
+        const parsed = JSON.parse(content);
+        // For now, fall back to stripped text for JSON content
+        return <div className="whitespace-pre-wrap">{stripHtml(content)}</div>;
+      } catch (e) {
+        // If JSON parsing fails, render as HTML
+        return <div 
+          className="prose prose-sm max-w-none"
+          dangerouslySetInnerHTML={{ __html: content }} 
+        />;
+      }
+    }
+    
+    // Render HTML content with proper styling
+    return <div 
+      className="prose prose-sm max-w-none"
+      dangerouslySetInnerHTML={{ __html: content }} 
+    />;
   };
 
   return (
@@ -40,7 +57,7 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
             PURPOSE
           </h2>
           <div className="text-justify leading-relaxed text-gray-800 policy-content">
-            <p className="whitespace-pre-wrap">{formatTextContent(policy.purpose)}</p>
+            {renderHtmlContent(policy.purpose)}
           </div>
         </div>
       )}
@@ -52,7 +69,7 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
             POLICY
           </h2>
           <div className="text-justify leading-relaxed text-gray-800 policy-content">
-            <p className="whitespace-pre-wrap">{formatTextContent(policy.policy_text)}</p>
+            {renderHtmlContent(policy.policy_text)}
           </div>
         </div>
       )}
@@ -64,7 +81,7 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
             PROCEDURE
           </h2>
           <div className="text-justify leading-relaxed text-gray-800 policy-content">
-            <p className="whitespace-pre-wrap">{formatTextContent(policy.procedure)}</p>
+            {renderHtmlContent(policy.procedure)}
           </div>
         </div>
       )}
@@ -74,41 +91,61 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
           page-break-inside: avoid;
         }
         
-        .policy-content h1, 
-        .policy-content h2, 
-        .policy-content h3 {
+        .policy-content .prose h1, 
+        .policy-content .prose h2, 
+        .policy-content .prose h3 {
           color: #1565c0 !important;
           font-weight: bold !important;
           text-transform: uppercase !important;
           margin: 20px 0 12px 0 !important;
         }
 
-        .policy-content h1 {
+        .policy-content .prose h1 {
           font-size: 14pt !important;
         }
 
-        .policy-content h2 {
+        .policy-content .prose h2 {
           font-size: 13pt !important;
         }
 
-        .policy-content h3 {
+        .policy-content .prose h3 {
           font-size: 12pt !important;
         }
 
-        .policy-content p {
+        .policy-content .prose p {
           margin-bottom: 12px !important;
           line-height: 1.5 !important;
+          color: #374151 !important;
         }
         
-        .policy-content ul, 
-        .policy-content ol {
+        .policy-content .prose ul, 
+        .policy-content .prose ol {
           margin: 12px 0 12px 20px !important;
           padding: 0 !important;
         }
         
-        .policy-content li {
+        .policy-content .prose li {
           margin-bottom: 6px !important;
           line-height: 1.4 !important;
+          color: #374151 !important;
+        }
+
+        .policy-content .prose ul {
+          list-style-type: disc !important;
+        }
+
+        .policy-content .prose ol {
+          list-style-type: decimal !important;
+        }
+
+        .policy-content .prose strong {
+          font-weight: 600 !important;
+          color: #374151 !important;
+        }
+
+        .policy-content .prose em {
+          font-style: italic !important;
+          color: #374151 !important;
         }
       `}</style>
     </div>
