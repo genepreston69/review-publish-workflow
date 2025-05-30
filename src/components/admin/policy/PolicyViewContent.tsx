@@ -13,13 +13,22 @@ interface PolicyViewContentProps {
 }
 
 export function PolicyViewContent({ policy }: PolicyViewContentProps) {
+  // Helper function to format text content with proper paragraphs
+  const formatTextContent = (content: string | null): string => {
+    if (!content) return '';
+    
+    const cleanText = stripHtml(content);
+    // Split by common sentence endings and rejoin with proper spacing
+    return cleanText.replace(/\.\s+/g, '. ').trim();
+  };
+
   return (
     <div className="space-y-8 mt-6">
       {/* Policy Name */}
       {policy.name && (
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-blue-600 uppercase tracking-wide">
-            {policy.name}
+            {stripHtml(policy.name)}
           </h1>
         </div>
       )}
@@ -31,7 +40,7 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
             PURPOSE
           </h2>
           <div className="text-justify leading-relaxed text-gray-800 policy-content">
-            <p>{stripHtml(policy.purpose)}</p>
+            <p className="whitespace-pre-wrap">{formatTextContent(policy.purpose)}</p>
           </div>
         </div>
       )}
@@ -43,7 +52,7 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
             POLICY
           </h2>
           <div className="text-justify leading-relaxed text-gray-800 policy-content">
-            <p>{stripHtml(policy.policy_text)}</p>
+            <p className="whitespace-pre-wrap">{formatTextContent(policy.policy_text)}</p>
           </div>
         </div>
       )}
@@ -55,7 +64,7 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
             PROCEDURE
           </h2>
           <div className="text-justify leading-relaxed text-gray-800 policy-content">
-            <p>{stripHtml(policy.procedure)}</p>
+            <p className="whitespace-pre-wrap">{formatTextContent(policy.procedure)}</p>
           </div>
         </div>
       )}
