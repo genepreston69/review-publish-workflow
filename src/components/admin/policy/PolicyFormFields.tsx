@@ -21,9 +21,10 @@ import { PolicyFormValues, POLICY_TYPES } from './PolicyFormSchema';
 
 interface PolicyFormFieldsProps {
   control: Control<PolicyFormValues>;
+  isEditMode?: boolean;
 }
 
-export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
+export function PolicyFormFields({ control, isEditMode = false }: PolicyFormFieldsProps) {
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -81,6 +82,7 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
                 className="min-h-[150px]"
                 context="purpose"
                 showBottomToolbar={true}
+                isEditMode={isEditMode}
               />
             </FormControl>
             <FormDescription>
@@ -105,6 +107,7 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
                 className="min-h-[250px]"
                 context="policy text"
                 showBottomToolbar={true}
+                isEditMode={isEditMode}
               />
             </FormControl>
             <FormDescription>
@@ -129,6 +132,7 @@ export function PolicyFormFields({ control }: PolicyFormFieldsProps) {
                 className="min-h-[180px]"
                 context="procedure"
                 showBottomToolbar={true}
+                isEditMode={isEditMode}
               />
             </FormControl>
             <FormDescription>
