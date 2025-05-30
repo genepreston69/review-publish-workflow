@@ -5,7 +5,7 @@ import { usePolicies } from './policy/usePolicies';
 
 export function CreatePolicy() {
   const { userRole } = useAuth();
-  const { addPolicy } = usePolicies();
+  const { fetchPolicies } = usePolicies();
 
   // Check if user has edit access
   const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
@@ -32,7 +32,7 @@ export function CreatePolicy() {
         </p>
       </div>
 
-      <CreatePolicyForm onPolicyCreated={addPolicy} />
+      <CreatePolicyForm onPolicyCreated={fetchPolicies} />
     </div>
   );
 }
