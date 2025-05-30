@@ -41,19 +41,17 @@ export function PolicyCardActions({
   return (
     <CardFooter className="pt-3 border-t">
       <div className="w-full space-y-2">
-        {/* Primary Actions Row - View and Edit buttons */}
+        {/* Primary Actions Row - Always show View button, Edit when applicable */}
         <div className="flex gap-2 justify-between">
-          {onView && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onView(policyId)}
-              className="flex-1 text-xs"
-            >
-              <Eye className="w-3 h-3 mr-1" />
-              View
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onView?.(policyId)}
+            className="flex-1 text-xs"
+          >
+            <Eye className="w-3 h-3 mr-1" />
+            View
+          </Button>
 
           {onEdit && (
             (isEditor && policyStatus === 'draft') ||

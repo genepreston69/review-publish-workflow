@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PolicyCardActions } from './PolicyCardActions';
 import { PolicyNumberDisplay } from './PolicyNumberDisplay';
+import { stripHtml } from './policyUtils';
 
 interface Policy {
   id: string;
@@ -38,7 +39,8 @@ export function FacilityPolicyCard({
   onRefresh
 }: FacilityPolicyCardProps) {
   const getStatusColor = (status: string | null) => {
-    switch (status?.toLowerCase()) {
+    const cleanStatus = stripHtml(status);
+    switch (cleanStatus?.toLowerCase()) {
       case 'published':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'draft':
@@ -63,7 +65,7 @@ export function FacilityPolicyCard({
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-lg leading-tight mb-2 line-clamp-2">
-              {policy.name || 'Untitled Policy'}
+              {stripHtml(policy.name) || 'Untitled Policy'}
             </h3>
             <PolicyNumberDisplay policyNumber={policy.policy_number} />
           </div>
@@ -71,7 +73,7 @@ export function FacilityPolicyCard({
             variant="outline" 
             className={`${getStatusColor(policy.status)} shrink-0 capitalize`}
           >
-            {policy.status || 'Unknown'}
+            {stripHtml(policy.status) || 'Unknown'}
           </Badge>
         </div>
       </CardHeader>
@@ -81,14 +83,14 @@ export function FacilityPolicyCard({
           {policy.purpose && (
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Purpose:</p>
-              <p className="text-sm text-gray-800 line-clamp-2">{policy.purpose}</p>
+              <p className="text-sm text-gray-800 line-clamp-2">{stripHtml(policy.purpose)}</p>
             </div>
           )}
           
           {policy.reviewer && (
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Reviewer:</p>
-              <p className="text-sm text-gray-800">{policy.reviewer}</p>
+              <p className="text-sm text-gray-800">{stripHtml(policy.reviewer)}</p>
             </div>
           )}
           
