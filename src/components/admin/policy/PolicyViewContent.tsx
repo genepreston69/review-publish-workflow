@@ -17,26 +17,13 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
   const renderHtmlContent = (content: string | null): JSX.Element | null => {
     if (!content) return null;
     
-    // If content looks like TipTap JSON, try to extract and render it properly
-    if (content.includes('"type":') && content.includes('"content":')) {
-      try {
-        const parsed = JSON.parse(content);
-        // For now, fall back to stripped text for JSON content
-        return <div className="whitespace-pre-wrap">{stripHtml(content)}</div>;
-      } catch (e) {
-        // If JSON parsing fails, render as HTML
-        return <div 
-          className="prose prose-sm max-w-none"
-          dangerouslySetInnerHTML={{ __html: content }} 
-        />;
-      }
-    }
-    
-    // Render HTML content with proper styling
-    return <div 
-      className="prose prose-sm max-w-none"
-      dangerouslySetInnerHTML={{ __html: content }} 
-    />;
+    // Always render as HTML to preserve formatting
+    return (
+      <div 
+        className="prose prose-sm max-w-none prose-headings:text-blue-600 prose-headings:font-bold prose-headings:uppercase prose-p:text-gray-800 prose-li:text-gray-800 prose-ul:list-disc prose-ol:list-decimal"
+        dangerouslySetInnerHTML={{ __html: content }} 
+      />
+    );
   };
 
   return (
@@ -91,6 +78,10 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
           page-break-inside: avoid;
         }
         
+        .policy-content .prose {
+          color: inherit;
+        }
+        
         .policy-content .prose h1, 
         .policy-content .prose h2, 
         .policy-content .prose h3 {
@@ -116,26 +107,26 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
           margin-bottom: 12px !important;
           line-height: 1.5 !important;
           color: #374151 !important;
+          text-align: justify !important;
         }
         
-        .policy-content .prose ul, 
+        .policy-content .prose ul {
+          margin: 12px 0 12px 20px !important;
+          padding: 0 !important;
+          list-style-type: disc !important;
+        }
+        
         .policy-content .prose ol {
           margin: 12px 0 12px 20px !important;
           padding: 0 !important;
+          list-style-type: decimal !important;
         }
         
         .policy-content .prose li {
           margin-bottom: 6px !important;
           line-height: 1.4 !important;
           color: #374151 !important;
-        }
-
-        .policy-content .prose ul {
-          list-style-type: disc !important;
-        }
-
-        .policy-content .prose ol {
-          list-style-type: decimal !important;
+          text-align: justify !important;
         }
 
         .policy-content .prose strong {
@@ -145,6 +136,15 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
 
         .policy-content .prose em {
           font-style: italic !important;
+          color: #374151 !important;
+        }
+
+        /* Ensure bullet points and numbers are visible */
+        .policy-content .prose ul li::marker {
+          color: #374151 !important;
+        }
+
+        .policy-content .prose ol li::marker {
           color: #374151 !important;
         }
       `}</style>
