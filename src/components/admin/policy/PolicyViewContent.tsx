@@ -1,4 +1,6 @@
 
+import { stripHtml } from './policyUtils';
+
 interface Policy {
   purpose: string | null;
   policy_text: string | null;
@@ -17,7 +19,7 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
         <div>
           <h3 className="text-lg font-semibold mb-3">Purpose</h3>
           <div className="prose max-w-none">
-            <div dangerouslySetInnerHTML={{ __html: policy.purpose }} />
+            <p className="whitespace-pre-wrap">{stripHtml(policy.purpose)}</p>
           </div>
         </div>
       )}
@@ -27,7 +29,7 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
         <div>
           <h3 className="text-lg font-semibold mb-3">Policy</h3>
           <div className="prose max-w-none">
-            <div dangerouslySetInnerHTML={{ __html: policy.policy_text }} />
+            <p className="whitespace-pre-wrap">{stripHtml(policy.policy_text)}</p>
           </div>
         </div>
       )}
@@ -37,7 +39,7 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
         <div>
           <h3 className="text-lg font-semibold mb-3">Procedure</h3>
           <div className="prose max-w-none">
-            <div dangerouslySetInnerHTML={{ __html: policy.procedure }} />
+            <p className="whitespace-pre-wrap">{stripHtml(policy.procedure)}</p>
           </div>
         </div>
       )}
