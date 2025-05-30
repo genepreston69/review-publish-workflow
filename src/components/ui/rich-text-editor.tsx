@@ -1,4 +1,5 @@
 
+
 import { EditorContent } from '@tiptap/react';
 import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
@@ -31,6 +32,9 @@ export function RichTextEditor({
   const auth = useAuth();
   const [userInitials, setUserInitials] = useState<string>('U');
   const [isJsonMode, setIsJsonMode] = useState<boolean>(false);
+
+  // Debug log to verify edit mode is being passed correctly
+  console.log('RichTextEditor - isEditMode:', isEditMode);
 
   // Load user initials from profile
   useEffect(() => {
@@ -99,6 +103,13 @@ export function RichTextEditor({
     editor.commands.setContent(wrappedContent);
   };
 
+  const editorContentClassName = cn(
+    "min-h-[200px]",
+    isEditMode && "edit-mode-text"
+  );
+
+  console.log('Editor content className:', editorContentClassName);
+
   return (
     <div className={cn(
       "border rounded-md transition-colors",
@@ -122,10 +133,7 @@ export function RichTextEditor({
       />
       <EditorContent 
         editor={editor} 
-        className={cn(
-          "min-h-[200px]",
-          isEditMode && "edit-mode-text"
-        )}
+        className={editorContentClassName}
         placeholder={placeholder}
       />
       {showBottomToolbar && (
@@ -144,3 +152,4 @@ export function RichTextEditor({
     </div>
   );
 }
+
