@@ -4,11 +4,11 @@ export function EditorStyles() {
     <style>{`
       /* Edit mode text styling - company blue color */
       .edit-mode-text .ProseMirror {
-        color: hsl(var(--primary)) !important;
+        color: #2563eb !important;
       }
       
       .edit-mode-text .ProseMirror * {
-        color: hsl(var(--primary)) !important;
+        color: #2563eb !important;
       }
       
       /* Draft mode uses default black text (no additional styling needed) */
@@ -183,11 +183,11 @@ export function EditorStyles() {
         
         /* Edit mode text color for print */
         .edit-mode-text .ProseMirror {
-          color: hsl(204, 100%, 37%) !important;
+          color: #2563eb !important;
         }
         
         .edit-mode-text .ProseMirror * {
-          color: hsl(204, 100%, 37%) !important;
+          color: #2563eb !important;
         }
       }
     `}</style>
