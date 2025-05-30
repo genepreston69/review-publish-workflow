@@ -9,9 +9,9 @@ interface ColorButtonsProps {
 
 export function ColorButtons({ editor }: ColorButtonsProps) {
   const colors = [
-    { name: 'Blue', value: '#2563eb', label: 'Blue text' },
+    { name: 'Blue', value: '#1d4ed8', label: 'Blue text' },
     { name: 'Red', value: '#dc2626', label: 'Red text' },
-    { name: 'Green', value: '#16a34a', label: 'Green text' },
+    { name: 'Green', value: '#15803d', label: 'Green text' },
   ];
 
   const handleColorClick = (color: string) => {
