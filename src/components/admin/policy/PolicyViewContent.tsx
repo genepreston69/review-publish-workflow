@@ -2,6 +2,7 @@
 import { stripHtml } from './policyUtils';
 
 interface Policy {
+  name: string | null;
   purpose: string | null;
   policy_text: string | null;
   procedure: string | null;
@@ -14,6 +15,15 @@ interface PolicyViewContentProps {
 export function PolicyViewContent({ policy }: PolicyViewContentProps) {
   return (
     <div className="space-y-8 mt-6">
+      {/* Policy Name */}
+      {policy.name && (
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-blue-600 uppercase tracking-wide">
+            {policy.name}
+          </h1>
+        </div>
+      )}
+
       {/* Purpose Section */}
       {policy.purpose && (
         <div className="policy-section">
@@ -21,7 +31,7 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
             PURPOSE
           </h2>
           <div className="text-justify leading-relaxed text-gray-800 policy-content">
-            <div dangerouslySetInnerHTML={{ __html: policy.purpose }} />
+            <p>{stripHtml(policy.purpose)}</p>
           </div>
         </div>
       )}
@@ -33,7 +43,7 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
             POLICY
           </h2>
           <div className="text-justify leading-relaxed text-gray-800 policy-content">
-            <div dangerouslySetInnerHTML={{ __html: policy.policy_text }} />
+            <p>{stripHtml(policy.policy_text)}</p>
           </div>
         </div>
       )}
@@ -45,7 +55,7 @@ export function PolicyViewContent({ policy }: PolicyViewContentProps) {
             PROCEDURE
           </h2>
           <div className="text-justify leading-relaxed text-gray-800 policy-content">
-            <div dangerouslySetInnerHTML={{ __html: policy.procedure }} />
+            <p>{stripHtml(policy.procedure)}</p>
           </div>
         </div>
       )}
