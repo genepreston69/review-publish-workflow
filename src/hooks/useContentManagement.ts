@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Content } from '@/types/content';
 import { UserRole } from '@/types/user';
+import { stripColorsFromHtml } from '@/utils/colorUtils';
 
 export const useContentManagement = (currentUser: any, userRole: UserRole | null) => {
   const [contents, setContents] = useState<Content[]>([]);
@@ -86,11 +87,15 @@ export const useContentManagement = (currentUser: any, userRole: UserRole | null
     }
 
     try {
+      // Strip colors from the content body when publishing
+      const cleanedBody = stripColorsFromHtml(content.body);
+      
       const { error } = await supabase
         .from('content')
         .update({ 
           status: 'published',
-          published_at: new Date().toISOString()
+          published_at: new Date().toISOString(),
+          body: cleanedBody
         })
         .eq('id', content.id);
 
@@ -105,7 +110,7 @@ export const useContentManagement = (currentUser: any, userRole: UserRole | null
 
       toast({
         title: "Content published",
-        description: "The content has been successfully published.",
+        description: "The content has been successfully published. All colors have been removed.",
       });
 
       // Refresh the content list
