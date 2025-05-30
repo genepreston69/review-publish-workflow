@@ -9,7 +9,7 @@ export function PolicyNumberDisplay({ policyNumber }: PolicyNumberDisplayProps) 
   if (!policyNumber) return null;
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 w-full">
       <div className="flex items-center gap-2">
         <FileText className="w-4 h-4 text-blue-600 flex-shrink-0" />
         <div className="flex items-center gap-2">
