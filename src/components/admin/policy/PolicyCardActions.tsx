@@ -41,8 +41,8 @@ export function PolicyCardActions({
   return (
     <CardFooter className="pt-3 border-t">
       <div className="w-full space-y-2">
-        {/* Primary Actions Row - Always show View button, Edit when applicable */}
-        <div className="flex gap-2 justify-between">
+        {/* First Row - View and Edit/Update buttons */}
+        <div className="flex gap-2">
           <Button
             size="sm"
             variant="outline"
@@ -53,6 +53,7 @@ export function PolicyCardActions({
             View
           </Button>
 
+          {/* Edit button for draft policies */}
           {onEdit && (
             (isEditor && policyStatus === 'draft') ||
             (canPublish && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review'))
@@ -67,39 +68,39 @@ export function PolicyCardActions({
               Edit
             </Button>
           )}
+
+          {/* Update Policy button for published policies */}
+          {policyStatus === 'published' && (isEditor || canPublish) && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleUpdatePolicy}
+              disabled={isDuplicating}
+              className="flex-1 text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
+            >
+              <RotateCcw className="w-3 h-3 mr-1" />
+              {isDuplicating ? 'Creating...' : 'Update'}
+            </Button>
+          )}
+
+          {/* Return to Draft button for under-review policies */}
+          {canPublish && (policyStatus === 'under-review' || policyStatus === 'under review') && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onUpdateStatus(policyId, 'draft')}
+              className="flex-1 text-xs bg-yellow-50 border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+            >
+              <RotateCcw className="w-3 h-3 mr-1" />
+              Return to Draft
+            </Button>
+          )}
         </div>
 
-        {/* Status Change Actions */}
-        {/* Return to Draft Button - Show prominently for publishers on under-review policies */}
-        {canPublish && (policyStatus === 'under-review' || policyStatus === 'under review') && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onUpdateStatus(policyId, 'draft')}
-            className="w-full text-xs bg-yellow-50 border-yellow-300 text-yellow-700 hover:bg-yellow-100"
-          >
-            <RotateCcw className="w-3 h-3 mr-1" />
-            Return to Draft
-          </Button>
-        )}
-
-        {/* Update Policy Button - Show for published policies for users with edit/publish permissions */}
-        {policyStatus === 'published' && (isEditor || canPublish) && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleUpdatePolicy}
-            disabled={isDuplicating}
-            className="w-full text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
-          >
-            <RotateCcw className="w-3 h-3 mr-1" />
-            {isDuplicating ? 'Creating Copy...' : 'Update Policy'}
-          </Button>
-        )}
-
-        {/* Publisher Actions - Publish/Reject buttons */}
-        {canPublish && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review') && (
-          <div className="flex gap-2 justify-between">
+        {/* Second Row - Status actions and delete */}
+        <div className="flex gap-2">
+          {/* Publish button */}
+          {canPublish && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review') && (
             <Button
               size="sm"
               onClick={() => onUpdateStatus(policyId, 'published')}
@@ -108,6 +109,10 @@ export function PolicyCardActions({
               <CheckCircle className="w-3 h-3 mr-1" />
               Publish
             </Button>
+          )}
+
+          {/* Reject button */}
+          {canPublish && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review') && (
             <Button
               size="sm"
               variant="outline"
@@ -117,21 +122,21 @@ export function PolicyCardActions({
               <XCircle className="w-3 h-3 mr-1" />
               Reject
             </Button>
-          </div>
-        )}
+          )}
 
-        {/* Destructive Actions - Delete button */}
-        {isSuperAdmin && onDelete && (
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => onDelete(policyId)}
-            className="w-full text-xs bg-red-600 hover:bg-red-700 text-white"
-          >
-            <Trash2 className="w-3 h-3 mr-1" />
-            Delete Policy
-          </Button>
-        )}
+          {/* Delete button */}
+          {isSuperAdmin && onDelete && (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => onDelete(policyId)}
+              className="flex-1 text-xs bg-red-600 hover:bg-red-700 text-white"
+            >
+              <Trash2 className="w-3 h-3 mr-1" />
+              Delete
+            </Button>
+          )}
+        </div>
       </div>
     </CardFooter>
   );
