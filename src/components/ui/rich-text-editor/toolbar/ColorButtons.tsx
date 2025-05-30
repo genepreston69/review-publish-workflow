@@ -15,7 +15,16 @@ export function ColorButtons({ editor }: ColorButtonsProps) {
   ];
 
   const handleColorClick = (color: string) => {
-    editor.chain().focus().setColor(color).run();
+    // First focus the editor to ensure proper state
+    editor.chain().focus().run();
+    
+    // If the same color is already active, unset it (toggle behavior)
+    if (editor.isActive('textStyle', { color: color })) {
+      editor.chain().focus().unsetColor().run();
+    } else {
+      // Clear any existing color first, then set the new color
+      editor.chain().focus().unsetColor().setColor(color).run();
+    }
   };
 
   return (
