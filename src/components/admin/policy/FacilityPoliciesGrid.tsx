@@ -21,6 +21,7 @@ interface FacilityPoliciesGridProps {
   onView: (policyId: string) => void;
   onUpdateStatus: (policyId: string, newStatus: string) => void;
   onDelete: (policyId: string) => void;
+  onRefresh?: () => void;
 }
 
 export function FacilityPoliciesGrid({ 
@@ -30,7 +31,8 @@ export function FacilityPoliciesGrid({
   isSuperAdmin, 
   onView, 
   onUpdateStatus, 
-  onDelete 
+  onDelete,
+  onRefresh
 }: FacilityPoliciesGridProps) {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
@@ -44,6 +46,7 @@ export function FacilityPoliciesGrid({
           onView={onView}
           onUpdateStatus={onUpdateStatus}
           onDelete={onDelete}
+          onRefresh={onRefresh}
         />
       ))}
     </div>

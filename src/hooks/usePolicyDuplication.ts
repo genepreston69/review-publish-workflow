@@ -23,6 +23,7 @@ export const usePolicyDuplication = () => {
   const duplicatePolicyForUpdate = async (policyId: string): Promise<string | null> => {
     try {
       setIsLoading(true);
+      console.log('=== STARTING POLICY DUPLICATION ===', policyId);
       
       // First, fetch the original policy
       const { data: originalPolicy, error: fetchError } = await supabase
@@ -41,6 +42,8 @@ export const usePolicyDuplication = () => {
         return null;
       }
 
+      console.log('=== ORIGINAL POLICY FETCHED ===', originalPolicy);
+
       // Create a new policy with the same content but as draft
       const duplicatedPolicy = {
         name: originalPolicy.name ? `${originalPolicy.name} - Updated` : null,
@@ -52,6 +55,8 @@ export const usePolicyDuplication = () => {
         policy_type: originalPolicy.policy_type,
         status: 'draft'
       };
+
+      console.log('=== CREATING DUPLICATED POLICY ===', duplicatedPolicy);
 
       const { data: newPolicy, error: insertError } = await supabase
         .from('Policies')
@@ -68,6 +73,8 @@ export const usePolicyDuplication = () => {
         });
         return null;
       }
+
+      console.log('=== NEW POLICY CREATED ===', newPolicy);
 
       toast({
         title: "Success",

@@ -28,9 +28,10 @@ interface PolicyViewModalProps {
   onClose: () => void;
   onEdit?: (policyId: string) => void;
   onUpdateStatus?: (policyId: string, newStatus: string) => void;
+  onRefresh?: () => void;
 }
 
-export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus }: PolicyViewModalProps) {
+export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onRefresh }: PolicyViewModalProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [policy, setPolicy] = useState<Policy | null>(null);
@@ -145,6 +146,7 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus }: P
           onUpdateStatus={onUpdateStatus}
           onReturnToDraft={handleReturnToDraft}
           onPublish={handlePublish}
+          onRefresh={onRefresh}
         />
       </DialogContent>
     </Dialog>
