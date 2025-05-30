@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { RotateCcw, Edit } from 'lucide-react';
+import { RotateCcw, Edit, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface Policy {
@@ -14,6 +14,7 @@ interface PolicyViewActionsProps {
   onEdit?: (policyId: string) => void;
   onUpdateStatus?: (policyId: string, newStatus: string) => void;
   onReturnToDraft: () => void;
+  onPublish?: () => void;
 }
 
 export function PolicyViewActions({ 
@@ -21,7 +22,8 @@ export function PolicyViewActions({
   onClose, 
   onEdit, 
   onUpdateStatus, 
-  onReturnToDraft 
+  onReturnToDraft,
+  onPublish
 }: PolicyViewActionsProps) {
   const { userRole } = useAuth();
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
@@ -66,6 +68,17 @@ export function PolicyViewActions({
           >
             <Edit className="w-4 h-4 mr-2" />
             Edit Policy
+          </Button>
+        )}
+
+        {/* Publish Button - Show for publishers/admins on draft or under-review policies */}
+        {canPublish && onPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') && (
+          <Button 
+            onClick={onPublish}
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Publish Policy
           </Button>
         )}
       </div>

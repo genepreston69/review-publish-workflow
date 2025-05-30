@@ -103,6 +103,27 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus }: P
     }
   };
 
+  const handlePublish = async () => {
+    if (!policy || !onUpdateStatus) return;
+
+    console.log('=== PUBLISHING POLICY ===', policy.id);
+    try {
+      await onUpdateStatus(policy.id, 'published');
+      toast({
+        title: "Success",
+        description: "Policy published successfully.",
+      });
+      onClose();
+    } catch (error) {
+      console.error('Error publishing policy:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to publish policy.",
+      });
+    }
+  };
+
   if (isLoading) {
     return <PolicyViewLoading onClose={onClose} />;
   }
@@ -113,7 +134,7 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus }: P
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto [&>button]:hidden">
         <PolicyViewHeader policy={policy} onClose={onClose} />
         <PolicyViewMetadata policy={policy} />
         <PolicyViewContent policy={policy} />
@@ -123,6 +144,7 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus }: P
           onEdit={onEdit}
           onUpdateStatus={onUpdateStatus}
           onReturnToDraft={handleReturnToDraft}
+          onPublish={handlePublish}
         />
       </DialogContent>
     </Dialog>
