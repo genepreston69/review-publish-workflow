@@ -1,4 +1,3 @@
-
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
@@ -16,6 +15,7 @@ import { PolicyManualGenerator } from '@/components/admin/policy/PolicyManualGen
 import { AppSidebar } from '@/components/AppSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
+import { ReviewForms } from '@/components/admin/ReviewForms';
 
 const Admin = () => {
   const { userRole, isLoading } = useAuth();
@@ -66,7 +66,7 @@ const Admin = () => {
       case 'draft-forms':
         return <div>Draft Forms - Coming Soon</div>;
       case 'review-forms':
-        return <div>Review Forms - Coming Soon</div>;
+        return <ReviewForms />;
       case 'published-forms':
         return <div>Published Forms - Coming Soon</div>;
       case 'users':
