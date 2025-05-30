@@ -40,12 +40,24 @@ export function CreateFormForm({ onFormCreated }: CreateFormFormProps) {
 
   const createFormMutation = useMutation({
     mutationFn: async (data: FormData) => {
+      // Ensure form_type is not empty and formNumber exists
+      if (!data.form_type || !formNumber) {
+        throw new Error('Form type and form number are required');
+      }
+
+      const formData = {
+        name: data.name || null,
+        form_type: data.form_type,
+        purpose: data.purpose || null,
+        reviewer: data.reviewer || null,
+        form_content: data.form_content || null,
+        status: data.status || 'draft',
+        form_number: formNumber,
+      };
+
       const { error } = await supabase
         .from('Forms')
-        .insert({
-          ...data,
-          form_number: formNumber,
-        });
+        .insert(formData);
 
       if (error) throw error;
     },
