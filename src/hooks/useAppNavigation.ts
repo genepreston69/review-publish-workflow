@@ -68,7 +68,8 @@ export function useAppNavigation() {
     // Define admin-only sections
     const adminOnlySections = [
       'create-policy', 'draft-policies', 'review-policies', 
-      'policy-manuals', 'users', 'assignments', 'analytics', 'moderation'
+      'policy-manuals', 'create-form', 'draft-forms', 'review-forms', 'published-forms',
+      'users', 'assignments', 'analytics', 'moderation'
     ];
     
     // Define sections that are available on both admin and main routes

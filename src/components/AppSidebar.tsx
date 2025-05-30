@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/sidebar";
 import { 
   Users, FileText, FileClock, FileCheck, Plus, BookOpen, 
-  Building, Eye, CheckCircle, BarChart3, Settings 
+  Building, Eye, CheckCircle, BarChart3, Settings, ClipboardList 
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
@@ -56,6 +56,30 @@ export function AppSidebar() {
       icon: FileCheck,
     }] : []),
   ];
+
+  // Form items - available to non-read-only users
+  const formItems = hasAdminAccess ? [
+    {
+      id: "create-form",
+      title: "Create Form",
+      icon: ClipboardList,
+    },
+    ...(isEditor ? [{
+      id: "draft-forms",
+      title: "Draft Forms",
+      icon: FileClock,
+    }] : []),
+    ...(canPublish && !isEditor ? [{
+      id: "review-forms",
+      title: "Review Forms",
+      icon: FileCheck,
+    }] : []),
+    {
+      id: "published-forms",
+      title: "Published Forms",
+      icon: ClipboardList,
+    },
+  ] : [];
 
   // Admin-only policy items
   const adminPolicyItems = hasAdminAccess ? [
@@ -136,6 +160,7 @@ export function AppSidebar() {
       
       <SidebarContent>
         {renderMenuSection(policyItems, "Policies")}
+        {renderMenuSection(formItems, "Forms")}
         {renderMenuSection(adminPolicyItems, "Tools")}
         {renderMenuSection(adminItems, "Administration")}
       </SidebarContent>
