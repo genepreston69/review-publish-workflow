@@ -4,6 +4,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Editor } from '@tiptap/react';
 import { cn } from '@/lib/utils';
 import { FormattingButtons } from './toolbar/FormattingButtons';
+import { ColorButtons } from './toolbar/ColorButtons';
 import { ListButtons } from './toolbar/ListButtons';
 import { AlignmentButtons } from './toolbar/AlignmentButtons';
 import { UndoRedoButtons } from './toolbar/UndoRedoButtons';
@@ -37,6 +38,10 @@ export function EditorToolbar({
       <div className={cn("p-2 flex flex-wrap gap-1 justify-between", borderClass)}>
         <div className="flex flex-wrap gap-1">
           <FormattingButtons editor={editor} />
+          
+          <ToolbarDivider />
+          
+          <ColorButtons editor={editor} />
           
           <ToolbarDivider />
           
