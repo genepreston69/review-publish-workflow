@@ -72,6 +72,7 @@ export function HRPolicies() {
           onView={handleViewPolicy}
           onUpdateStatus={handleUpdateStatus}
           onDelete={handleDeletePolicy}
+          onRefresh={refetchPolicies}
         />
       )}
 
@@ -80,6 +81,7 @@ export function HRPolicies() {
           policyId={viewingPolicyId}
           onClose={handleCloseView}
           onUpdateStatus={handleUpdateStatus}
+          onRefresh={refetchPolicies}
         />
       )}
     </div>

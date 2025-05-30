@@ -2,6 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { RotateCcw, Edit, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { usePolicyDuplication } from '@/hooks/usePolicyDuplication';
 
 interface Policy {
   id: string;
@@ -15,6 +16,7 @@ interface PolicyViewActionsProps {
   onUpdateStatus?: (policyId: string, newStatus: string) => void;
   onReturnToDraft: () => void;
   onPublish?: () => void;
+  onRefresh?: () => void;
 }
 
 export function PolicyViewActions({ 
@@ -23,11 +25,20 @@ export function PolicyViewActions({
   onEdit, 
   onUpdateStatus, 
   onReturnToDraft,
-  onPublish
+  onPublish,
+  onRefresh
 }: PolicyViewActionsProps) {
   const { userRole } = useAuth();
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
   const isEditor = userRole === 'edit';
+  const { duplicatePolicyForUpdate, isLoading: isDuplicating } = usePolicyDuplication();
+
+  const handleUpdatePolicy = async () => {
+    const newPolicyId = await duplicatePolicyForUpdate(policy.id);
+    if (newPolicyId && onRefresh) {
+      onRefresh();
+    }
+  };
 
   return (
     <div className="flex justify-between mt-6 pt-4 border-t">
@@ -45,14 +56,15 @@ export function PolicyViewActions({
         )}
 
         {/* Update Policy Button - Show for published policies for users with edit/publish permissions */}
-        {policy.status === 'published' && onUpdateStatus && (isEditor || canPublish) && (
+        {policy.status === 'published' && (isEditor || canPublish) && (
           <Button 
             variant="outline" 
-            onClick={onReturnToDraft}
+            onClick={handleUpdatePolicy}
+            disabled={isDuplicating}
             className="border-blue-300 text-blue-600 hover:bg-blue-50"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
-            Update Policy
+            {isDuplicating ? 'Creating Copy...' : 'Update Policy'}
           </Button>
         )}
 

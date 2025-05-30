@@ -69,6 +69,7 @@ export function FacilityPolicies() {
           onView={handleViewPolicy}
           onUpdateStatus={handleUpdateStatus}
           onDelete={handleDeletePolicy}
+          onRefresh={refetchPolicies}
         />
       )}
 
@@ -77,6 +78,7 @@ export function FacilityPolicies() {
           policyId={viewingPolicyId}
           onClose={handleCloseView}
           onUpdateStatus={handleUpdateStatus}
+          onRefresh={refetchPolicies}
         />
       )}
     </div>

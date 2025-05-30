@@ -3,6 +3,7 @@ import { CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trash2, Edit, Eye, RotateCcw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { usePolicyDuplication } from '@/hooks/usePolicyDuplication';
 
 interface PolicyCardActionsProps {
   policyId: string;
@@ -12,6 +13,7 @@ interface PolicyCardActionsProps {
   onEdit?: (policyId: string) => void;
   onView?: (policyId: string) => void;
   onDelete?: (policyId: string) => void;
+  onRefresh?: () => void;
 }
 
 export function PolicyCardActions({ 
@@ -21,11 +23,20 @@ export function PolicyCardActions({
   onUpdateStatus, 
   onEdit, 
   onView, 
-  onDelete 
+  onDelete,
+  onRefresh
 }: PolicyCardActionsProps) {
   const { userRole } = useAuth();
   const isSuperAdmin = userRole === 'super-admin';
   const isEditor = userRole === 'edit';
+  const { duplicatePolicyForUpdate, isLoading: isDuplicating } = usePolicyDuplication();
+
+  const handleUpdatePolicy = async () => {
+    const newPolicyId = await duplicatePolicyForUpdate(policyId);
+    if (newPolicyId && onRefresh) {
+      onRefresh();
+    }
+  };
 
   return (
     <CardFooter className="pt-3 border-t">
@@ -79,11 +90,12 @@ export function PolicyCardActions({
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onUpdateStatus(policyId, 'draft')}
+            onClick={handleUpdatePolicy}
+            disabled={isDuplicating}
             className="w-full text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
           >
             <RotateCcw className="w-3 h-3 mr-1" />
-            Update Policy
+            {isDuplicating ? 'Creating Copy...' : 'Update Policy'}
           </Button>
         )}
 
