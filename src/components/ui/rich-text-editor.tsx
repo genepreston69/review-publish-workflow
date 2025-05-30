@@ -122,7 +122,10 @@ export function RichTextEditor({
       />
       <EditorContent 
         editor={editor} 
-        className="min-h-[200px]"
+        className={cn(
+          "min-h-[200px]",
+          isEditMode && "edit-mode-text"
+        )}
         placeholder={placeholder}
       />
       {showBottomToolbar && (

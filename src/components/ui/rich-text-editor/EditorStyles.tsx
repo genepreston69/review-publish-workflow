@@ -2,6 +2,17 @@
 export function EditorStyles() {
   return (
     <style>{`
+      /* Edit mode text styling - company blue color */
+      .edit-mode-text .ProseMirror {
+        color: hsl(var(--primary)) !important;
+      }
+      
+      .edit-mode-text .ProseMirror * {
+        color: hsl(var(--primary)) !important;
+      }
+      
+      /* Draft mode uses default black text (no additional styling needed) */
+      
       /* Suggestion styling */
       .ProseMirror .suggestion-insert {
         font-weight: bold;
@@ -168,6 +179,15 @@ export function EditorStyles() {
         
         .ProseMirror ol {
           list-style-type: decimal !important;
+        }
+        
+        /* Edit mode text color for print */
+        .edit-mode-text .ProseMirror {
+          color: hsl(204, 100%, 37%) !important;
+        }
+        
+        .edit-mode-text .ProseMirror * {
+          color: hsl(204, 100%, 37%) !important;
         }
       }
     `}</style>
