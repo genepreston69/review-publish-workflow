@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -47,58 +46,9 @@ export function FormViewModal({ formId, onClose, onEdit, onUpdateStatus }: FormV
               margin: 0 auto;
               padding: 20px;
             }
-            .form-header {
-              text-align: center;
-              margin-bottom: 30px;
-              border-bottom: 2px solid #1565c0;
-              padding-bottom: 20px;
-            }
-            .form-title {
-              font-size: 24px;
-              font-weight: bold;
-              color: #1565c0;
-              margin-bottom: 10px;
-              text-transform: uppercase;
-            }
-            .form-metadata {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 20px;
-              margin-bottom: 30px;
-              padding: 20px;
-              background-color: #f8f9fa;
-              border-radius: 8px;
-            }
-            .metadata-item {
-              margin-bottom: 10px;
-            }
-            .metadata-label {
-              font-weight: bold;
-              color: #666;
-              font-size: 12px;
-              text-transform: uppercase;
-            }
-            .metadata-value {
-              font-size: 14px;
-              margin-top: 4px;
-            }
             .form-content {
-              margin-top: 30px;
-            }
-            .section-title {
-              font-size: 18px;
-              font-weight: bold;
-              color: #1565c0;
-              margin: 30px 0 15px 0;
-              text-transform: uppercase;
-              border-bottom: 1px solid #1565c0;
-              padding-bottom: 5px;
-            }
-            .content-section {
-              margin-bottom: 30px;
-              padding: 20px;
-              border: 1px solid #e5e7eb;
-              border-radius: 8px;
+              margin: 0;
+              padding: 0;
             }
             @media print {
               body {
@@ -112,42 +62,11 @@ export function FormViewModal({ formId, onClose, onEdit, onUpdateStatus }: FormV
           </style>
         </head>
         <body>
-          <div class="form-header">
-            <div class="form-title">${form.name || 'Untitled Form'}</div>
-            <div>Form Number: ${form.form_number || 'Not assigned'} | Type: ${form.form_type}</div>
-          </div>
-
-          <div class="form-metadata">
-            ${form.purpose ? `
-              <div class="metadata-item">
-                <div class="metadata-label">Purpose</div>
-                <div class="metadata-value">${form.purpose}</div>
-              </div>
-            ` : ''}
-            ${form.reviewer ? `
-              <div class="metadata-item">
-                <div class="metadata-label">Reviewer</div>
-                <div class="metadata-value">${form.reviewer}</div>
-              </div>
-            ` : ''}
-            <div class="metadata-item">
-              <div class="metadata-label">Created</div>
-              <div class="metadata-value">${new Date(form.created_at).toLocaleDateString()}</div>
-            </div>
-            <div class="metadata-item">
-              <div class="metadata-label">Status</div>
-              <div class="metadata-value">${form.status || 'draft'}</div>
-            </div>
-          </div>
-
           ${form.form_content ? `
             <div class="form-content">
-              <div class="section-title">Form Content</div>
-              <div class="content-section">
-                ${form.form_content}
-              </div>
+              ${form.form_content}
             </div>
-          ` : ''}
+          ` : '<p>No form content available.</p>'}
         </body>
       </html>
     `;
