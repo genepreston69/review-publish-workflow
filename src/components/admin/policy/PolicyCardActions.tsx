@@ -1,4 +1,3 @@
-
 import { CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trash2, Edit, Eye, RotateCcw } from 'lucide-react';
@@ -80,12 +79,26 @@ export function PolicyCardActions({
     }
   };
 
+  // Determine which buttons to show in each row
+  const showEditButton = onEdit && (
+    isSuperAdmin ||
+    (isEditor && policyStatus === 'draft') ||
+    (canPublish && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review'))
+  );
+
+  const showSubmitButton = policyStatus === 'draft' && (isSuperAdmin || isEditor || canPublish);
+  const showUpdateButton = policyStatus === 'published' && (isSuperAdmin || isEditor || canPublish);
+
+  const showPublishButton = (isSuperAdmin || canPublish) && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review');
+  const showArchiveButton = (isSuperAdmin || canPublish) && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review');
+  const showDeleteButton = isSuperAdmin && onDelete;
+
   return (
     <CardFooter className="pt-6 border-t">
       <div className="w-full space-y-3">
-        {/* First row - View, Edit, Submit */}
+        {/* First row - View, Edit, Submit/Update */}
         <div className="grid grid-cols-3 gap-2 w-full">
-          {/* View button */}
+          {/* View button - always shown */}
           <Button
             size="sm"
             variant="outline"
@@ -96,25 +109,23 @@ export function PolicyCardActions({
             View
           </Button>
 
-          {/* Edit button */}
-          {onEdit && (
-            isSuperAdmin ||
-            (isEditor && policyStatus === 'draft') ||
-            (canPublish && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review'))
-          ) && (
+          {/* Edit button or placeholder */}
+          {showEditButton ? (
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onEdit(policyId)}
+              onClick={() => onEdit!(policyId)}
               className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
             >
               <Edit className="w-3 h-3 mr-1" />
               Edit
             </Button>
+          ) : (
+            <div></div>
           )}
 
-          {/* Submit button for draft policies OR Update Policy button for published policies */}
-          {policyStatus === 'draft' && (isSuperAdmin || isEditor || canPublish) && (
+          {/* Submit/Update button or placeholder */}
+          {showSubmitButton ? (
             <Button
               size="sm"
               variant="outline"
@@ -123,9 +134,7 @@ export function PolicyCardActions({
             >
               Submit
             </Button>
-          )}
-
-          {policyStatus === 'published' && (isSuperAdmin || isEditor || canPublish) && (
+          ) : showUpdateButton ? (
             <Button
               size="sm"
               variant="outline"
@@ -136,13 +145,15 @@ export function PolicyCardActions({
               <RotateCcw className="w-3 h-3 mr-1" />
               {isDuplicating ? 'Creating...' : 'Update'}
             </Button>
+          ) : (
+            <div></div>
           )}
         </div>
 
         {/* Second row - Publish, Archive, Delete */}
         <div className="grid grid-cols-3 gap-2 w-full">
-          {/* Publish button */}
-          {(isSuperAdmin || canPublish) && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review') && (
+          {/* Publish button or placeholder */}
+          {showPublishButton ? (
             <Button
               size="sm"
               onClick={handlePublish}
@@ -151,10 +162,12 @@ export function PolicyCardActions({
               <CheckCircle className="w-3 h-3 mr-1" />
               Publish
             </Button>
+          ) : (
+            <div></div>
           )}
 
-          {/* Archive button */}
-          {(isSuperAdmin || canPublish) && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review') && (
+          {/* Archive button or placeholder */}
+          {showArchiveButton ? (
             <Button
               size="sm"
               variant="outline"
@@ -164,19 +177,23 @@ export function PolicyCardActions({
               <XCircle className="w-3 h-3 mr-1" />
               Archive
             </Button>
+          ) : (
+            <div></div>
           )}
 
-          {/* Delete button */}
-          {isSuperAdmin && onDelete && (
+          {/* Delete button or placeholder */}
+          {showDeleteButton ? (
             <Button
               size="sm"
               variant="destructive"
-              onClick={() => onDelete(policyId)}
+              onClick={() => onDelete!(policyId)}
               className="text-xs bg-red-600 hover:bg-red-700 text-white"
             >
               <Trash2 className="w-3 h-3 mr-1" />
               Delete
             </Button>
+          ) : (
+            <div></div>
           )}
         </div>
       </div>
