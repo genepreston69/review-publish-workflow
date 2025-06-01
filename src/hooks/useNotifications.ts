@@ -36,8 +36,14 @@ export const useNotifications = () => {
         return;
       }
 
-      setNotifications(data || []);
-      setUnreadCount((data || []).filter(n => !n.read).length);
+      // Transform the data to match our interface
+      const transformedData = (data || []).map(item => ({
+        ...item,
+        metadata: typeof item.metadata === 'string' ? JSON.parse(item.metadata) : (item.metadata || {})
+      }));
+
+      setNotifications(transformedData);
+      setUnreadCount(transformedData.filter(n => !n.read).length);
     } catch (error) {
       console.error('Error in fetchNotifications:', error);
     } finally {
@@ -109,7 +115,10 @@ export const useNotifications = () => {
           filter: `user_id=eq.${currentUser.id}`,
         },
         (payload) => {
-          const newNotification = payload.new as Notification;
+          const newNotification = {
+            ...payload.new,
+            metadata: typeof payload.new.metadata === 'string' ? JSON.parse(payload.new.metadata) : (payload.new.metadata || {})
+          } as Notification;
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
         }
@@ -123,7 +132,10 @@ export const useNotifications = () => {
           filter: `user_id=eq.${currentUser.id}`,
         },
         (payload) => {
-          const updatedNotification = payload.new as Notification;
+          const updatedNotification = {
+            ...payload.new,
+            metadata: typeof payload.new.metadata === 'string' ? JSON.parse(payload.new.metadata) : (payload.new.metadata || {})
+          } as Notification;
           setNotifications(prev => 
             prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
           );

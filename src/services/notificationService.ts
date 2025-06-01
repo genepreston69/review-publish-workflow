@@ -16,7 +16,7 @@ export interface CreateNotificationParams {
   type: 'policy_status_change' | 'policy_assignment' | 'policy_comment' | 'policy_published' | 'policy_returned';
   title: string;
   message: string;
-  metadata: Record<string, any>;
+  metadata: NotificationData;
   sendEmail?: boolean;
   userEmail?: string;
 }
