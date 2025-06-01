@@ -19,21 +19,37 @@ interface RichTextEditorProps {
   isEditMode?: boolean;
 }
 
-// Helper function to strip HTML tags and return clean text
+// Enhanced HTML stripping function
 const stripHtmlTags = (html: string): string => {
   if (!html) return '';
   
-  // Create a temporary div to parse HTML
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = html;
+  // Remove HTML tags completely
+  let cleanText = html.replace(/<[^>]*>/g, '');
   
-  // Get text content and clean up
-  let textContent = tempDiv.textContent || tempDiv.innerText || '';
+  // Decode HTML entities
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = cleanText;
+  cleanText = tempDiv.textContent || tempDiv.innerText || '';
   
   // Clean up multiple spaces and line breaks
-  textContent = textContent.replace(/\s+/g, ' ').trim();
+  cleanText = cleanText.replace(/\s+/g, ' ').trim();
   
-  return textContent;
+  return cleanText;
+};
+
+// Convert TipTap JSON to plain text
+const extractTextFromJson = (jsonContent: any): string => {
+  if (!jsonContent || typeof jsonContent !== 'object') return '';
+  
+  if (jsonContent.type === 'text') {
+    return jsonContent.text || '';
+  }
+  
+  if (jsonContent.content && Array.isArray(jsonContent.content)) {
+    return jsonContent.content.map(extractTextFromJson).join(' ');
+  }
+  
+  return '';
 };
 
 export function RichTextEditor({ 
@@ -100,10 +116,33 @@ export function RichTextEditor({
     }
   }, [content]);
 
-  // Clean the content for display - strip HTML if present
-  const displayContent = content.includes('<') && content.includes('>') && !content.includes('"type":') 
-    ? stripHtmlTags(content) 
-    : content;
+  // Always clean the content for display - aggressively strip any HTML
+  const displayContent = useMemo(() => {
+    if (!content) return '';
+    
+    console.log('Processing display content:', content);
+    
+    // Try to extract from JSON first
+    try {
+      const parsed = JSON.parse(content);
+      if (isValidTipTapJson(parsed)) {
+        const plainText = extractTextFromJson(parsed);
+        console.log('Extracted from JSON:', plainText);
+        return plainText;
+      }
+    } catch {
+      // Not JSON, continue
+    }
+    
+    // If content contains any HTML, strip it completely
+    if (content.includes('<') || content.includes('>') || content.includes('&')) {
+      const cleanText = stripHtmlTags(content);
+      console.log('Stripped HTML:', cleanText);
+      return cleanText;
+    }
+    
+    return content;
+  }, [content]);
 
   const editor = useEditorSetup({ 
     content: displayContent, 

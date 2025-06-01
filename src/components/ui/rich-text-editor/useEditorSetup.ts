@@ -1,5 +1,3 @@
-
-
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -21,50 +19,66 @@ interface UseEditorSetupProps {
   isJsonMode: boolean;
 }
 
-// Helper function to strip HTML tags and return clean text
+// Enhanced HTML stripping function
 const stripHtmlTags = (html: string): string => {
   if (!html) return '';
   
-  // Create a temporary div to parse HTML
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = html;
+  // Remove HTML tags completely
+  let cleanText = html.replace(/<[^>]*>/g, '');
   
-  // Get text content and clean up
-  let textContent = tempDiv.textContent || tempDiv.innerText || '';
+  // Decode HTML entities
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = cleanText;
+  cleanText = tempDiv.textContent || tempDiv.innerText || '';
   
   // Clean up multiple spaces and line breaks
-  textContent = textContent.replace(/\s+/g, ' ').trim();
+  cleanText = cleanText.replace(/\s+/g, ' ').trim();
   
-  return textContent;
+  return cleanText;
+};
+
+// Convert TipTap JSON to plain text
+const extractTextFromJson = (jsonContent: any): string => {
+  if (!jsonContent || typeof jsonContent !== 'object') return '';
+  
+  if (jsonContent.type === 'text') {
+    return jsonContent.text || '';
+  }
+  
+  if (jsonContent.content && Array.isArray(jsonContent.content)) {
+    return jsonContent.content.map(extractTextFromJson).join(' ');
+  }
+  
+  return '';
 };
 
 export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetupProps) {
-  // Determine if content is JSON or HTML and prepare initial content
+  // Clean and prepare initial content
   const getInitialContent = useMemo(() => {
     if (!content) return '';
     
-    // If content contains HTML tags, strip them and show as plain text
-    if (content.includes('<') && content.includes('>') && !content.includes('"type":')) {
-      const cleanText = stripHtmlTags(content);
-      return cleanText;
-    }
+    console.log('Processing initial content:', content);
     
     // Try to parse as JSON first
     try {
       const parsed = JSON.parse(content);
       if (isValidTipTapJson(parsed)) {
-        return parsed;
+        const plainText = extractTextFromJson(parsed);
+        console.log('Extracted text from JSON:', plainText);
+        return plainText;
       }
     } catch {
-      // Not JSON, treat as plain text
+      // Not JSON, continue processing
     }
     
-    // If it's TipTap JSON format, migrate to proper format
+    // If content contains HTML tags, strip them completely
     if (content.includes('<') && content.includes('>')) {
-      return migrateHtmlToJson(content);
+      const cleanText = stripHtmlTags(content);
+      console.log('Stripped HTML, result:', cleanText);
+      return cleanText;
     }
     
-    // Plain text
+    // Return as plain text
     return content;
   }, [content]);
 
@@ -110,8 +124,9 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
     ],
     content: getInitialContent,
     onUpdate: ({ editor }) => {
-      // Always output as clean text to suppress HTML
+      // Always output as clean plain text
       const plainText = editor.getText();
+      console.log('Editor updated, outputting plain text:', plainText);
       onChange(plainText);
     },
     editorProps: {
@@ -126,14 +141,32 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
   useEffect(() => {
     if (editor && content !== undefined) {
       const currentText = editor.getText();
+      
+      // Clean the incoming content before comparing
+      let cleanIncomingContent = content;
+      
+      // Strip HTML if present
+      if (content.includes('<') && content.includes('>')) {
+        cleanIncomingContent = stripHtmlTags(content);
+      }
+      
+      // Try to extract from JSON if it's TipTap JSON
+      try {
+        const parsed = JSON.parse(content);
+        if (isValidTipTapJson(parsed)) {
+          cleanIncomingContent = extractTextFromJson(parsed);
+        }
+      } catch {
+        // Not JSON, use the cleaned content
+      }
+      
       // Only update if the content is different from what's currently in the editor
-      if (currentText !== content) {
-        console.log('Updating editor content:', { currentText, newContent: content });
-        editor.commands.setContent(content);
+      if (currentText !== cleanIncomingContent) {
+        console.log('Updating editor content:', { currentText, newContent: cleanIncomingContent });
+        editor.commands.setContent(cleanIncomingContent);
       }
     }
   }, [editor, content]);
 
   return editor;
 }
-
