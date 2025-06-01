@@ -13,39 +13,20 @@ export function ReviewPolicies() {
   const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
 
-  // Debug logging
-  console.log('=== REVIEW POLICIES DEBUG ===');
-  console.log('Total policies loaded:', policies.length);
-  console.log('Current user:', currentUser?.email);
-  console.log('User role:', userRole);
-  console.log('Is super admin:', isSuperAdmin);
-  console.log('Is loading:', isLoadingPolicies);
-
   // All possible status variations that need review
   const reviewStatuses = ['draft', 'under-review', 'under review', 'awaiting-changes', 'awaiting changes'];
 
   // Filter to show policies that need review with proper access control
   const reviewPolicies = policies.filter(policy => {
-    console.log(`Checking policy ${policy.id}:`, {
-      name: policy.name,
-      status: policy.status,
-      creator_id: policy.creator_id,
-      reviewer: policy.reviewer,
-      currentUserId: currentUser?.id
-    });
-
     // Check if policy needs review (case-insensitive and flexible matching)
     const needsReview = policy.status && reviewStatuses.some(status => 
       policy.status?.toLowerCase().trim() === status.toLowerCase()
     );
     
-    console.log(`Policy ${policy.id} needs review:`, needsReview);
-    
     if (!needsReview) return false;
     
     // Super-admins can see all policies needing review
     if (isSuperAdmin) {
-      console.log(`Super admin can see policy ${policy.id}`);
       return true;
     }
     
@@ -53,44 +34,31 @@ export function ReviewPolicies() {
     if (userRole === 'publish') {
       // Don't show policies they created (maker/checker rule)
       if (policy.creator_id === currentUser?.id) {
-        console.log(`Policy ${policy.id} filtered out - creator is current user`);
         return false;
       }
       
       // Show if assigned as reviewer or if no specific reviewer assigned
       const canReview = policy.reviewer === currentUser?.email || !policy.reviewer;
-      console.log(`Policy ${policy.id} can review:`, canReview, {
-        policyReviewer: policy.reviewer,
-        currentUserEmail: currentUser?.email,
-        noReviewer: !policy.reviewer
-      });
       return canReview;
     }
     
-    console.log(`Policy ${policy.id} filtered out - user role insufficient`);
     return false;
   });
-
-  console.log('Filtered review policies:', reviewPolicies.length);
-  console.log('Review policies:', reviewPolicies.map(p => ({ id: p.id, name: p.name, status: p.status })));
 
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
   const canArchive = isSuperAdmin;
 
   const handleEditPolicy = (policyId: string) => {
-    console.log('Edit policy:', policyId);
     setEditingPolicyId(policyId);
     setViewingPolicyId(null);
   };
 
   const handleViewPolicy = (policyId: string) => {
-    console.log('View policy:', policyId);
     setViewingPolicyId(policyId);
     setEditingPolicyId(null);
   };
 
   const handlePolicyUpdated = (updatedPolicy: Policy) => {
-    console.log('Policy updated:', updatedPolicy);
     setEditingPolicyId(null);
     // Refresh the policy list
     fetchPolicies();
@@ -148,13 +116,6 @@ export function ReviewPolicies() {
     );
   }
 
-  // Count policies by status for debug (with flexible matching)
-  const draftCount = policies.filter(p => p.status?.toLowerCase() === 'draft').length;
-  const underReviewCount = policies.filter(p => p.status && reviewStatuses.some(status => 
-    p.status?.toLowerCase().trim() === status.toLowerCase()
-  )).length;
-  const publishedCount = policies.filter(p => p.status?.toLowerCase() === 'published').length;
-
   return (
     <div className="space-y-6">
       <div>
@@ -173,14 +134,6 @@ export function ReviewPolicies() {
             </div>
           </div>
         )}
-        
-        {/* Debug info for troubleshooting */}
-        <div className="text-xs text-gray-400 mt-2 p-2 bg-gray-50 rounded">
-          <p>Debug: Total policies: {policies.length}, User role: {userRole}, Can publish: {canPublish ? 'Yes' : 'No'}</p>
-          <p>Policies by status: Draft: {draftCount}, Under Review: {underReviewCount}, Published: {publishedCount}</p>
-          <p>Raw status values: {policies.map(p => `"${p.status}"`).slice(0, 10).join(', ')}{policies.length > 10 ? '...' : ''}</p>
-          <p>Loading: {isLoadingPolicies ? 'Yes' : 'No'}</p>
-        </div>
       </div>
 
       <PolicyList

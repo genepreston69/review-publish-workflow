@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -104,6 +105,12 @@ export function PolicyViewActions({
     if (actionType === 'request-changes') {
       await onUpdateStatus(policy.id, 'awaiting-changes', reviewerComment);
     } else if (actionType === 'publish') {
+      // Check maker/checker rule before publishing
+      if (isCreator && !isSuperAdmin) {
+        console.log('=== MAKER/CHECKER RULE VIOLATION PREVENTED ===');
+        return;
+      }
+      
       // When publishing, archive old versions first using policy number
       try {
         if (policy.policy_number) {
@@ -129,11 +136,20 @@ export function PolicyViewActions({
   };
 
   const handlePublishWithComment = () => {
+    // Check maker/checker rule before showing comment section
+    if (isCreator && !isSuperAdmin) {
+      return; // Don't show publish options for creators unless super admin
+    }
     setActionType('publish');
     setShowCommentSection(true);
   };
 
   const handleDirectPublish = async () => {
+    // Check maker/checker rule before publishing
+    if (isCreator && !isSuperAdmin) {
+      return; // Don't allow publishing for creators unless super admin
+    }
+    
     if (onPublish) {
       // Archive old versions before publishing using policy number
       try {

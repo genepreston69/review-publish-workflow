@@ -1,3 +1,4 @@
+
 import { CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trash2, Edit, Eye, RotateCcw } from 'lucide-react';
@@ -27,7 +28,7 @@ export function PolicyCardActions({
   onDelete,
   onRefresh
 }: PolicyCardActionsProps) {
-  const { userRole } = useAuth();
+  const { userRole, currentUser } = useAuth();
   const isSuperAdmin = userRole === 'super-admin';
   const isEditor = userRole === 'edit';
   const { duplicatePolicyForUpdate, archiveByPolicyNumber, isLoading: isDuplicating } = usePolicyDuplication();
@@ -44,18 +45,30 @@ export function PolicyCardActions({
     try {
       console.log('=== PUBLISHING POLICY WITH ARCHIVING ===', policyId);
 
-      // Get the policy being published to find its policy number
+      // Get the policy being published to check creator and policy number
       const { data: currentPolicy } = await supabase
         .from('Policies')
-        .select('policy_number')
+        .select('policy_number, creator_id')
         .eq('id', policyId)
         .single();
 
-      if (currentPolicy && currentPolicy.policy_number) {
+      if (currentPolicy) {
+        // Check maker/checker rule before attempting publish
+        if (currentPolicy.creator_id === currentUser?.id && !isSuperAdmin) {
+          toast({
+            variant: "destructive",
+            title: "Publishing Not Allowed",
+            description: "You cannot publish a policy you created. Another reviewer must publish it due to maker/checker controls.",
+          });
+          return;
+        }
+
         console.log('=== ARCHIVING POLICIES WITH SAME POLICY NUMBER ===', currentPolicy.policy_number);
         
         // Archive all other policies with the same policy number using the new method
-        await archiveByPolicyNumber(currentPolicy.policy_number, policyId);
+        if (currentPolicy.policy_number) {
+          await archiveByPolicyNumber(currentPolicy.policy_number, policyId);
+        }
       }
 
       // Now publish the current policy

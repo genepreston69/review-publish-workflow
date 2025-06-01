@@ -17,7 +17,6 @@ export const usePolicies = () => {
   const fetchPolicies = async () => {
     try {
       setIsLoadingPolicies(true);
-      console.log('=== FETCHING POLICIES ===');
       
       const { data, error } = await supabase
         .from('Policies')
@@ -38,7 +37,6 @@ export const usePolicies = () => {
         });
         setPolicies([]); // Set empty array on error
       } else {
-        console.log('=== POLICIES FETCHED SUCCESSFULLY ===', data?.length || 0);
         setPolicies(data || []);
       }
     } catch (error) {
@@ -86,12 +84,13 @@ export const usePolicies = () => {
 
       console.log('=== CURRENT POLICY DATA ===', currentPolicy);
 
-      // Enforce maker/checker rule for publishing (except for super admins)
+      // Check maker/checker rule BEFORE attempting database update
       if (newStatus === 'published' && currentPolicy.creator_id === currentUser.id && !isSuperAdmin) {
+        console.log('=== MAKER/CHECKER RULE VIOLATION ===');
         toast({
           variant: "destructive",
-          title: "Access Denied",
-          description: "You cannot publish a policy you created. Another reviewer must publish it.",
+          title: "Publishing Not Allowed",
+          description: "You cannot publish a policy you created. Another reviewer must publish it due to maker/checker controls.",
         });
         return;
       }
@@ -121,9 +120,20 @@ export const usePolicies = () => {
         });
       }
       
-      // Set publisher_id when publishing
+      // Set publisher_id when publishing - ONLY if not violating maker/checker rule
       if (newStatus === 'published') {
         console.log('=== PUBLISHING POLICY ===', policyId);
+        
+        // Double-check maker/checker rule (safety check)
+        if (currentPolicy.creator_id === currentUser.id && !isSuperAdmin) {
+          console.error('=== ATTEMPTED MAKER/CHECKER VIOLATION ===');
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Cannot publish: You are the creator of this policy. Another reviewer must publish it.",
+          });
+          return;
+        }
         
         // Archive old versions with the same policy number first
         if (currentPolicy.policy_number) {
@@ -204,11 +214,21 @@ export const usePolicies = () => {
 
       if (updateError) {
         console.error('Error updating policy status:', updateError);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to update policy status.",
-        });
+        
+        // Handle specific database constraint violations
+        if (updateError.message?.includes('check_creator_not_publisher')) {
+          toast({
+            variant: "destructive",
+            title: "Publishing Not Allowed",
+            description: "Database constraint violation: Creator cannot be the publisher. Another reviewer must publish this policy.",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: `Failed to update policy status: ${updateError.message}`,
+          });
+        }
         return;
       }
 
