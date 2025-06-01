@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 export const policyFormSchema = z.object({
@@ -10,6 +9,9 @@ export const policyFormSchema = z.object({
 });
 
 export type PolicyFormValues = z.infer<typeof policyFormSchema>;
+
+// Keep the old type alias for backward compatibility
+export type PolicyFormData = PolicyFormValues;
 
 export const POLICY_TYPES = [
   { value: 'RP', label: 'RP - Recovery Point Policy' },

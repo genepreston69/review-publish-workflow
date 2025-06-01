@@ -233,39 +233,19 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
         </div>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <PolicyFormFields control={form.control} />
-
-            <div className="flex justify-end gap-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={onCancel}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="min-w-[120px]"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Changes
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
-        </Form>
+        <PolicyFormFields 
+          initialData={{
+            name: policy.name || '',
+            policy_type: policy.policy_type || '',
+            purpose: policy.purpose || '',
+            procedure: policy.procedure || '',
+            policy_text: policy.policy_text || '',
+          }}
+          onSubmit={onSubmit}
+          isLoading={isSubmitting}
+          submitLabel="Save Changes"
+          onCancel={onCancel}
+        />
       </CardContent>
     </Card>
   );

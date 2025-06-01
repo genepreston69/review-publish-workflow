@@ -177,33 +177,13 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <PolicyFormFields control={form.control} />
-            
-            <PolicyNumberDisplay policyNumber={generatedPolicyNumber} />
-
-            <div className="flex justify-end">
-              <Button 
-                type="submit" 
-                disabled={isSubmitting || !generatedPolicyNumber}
-                className="min-w-[120px]"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Policy
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
-        </Form>
+        <PolicyFormFields 
+          onSubmit={onSubmit}
+          isLoading={isSubmitting}
+          submitLabel="Create Policy"
+        />
+        
+        <PolicyNumberDisplay policyNumber={generatedPolicyNumber} />
       </CardContent>
     </Card>
   );

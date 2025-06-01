@@ -21,14 +21,14 @@ import {
 } from '@/components/ui/select';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { AIWritingAssistant } from '@/components/ui/ai-writing-assistant';
-import { PolicyFormData, policyFormSchema } from './PolicyFormSchema';
+import { PolicyFormValues, policyFormSchema } from './PolicyFormSchema';
 import { TrackingButton } from '@/components/ui/rich-text-editor/toolbar/TrackingButton';
 import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
 
 interface PolicyFormFieldsProps {
-  initialData?: Partial<PolicyFormData>;
-  onSubmit: (data: PolicyFormData) => void;
+  initialData?: Partial<PolicyFormValues>;
+  onSubmit: (data: PolicyFormValues) => void;
   isLoading: boolean;
   submitLabel: string;
   onCancel?: () => void;
@@ -44,12 +44,11 @@ export function PolicyFormFields({
   const { currentUser } = useAuth();
   const [trackingEnabled, setTrackingEnabled] = useState(false);
   
-  const form = useForm<PolicyFormData>({
+  const form = useForm<PolicyFormValues>({
     resolver: zodResolver(policyFormSchema),
     defaultValues: {
       name: '',
-      policy_type: 'HR',
-      effective_date: '',
+      policy_type: '',
       purpose: '',
       policy_text: '',
       procedure: '',
@@ -57,12 +56,12 @@ export function PolicyFormFields({
     },
   });
 
-  const handleSubmit = (data: PolicyFormData) => {
+  const handleSubmit = (data: PolicyFormValues) => {
     onSubmit(data);
   };
 
   // Helper function to update form field values from AI Assistant
-  const updateFormField = (fieldName: keyof PolicyFormData, newValue: string) => {
+  const updateFormField = (fieldName: keyof PolicyFormValues, newValue: string) => {
     form.setValue(fieldName, newValue, { shouldDirty: true, shouldValidate: true });
   };
 
@@ -106,20 +105,6 @@ export function PolicyFormFields({
             )}
           />
         </div>
-
-        <FormField
-          control={form.control}
-          name="effective_date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Effective Date</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <FormField
           control={form.control}
@@ -171,8 +156,6 @@ export function PolicyFormFields({
                 <RichTextEditor
                   content={field.value || ''}
                   onChange={field.onChange}
-                  trackingEnabled={trackingEnabled}
-                  userInitials={currentUser?.name?.split(' ').map(n => n[0]).join('') || 'U'}
                   placeholder="Enter the main policy content..."
                 />
               </FormControl>
@@ -205,8 +188,6 @@ export function PolicyFormFields({
                 <RichTextEditor
                   content={field.value || ''}
                   onChange={field.onChange}
-                  trackingEnabled={trackingEnabled}
-                  userInitials={currentUser?.name?.split(' ').map(n => n[0]).join('') || 'U'}
                   placeholder="Enter the procedures and implementation steps..."
                 />
               </FormControl>
