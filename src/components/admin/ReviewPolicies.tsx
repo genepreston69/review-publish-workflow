@@ -5,18 +5,7 @@ import { PolicyList } from './policy/PolicyList';
 import { PolicyEditForm } from './policy/PolicyEditForm';
 import { PolicyViewModal } from './policy/PolicyViewModal';
 import { usePolicies } from './policy/usePolicies';
-
-interface Policy {
-  id: string;
-  name: string | null;
-  policy_number: string | null;
-  policy_text: string | null;
-  procedure: string | null;
-  purpose: string | null;
-  reviewer: string | null;
-  status: string | null;
-  created_at: string;
-}
+import { Policy } from './policy/types';
 
 export function ReviewPolicies() {
   const { userRole } = useAuth();
@@ -28,7 +17,8 @@ export function ReviewPolicies() {
   const reviewPolicies = policies.filter(policy => 
     policy.status === 'draft' || 
     policy.status === 'under-review' || 
-    policy.status === 'under review'
+    policy.status === 'under review' ||
+    policy.status === 'awaiting-changes'
   );
 
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
@@ -97,8 +87,18 @@ export function ReviewPolicies() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Review Policies</h2>
         <p className="text-muted-foreground">
-          Review and approve policies for publication.
+          Review and approve policies for publication. You can edit policies before approving them.
         </p>
+        {reviewPolicies.length > 0 && (
+          <div className="text-sm text-gray-600 mt-1">
+            <p>Showing {reviewPolicies.length} {reviewPolicies.length === 1 ? 'policy' : 'policies'} awaiting review</p>
+            <div className="flex gap-4 mt-1">
+              <span>Draft: {reviewPolicies.filter(p => p.status === 'draft').length}</span>
+              <span>Under Review: {reviewPolicies.filter(p => p.status === 'under-review' || p.status === 'under review').length}</span>
+              <span>Awaiting Changes: {reviewPolicies.filter(p => p.status === 'awaiting-changes').length}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <PolicyList

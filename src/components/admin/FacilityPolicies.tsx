@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { PolicyViewModal } from './policy/PolicyViewModal';
-import { FacilityPoliciesEmptyState } from './policy/FacilityPoliciesEmptyState';
 import { FacilityPoliciesGrid } from './policy/FacilityPoliciesGrid';
 import { useAllUserPolicies } from '@/hooks/useAllUserPolicies';
 
@@ -55,11 +54,19 @@ export function FacilityPolicies() {
           <p className="text-muted-foreground">
             View published facility policies and procedures
           </p>
+          {facilityPolicies.length > 0 && (
+            <p className="text-sm text-gray-600 mt-1">
+              {facilityPolicies.length} published facility {facilityPolicies.length === 1 ? 'policy' : 'policies'}
+            </p>
+          )}
         </div>
       </div>
 
       {facilityPolicies.length === 0 ? (
-        <FacilityPoliciesEmptyState />
+        <div className="text-center py-12">
+          <h3 className="mt-4 text-lg font-medium">No published facility policies found</h3>
+          <p className="text-gray-500">No facility policies have been published yet.</p>
+        </div>
       ) : (
         <FacilityPoliciesGrid
           policies={facilityPolicies}

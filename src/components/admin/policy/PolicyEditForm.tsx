@@ -11,19 +11,7 @@ import { Save, Loader2, ArrowLeft } from 'lucide-react';
 import { PolicyFormFields } from './PolicyFormFields';
 import { PolicyNumberDisplay } from './PolicyNumberDisplay';
 import { policyFormSchema, PolicyFormValues } from './PolicyFormSchema';
-
-interface Policy {
-  id: string;
-  name: string | null;
-  policy_number: string | null;
-  policy_text: string | null;
-  procedure: string | null;
-  purpose: string | null;
-  reviewer: string | null;
-  status: string | null;
-  policy_type: string | null;
-  created_at: string;
-}
+import { Policy } from './types';
 
 interface PolicyEditFormProps {
   policyId: string;
@@ -61,7 +49,11 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
 
         const { data, error } = await supabase
           .from('Policies')
-          .select('*')
+          .select(`
+            *,
+            creator:creator_id(id, name, email),
+            publisher:publisher_id(id, name, email)
+          `)
           .eq('id', policyId)
           .single();
 
@@ -76,7 +68,7 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
           return;
         }
 
-        console.log('=== POLICY LOADED ===', data);
+        console.log('=== POLICY LOADED FOR EDIT ===', data);
         setPolicy(data);
 
         // Populate form with existing data
@@ -130,6 +122,7 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
         purpose: data.purpose,
         procedure: data.procedure,
         policy_text: data.policy_text,
+        updated_at: new Date().toISOString(),
         // Keep existing policy_number and other fields
       };
 
@@ -137,7 +130,11 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
         .from('Policies')
         .update(updateData)
         .eq('id', policyId)
-        .select();
+        .select(`
+          *,
+          creator:creator_id(id, name, email),
+          publisher:publisher_id(id, name, email)
+        `);
 
       if (error) {
         console.error('=== SUPABASE UPDATE ERROR ===', error);
@@ -223,8 +220,11 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
               Edit Policy
             </CardTitle>
             <CardDescription>
-              Update the policy information below. Changes will be saved immediately.
+              Update the policy information below. Changes will be saved with updated timestamp.
             </CardDescription>
+            {policy.policy_number && (
+              <PolicyNumberDisplay policyNumber={policy.policy_number} />
+            )}
           </div>
           <Button variant="outline" onClick={onCancel}>
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -236,8 +236,6 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <PolicyFormFields control={form.control} />
-            
-            <PolicyNumberDisplay policyNumber={policy.policy_number} />
 
             <div className="flex justify-end gap-2">
               <Button 

@@ -1,21 +1,11 @@
+
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PolicyCardHeader } from './PolicyCardHeader';
 import { PolicyCardContent } from './PolicyCardContent';
 import { PolicyCardActions } from './PolicyCardActions';
 import { cn } from '@/lib/utils';
-
-interface Policy {
-  id: string;
-  name: string | null;
-  policy_number: string | null;
-  policy_text: string | null;
-  procedure: string | null;
-  purpose: string | null;
-  reviewer: string | null;
-  status: string | null;
-  created_at: string;
-}
+import { Policy } from './types';
 
 interface PolicyCardProps {
   policy: Policy;

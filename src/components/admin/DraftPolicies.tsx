@@ -5,27 +5,23 @@ import { PolicyList } from './policy/PolicyList';
 import { PolicyEditForm } from './policy/PolicyEditForm';
 import { PolicyViewModal } from './policy/PolicyViewModal';
 import { usePolicies } from './policy/usePolicies';
-
-interface Policy {
-  id: string;
-  name: string | null;
-  policy_number: string | null;
-  policy_text: string | null;
-  procedure: string | null;
-  purpose: string | null;
-  reviewer: string | null;
-  status: string | null;
-  created_at: string;
-}
+import { Policy } from './policy/types';
 
 export function DraftPolicies() {
-  const { userRole } = useAuth();
+  const { userRole, currentUser } = useAuth();
   const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, isSuperAdmin } = usePolicies();
   const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
 
-  // Filter to show only draft policies for the current user
-  const draftPolicies = policies.filter(policy => policy.status === 'draft');
+  // Filter to show only draft policies for the current user (unless super-admin who can see all)
+  const draftPolicies = policies.filter(policy => {
+    const isDraft = policy.status === 'draft';
+    if (isSuperAdmin) {
+      return isDraft; // Super-admins can see all drafts
+    }
+    // Regular users can only see their own drafts
+    return isDraft && policy.creator_id === currentUser?.id;
+  });
 
   const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
@@ -93,8 +89,16 @@ export function DraftPolicies() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Draft Policies</h2>
         <p className="text-muted-foreground">
-          Manage your draft policies before they are sent for review.
+          {isSuperAdmin 
+            ? 'Manage all draft policies in the system.' 
+            : 'Manage your draft policies before they are sent for review.'
+          }
         </p>
+        {draftPolicies.length > 0 && (
+          <p className="text-sm text-gray-600 mt-1">
+            Showing {draftPolicies.length} draft {draftPolicies.length === 1 ? 'policy' : 'policies'}
+          </p>
+        )}
       </div>
 
       <PolicyList

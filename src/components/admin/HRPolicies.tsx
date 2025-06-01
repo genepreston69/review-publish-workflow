@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { PolicyViewModal } from './policy/PolicyViewModal';
-import { FacilityPoliciesEmptyState } from './policy/FacilityPoliciesEmptyState';
 import { FacilityPoliciesGrid } from './policy/FacilityPoliciesGrid';
 import { useAllUserPolicies } from '@/hooks/useAllUserPolicies';
 
@@ -55,6 +54,11 @@ export function HRPolicies() {
           <p className="text-muted-foreground">
             View published human resources policies and procedures
           </p>
+          {hrPolicies.length > 0 && (
+            <p className="text-sm text-gray-600 mt-1">
+              {hrPolicies.length} published HR {hrPolicies.length === 1 ? 'policy' : 'policies'}
+            </p>
+          )}
         </div>
       </div>
 
