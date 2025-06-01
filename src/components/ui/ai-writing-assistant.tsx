@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   Wand2, 
   CheckCircle, 
@@ -11,7 +12,8 @@ import {
   Users, 
   User, 
   Gavel,
-  Loader2
+  Loader2,
+  Lock
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -42,8 +44,32 @@ export function AIWritingAssistant({ text, onChange, context, className }: AIWri
   const [pendingSuggestion, setPendingSuggestion] = useState<PendingSuggestion | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { currentUser, userRole, isLoading: authLoading } = useAuth();
+
+  // Check if user has edit permissions
+  const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
   const callAIAssistant = async (operation: string, operationName: string, operationDescription: string) => {
+    // Check authentication first
+    if (!currentUser) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Required",
+        description: "Please sign in to use AI assistance features.",
+      });
+      return;
+    }
+
+    // Check edit permissions
+    if (!hasEditAccess) {
+      toast({
+        variant: "destructive",
+        title: "Insufficient Permissions",
+        description: "You need edit access to use AI assistance features.",
+      });
+      return;
+    }
+
     if (!text.trim()) {
       toast({
         variant: "destructive",
@@ -69,7 +95,7 @@ export function AIWritingAssistant({ text, onChange, context, className }: AIWri
       }
 
       if (data?.improvedText) {
-        // Store suggestion for user review instead of auto-applying
+        // Store suggestion for user review
         setPendingSuggestion({
           originalText: text,
           suggestedText: data.improvedText,
@@ -96,7 +122,14 @@ export function AIWritingAssistant({ text, onChange, context, className }: AIWri
 
   const handleAcceptSuggestion = () => {
     if (pendingSuggestion) {
+      console.log('AI Suggestion - Applying changes:', {
+        operation: pendingSuggestion.operationName,
+        originalLength: pendingSuggestion.originalText.length,
+        newLength: pendingSuggestion.suggestedText.length
+      });
+      
       onChange(pendingSuggestion.suggestedText);
+      
       toast({
         title: "AI Suggestion Accepted",
         description: `${pendingSuggestion.operationName} applied successfully.`,
@@ -107,6 +140,8 @@ export function AIWritingAssistant({ text, onChange, context, className }: AIWri
 
   const handleRejectSuggestion = () => {
     if (pendingSuggestion) {
+      console.log('AI Suggestion - Rejected:', pendingSuggestion.operationName);
+      
       toast({
         title: "AI Suggestion Rejected",
         description: `${pendingSuggestion.operationName} suggestion discarded.`,
@@ -160,6 +195,37 @@ export function AIWritingAssistant({ text, onChange, context, className }: AIWri
       icon: Gavel,
     },
   ];
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        disabled
+        className={className}
+      >
+        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        Loading...
+      </Button>
+    );
+  }
+
+  // Show locked state if no authentication or insufficient permissions
+  if (!currentUser || !hasEditAccess) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        disabled
+        className={className}
+        title={!currentUser ? "Sign in required" : "Edit access required"}
+      >
+        <Lock className="w-4 h-4 mr-2" />
+        AI Assistant
+      </Button>
+    );
+  }
 
   return (
     <>
