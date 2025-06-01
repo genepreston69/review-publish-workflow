@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -73,12 +72,28 @@ export const UserManagement = () => {
 
   const updateUserRole = async (userId: string, newRole: UserRole) => {
     try {
-      const { error } = await supabase
+      console.log('Updating user role:', { userId, newRole });
+      
+      // First, delete any existing roles for this user
+      const { error: deleteError } = await supabase
         .from('user_roles')
-        .update({ role: newRole })
+        .delete()
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (deleteError) {
+        console.error('Error deleting existing roles:', deleteError);
+        throw deleteError;
+      }
+
+      // Then insert the new role
+      const { error: insertError } = await supabase
+        .from('user_roles')
+        .insert({ user_id: userId, role: newRole });
+
+      if (insertError) {
+        console.error('Error inserting new role:', insertError);
+        throw insertError;
+      }
 
       toast({
         title: "Success",
