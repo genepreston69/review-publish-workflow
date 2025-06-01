@@ -98,17 +98,17 @@ export function PolicyCard({
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-col gap-2">
+        {/* Actions - Grid layout with 3 buttons per row */}
+        <div className="grid grid-cols-3 gap-2">
           {onView && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => onView(policy.id)}
-              className="w-full"
+              className="w-full text-xs"
             >
-              <Eye className="w-4 h-4 mr-2" />
-              View Details
+              <Eye className="w-3 h-3 mr-1" />
+              View
             </Button>
           )}
 
@@ -117,32 +117,21 @@ export function PolicyCard({
               variant="outline"
               size="sm"
               onClick={() => onEdit(policy.id)}
-              className="w-full"
+              className="w-full text-xs"
             >
-              <Edit className="w-4 h-4 mr-2" />
+              <Edit className="w-3 h-3 mr-1" />
               Edit
             </Button>
           )}
 
-          <PolicyCardActions
-            policyId={policy.id}
-            policyStatus={policy.status}
-            canPublish={canPublish}
-            onUpdateStatus={handleUpdateStatus}
-            onEdit={onEdit}
-            onView={onView}
-            onDelete={onDelete}
-          />
-
-          {/* Super-admin only actions */}
           {canArchive && onArchive && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => onArchive(policy.id)}
-              className="w-full text-orange-600 border-orange-200 hover:bg-orange-50"
+              className="w-full text-xs text-orange-600 border-orange-200 hover:bg-orange-50"
             >
-              <Archive className="w-4 h-4 mr-2" />
+              <Archive className="w-3 h-3 mr-1" />
               Archive
             </Button>
           )}
@@ -153,9 +142,9 @@ export function PolicyCard({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                  className="w-full text-xs text-red-600 border-red-200 hover:bg-red-50"
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
+                  <Trash2 className="w-3 h-3 mr-1" />
                   Delete
                 </Button>
               </AlertDialogTrigger>
@@ -179,6 +168,16 @@ export function PolicyCard({
             </AlertDialog>
           )}
         </div>
+
+        <PolicyCardActions
+          policyId={policy.id}
+          policyStatus={policy.status}
+          canPublish={canPublish}
+          onUpdateStatus={handleUpdateStatus}
+          onEdit={onEdit}
+          onView={onView}
+          onDelete={onDelete}
+        />
       </CardContent>
     </Card>
   );
