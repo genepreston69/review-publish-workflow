@@ -6,7 +6,7 @@ import {
   CardHeader,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Eye, Edit, Trash2, Archive, Send } from 'lucide-react';
+import { Eye, Edit, Trash2, Archive, Send, CheckCircle } from 'lucide-react';
 import { PolicyCardHeader } from './PolicyCardHeader';
 import { PolicyCardContent } from './PolicyCardContent';
 import { Policy } from './types';
@@ -71,6 +71,11 @@ export function PolicyCard({
   const canArchive = userRole === 'super-admin';
   const isSuperAdmin = userRole === 'super-admin';
   const isCreator = policy.creator_id === currentUser?.id;
+
+  // Check if current user can publish this specific policy (maker/checker rule)
+  const canPublishPolicy = (isSuperAdmin || canPublish) && 
+    (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'awaiting-changes') &&
+    (isSuperAdmin || !isCreator); // Super admins bypass maker/checker rule
 
   return (
     <Card className="h-full">
@@ -140,6 +145,20 @@ export function PolicyCard({
             >
               <Send className="w-3 h-3 mr-1" />
               Submit for Review
+            </Button>
+          )}
+
+          {/* Publish button - Show for policies that can be published */}
+          {canPublishPolicy && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleUpdateStatus('published')}
+              disabled={isUpdating}
+              className="w-full text-xs text-green-600 border-green-200 hover:bg-green-50"
+            >
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Publish
             </Button>
           )}
 
