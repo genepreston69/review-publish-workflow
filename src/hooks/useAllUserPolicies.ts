@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { fetchPoliciesByType } from '@/components/admin/policy/policyFetcher';
 import { useToast } from '@/hooks/use-toast';
 import { Policy } from '@/components/admin/policy/types';
@@ -22,6 +23,20 @@ export const useAllUserPolicies = () => {
       // Fetch Facility policies by policy_type field
       const facilityPoliciesData = await fetchPoliciesByType('Facility');
       console.log('=== FACILITY POLICIES FETCHED BY TYPE ===', facilityPoliciesData.length);
+      
+      // Debug: Let's also check what policy types exist in the database
+      if (facilityPoliciesData.length === 0) {
+        console.log('=== DEBUG: No facility policies found, checking all policy types ===');
+        // This will help us understand what policy_type values exist
+        const { data: allPolicies } = await supabase
+          .from('Policies')
+          .select('policy_type')
+          .eq('status', 'published')
+          .is('archived_at', null);
+        
+        const uniqueTypes = [...new Set(allPolicies?.map(p => p.policy_type))];
+        console.log('=== ALL UNIQUE POLICY TYPES IN DATABASE ===', uniqueTypes);
+      }
       
       setHrPolicies(hrPoliciesData);
       setFacilityPolicies(facilityPoliciesData);

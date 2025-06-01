@@ -4,18 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { PolicyCardActions } from './PolicyCardActions';
 import { PolicyNumberDisplay } from './PolicyNumberDisplay';
 import { stripHtml } from './policyUtils';
-
-interface Policy {
-  id: string;
-  name: string | null;
-  policy_number: string | null;
-  policy_text: string | null;
-  procedure: string | null;
-  purpose: string | null;
-  reviewer: string | null;
-  status: string | null;
-  created_at: string;
-}
+import { Policy } from './types';
 
 interface FacilityPolicyCardProps {
   policy: Policy;

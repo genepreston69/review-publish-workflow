@@ -3,7 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Policy } from './types';
 
 export const fetchPoliciesByType = async (policyType: string): Promise<Policy[]> => {
-  const { data, error } = await supabase
+  console.log('=== FETCHING POLICIES BY TYPE ===', policyType);
+  
+  let query = supabase
     .from('Policies')
     .select(`
       *,
@@ -11,14 +13,31 @@ export const fetchPoliciesByType = async (policyType: string): Promise<Policy[]>
       publisher:publisher_id(id, name, email)
     `)
     .eq('status', 'published')
-    .eq('policy_type', policyType)
-    .is('archived_at', null) // Only show non-archived policies
-    .order('policy_number', { ascending: true });
+    .is('archived_at', null); // Only show non-archived policies
+
+  // Handle different policy type filtering logic
+  if (policyType === 'Facility') {
+    // For facility policies, include both 'Facility' type and legacy types that represent facility policies
+    query = query.or('policy_type.eq.Facility,policy_type.eq.RP,policy_type.eq.S,policy_type.ilike.%facility%');
+  } else if (policyType === 'HR') {
+    // For HR policies, include 'HR' type and legacy HR-related types
+    query = query.or('policy_type.eq.HR,policy_type.ilike.%hr%,policy_type.ilike.%human%');
+  } else {
+    // Default exact match for other types
+    query = query.eq('policy_type', policyType);
+  }
+
+  query = query.order('policy_number', { ascending: true });
+
+  const { data, error } = await query;
 
   if (error) {
-    console.error('Error fetching policies:', error);
+    console.error('Error fetching policies by type:', error);
     throw error;
   }
+
+  console.log(`=== ${policyType.toUpperCase()} POLICIES FETCHED ===`, data?.length || 0);
+  console.log('Sample policies:', data?.slice(0, 3));
 
   return data || [];
 };
