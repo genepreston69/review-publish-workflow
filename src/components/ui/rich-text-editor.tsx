@@ -1,5 +1,4 @@
 
-
 import { EditorContent } from '@tiptap/react';
 import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
@@ -90,19 +89,6 @@ export function RichTextEditor({
     return null;
   }
 
-  // Extract plain text for AI processing
-  const getPlainText = () => {
-    return editor.getText();
-  };
-
-  // Handle AI-improved text
-  const handleAITextChange = (improvedText: string) => {
-    const htmlContent = improvedText.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
-    const wrappedContent = `<p>${htmlContent}</p>`;
-    
-    editor.commands.setContent(wrappedContent);
-  };
-
   const editorContentClassName = cn(
     "min-h-[200px]",
     isEditMode && "edit-mode-text"
@@ -126,9 +112,6 @@ export function RichTextEditor({
         trackingEnabled={false}
         userInitials={userInitials}
         onToggleTracking={() => {}}
-        onAITextChange={handleAITextChange}
-        getPlainText={getPlainText}
-        context={context}
         position="top"
       />
       <EditorContent 
@@ -142,9 +125,6 @@ export function RichTextEditor({
           trackingEnabled={false}
           userInitials={userInitials}
           onToggleTracking={() => {}}
-          onAITextChange={handleAITextChange}
-          getPlainText={getPlainText}
-          context={context}
           position="bottom"
         />
       )}
@@ -152,4 +132,3 @@ export function RichTextEditor({
     </div>
   );
 }
-
