@@ -22,9 +22,7 @@ import {
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { AIWritingAssistant } from '@/components/ui/ai-writing-assistant';
 import { PolicyFormValues, policyFormSchema } from './PolicyFormSchema';
-import { TrackingButton } from '@/components/ui/rich-text-editor/toolbar/TrackingButton';
 import { useAuth } from '@/hooks/useAuth';
-import { useState } from 'react';
 
 interface PolicyFormFieldsProps {
   initialData?: Partial<PolicyFormValues>;
@@ -42,7 +40,6 @@ export function PolicyFormFields({
   onCancel,
 }: PolicyFormFieldsProps) {
   const { currentUser } = useAuth();
-  const [trackingEnabled, setTrackingEnabled] = useState(false);
   
   const form = useForm<PolicyFormValues>({
     resolver: zodResolver(policyFormSchema),
@@ -139,18 +136,12 @@ export function PolicyFormFields({
             <FormItem>
               <FormLabel className="flex items-center justify-between">
                 Policy Content
-                <div className="flex items-center gap-2">
-                  <TrackingButton
-                    trackingEnabled={trackingEnabled}
-                    onToggleTracking={() => setTrackingEnabled(!trackingEnabled)}
-                  />
-                  <AIWritingAssistant
-                    text={field.value || ''}
-                    onChange={(newValue) => updateFormField('policy_text', newValue)}
-                    context="Main policy content"
-                    className="ml-2"
-                  />
-                </div>
+                <AIWritingAssistant
+                  text={field.value || ''}
+                  onChange={(newValue) => updateFormField('policy_text', newValue)}
+                  context="Main policy content"
+                  className="ml-2"
+                />
               </FormLabel>
               <FormControl>
                 <RichTextEditor
@@ -171,18 +162,12 @@ export function PolicyFormFields({
             <FormItem>
               <FormLabel className="flex items-center justify-between">
                 Procedures
-                <div className="flex items-center gap-2">
-                  <TrackingButton
-                    trackingEnabled={trackingEnabled}
-                    onToggleTracking={() => setTrackingEnabled(!trackingEnabled)}
-                  />
-                  <AIWritingAssistant
-                    text={field.value || ''}
-                    onChange={(newValue) => updateFormField('procedure', newValue)}
-                    context="Policy procedures and implementation steps"
-                    className="ml-2"
-                  />
-                </div>
+                <AIWritingAssistant
+                  text={field.value || ''}
+                  onChange={(newValue) => updateFormField('procedure', newValue)}
+                  context="Policy procedures and implementation steps"
+                  className="ml-2"
+                />
               </FormLabel>
               <FormControl>
                 <RichTextEditor
