@@ -54,7 +54,7 @@ const extractTextFromJson = (jsonContent: any): string => {
 };
 
 export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetupProps) {
-  // Clean and prepare initial content while preserving formatting
+  // Process content for the editor - keep as HTML
   const getInitialContent = useMemo(() => {
     return processContentForDisplay(content);
   }, [content]);
@@ -118,12 +118,12 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
   useEffect(() => {
     if (editor && content !== undefined) {
       const currentContent = editor.getHTML();
-      const cleanIncomingContent = processContentForDisplay(content);
+      const processedContent = processContentForDisplay(content);
       
       // Only update if the content is different from what's currently in the editor
-      if (currentContent !== cleanIncomingContent) {
-        console.log('Updating editor content with formatting preserved:', { currentContent, newContent: cleanIncomingContent });
-        editor.commands.setContent(cleanIncomingContent);
+      if (currentContent !== processedContent) {
+        console.log('Updating editor content with formatting preserved:', { currentContent, newContent: processedContent });
+        editor.commands.setContent(processedContent);
       }
     }
   }, [editor, content]);

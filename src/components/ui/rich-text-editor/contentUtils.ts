@@ -1,4 +1,3 @@
-
 import { isValidTipTapJson } from '@/utils/trackingUtils';
 
 // Enhanced HTML stripping function - preserve line breaks and spacing
@@ -18,10 +17,32 @@ export const stripHtmlTags = (html: string): string => {
   tempDiv.innerHTML = cleanText;
   cleanText = tempDiv.textContent || tempDiv.innerText || '';
   
-  // Preserve spacing - don't collapse multiple spaces or line breaks
-  cleanText = cleanText.replace(/\n\s*\n\s*\n/g, '\n\n'); // Only collapse excessive line breaks
-  
+  // Don't collapse any whitespace - preserve exactly as entered
   return cleanText;
+};
+
+// Convert TipTap JSON to HTML to preserve formatting
+export const extractHtmlFromJson = (jsonContent: any): string => {
+  if (!jsonContent || typeof jsonContent !== 'object') return '';
+  
+  if (jsonContent.type === 'text') {
+    return jsonContent.text || '';
+  }
+  
+  if (jsonContent.type === 'paragraph') {
+    const content = jsonContent.content ? jsonContent.content.map(extractHtmlFromJson).join('') : '';
+    return `<p>${content}</p>`;
+  }
+  
+  if (jsonContent.type === 'hardBreak') {
+    return '<br>';
+  }
+  
+  if (jsonContent.content && Array.isArray(jsonContent.content)) {
+    return jsonContent.content.map(extractHtmlFromJson).join('');
+  }
+  
+  return '';
 };
 
 // Convert TipTap JSON to plain text with proper spacing and line breaks
@@ -48,7 +69,7 @@ export const extractTextFromJson = (jsonContent: any): string => {
   return '';
 };
 
-// Process content for display - preserve all formatting
+// Process content for display - keep as HTML to preserve formatting
 export const processContentForDisplay = (content: string): string => {
   if (!content) return '';
   
@@ -58,23 +79,31 @@ export const processContentForDisplay = (content: string): string => {
   try {
     const parsed = JSON.parse(content);
     if (isValidTipTapJson(parsed)) {
-      const textWithBreaks = extractTextFromJson(parsed);
-      console.log('Extracted from JSON with formatting:', textWithBreaks);
-      return textWithBreaks;
+      const htmlContent = extractHtmlFromJson(parsed);
+      console.log('Extracted HTML from JSON:', htmlContent);
+      return htmlContent;
     }
   } catch {
     // Not JSON, continue
   }
   
-  // If content contains HTML, preserve formatting while cleaning
-  if (content.includes('<') || content.includes('>') || content.includes('&')) {
-    const cleanText = stripHtmlTags(content);
-    console.log('Processed HTML with formatting preserved:', cleanText);
-    return cleanText;
+  // If content already contains HTML, return as-is
+  if (content.includes('<') && content.includes('>')) {
+    console.log('Content is already HTML, returning as-is:', content);
+    return content;
   }
   
-  // Return content as-is to preserve spacing and formatting
-  return content;
+  // Convert plain text to HTML paragraphs, preserving line breaks
+  const lines = content.split('\n');
+  const htmlContent = lines.map(line => {
+    if (line.trim() === '') {
+      return '<p></p>';
+    }
+    return `<p>${line}</p>`;
+  }).join('');
+  
+  console.log('Converted plain text to HTML:', htmlContent);
+  return htmlContent;
 };
 
 // Determine if content is in JSON mode
