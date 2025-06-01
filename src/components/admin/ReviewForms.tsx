@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { FormList } from './form/FormList';
 import { FormEditForm } from './form/FormEditForm';
@@ -20,44 +20,40 @@ interface Form {
 
 export function ReviewForms() {
   const { userRole } = useAuth();
-  const { forms, isLoadingForms, updateFormStatus, deleteForm, isSuperAdmin } = useForms();
+  // Optimize by filtering at database level
+  const { forms, isLoadingForms, updateFormStatus, deleteForm, isSuperAdmin } = useForms({
+    statusFilter: ['draft', 'under-review', 'under review']
+  });
   const [editingFormId, setEditingFormId] = useState<string | null>(null);
   const [viewingFormId, setViewingFormId] = useState<string | null>(null);
 
-  // Filter to show forms that need review
-  const reviewForms = forms.filter(form => 
-    form.status === 'draft' || 
-    form.status === 'under-review' || 
-    form.status === 'under review'
-  );
-
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
 
-  const handleEditForm = (formId: string) => {
+  const handleEditForm = useCallback((formId: string) => {
     console.log('Edit form:', formId);
     setEditingFormId(formId);
     setViewingFormId(null);
-  };
+  }, []);
 
-  const handleViewForm = (formId: string) => {
+  const handleViewForm = useCallback((formId: string) => {
     console.log('View form:', formId);
     setViewingFormId(formId);
     setEditingFormId(null);
-  };
+  }, []);
 
-  const handleFormUpdated = (updatedForm: Form) => {
+  const handleFormUpdated = useCallback((updatedForm: Form) => {
     console.log('Form updated:', updatedForm);
     setEditingFormId(null);
     // The form list will automatically refresh from the database
-  };
+  }, []);
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setEditingFormId(null);
-  };
+  }, []);
 
-  const handleCloseView = () => {
+  const handleCloseView = useCallback(() => {
     setViewingFormId(null);
-  };
+  }, []);
 
   if (!canPublish) {
     return (
@@ -92,6 +88,9 @@ export function ReviewForms() {
     );
   }
 
+  // Find the viewing form data to pass to modal
+  const viewingForm = forms.find(form => form.id === viewingFormId);
+
   return (
     <div className="space-y-6">
       <div>
@@ -102,7 +101,7 @@ export function ReviewForms() {
       </div>
 
       <FormList
-        forms={reviewForms}
+        forms={forms}
         isLoading={isLoadingForms}
         isEditor={false}
         canPublish={true}
@@ -116,6 +115,7 @@ export function ReviewForms() {
       {viewingFormId && (
         <FormViewModal
           formId={viewingFormId}
+          formData={viewingForm} // Pass form data to avoid duplicate fetch
           onClose={handleCloseView}
           onEdit={handleEditForm}
           onUpdateStatus={updateFormStatus}

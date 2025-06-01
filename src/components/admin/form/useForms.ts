@@ -4,17 +4,29 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Form } from './FormSchema';
 
-export function useForms() {
+interface UseFormsOptions {
+  statusFilter?: string[];
+}
+
+export function useForms(options: UseFormsOptions = {}) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { statusFilter } = options;
 
   const { data: forms = [], isLoading: isLoadingForms } = useQuery({
-    queryKey: ['forms'],
+    queryKey: ['forms', statusFilter],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('Forms')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // Apply status filter at database level for better performance
+      if (statusFilter && statusFilter.length > 0) {
+        query = query.in('status', statusFilter);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching forms:', error);
