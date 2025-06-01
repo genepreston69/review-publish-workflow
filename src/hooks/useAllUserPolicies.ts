@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { fetchPoliciesByPrefix } from '@/components/admin/policy/policyFetcher';
+import { fetchPoliciesByType } from '@/components/admin/policy/policyFetcher';
 import { useToast } from '@/hooks/use-toast';
 import { Policy } from '@/components/admin/policy/types';
 
@@ -12,16 +12,16 @@ export const useAllUserPolicies = () => {
 
   const fetchAllPolicies = async () => {
     try {
-      console.log('=== FETCHING ALL POLICIES FOR ALL USERS ===');
+      console.log('=== FETCHING ALL POLICIES FOR ALL USERS BY TYPE ===');
       setIsLoadingPolicies(true);
       
-      // Fetch HR policies (policy numbers starting with "HR")
-      const hrPoliciesData = await fetchPoliciesByPrefix('HR');
-      console.log('=== HR POLICIES FETCHED ===', hrPoliciesData.length);
+      // Fetch HR policies by policy_type field
+      const hrPoliciesData = await fetchPoliciesByType('HR');
+      console.log('=== HR POLICIES FETCHED BY TYPE ===', hrPoliciesData.length);
       
-      // Fetch Facility policies (policy numbers starting with "RP")
-      const facilityPoliciesData = await fetchPoliciesByPrefix('RP');
-      console.log('=== FACILITY POLICIES FETCHED ===', facilityPoliciesData.length);
+      // Fetch Facility policies by policy_type field
+      const facilityPoliciesData = await fetchPoliciesByType('Facility');
+      console.log('=== FACILITY POLICIES FETCHED BY TYPE ===', facilityPoliciesData.length);
       
       setHrPolicies(hrPoliciesData);
       setFacilityPolicies(facilityPoliciesData);
