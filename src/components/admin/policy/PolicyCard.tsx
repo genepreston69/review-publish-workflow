@@ -78,13 +78,13 @@ export function PolicyCard({
     (isSuperAdmin || !isCreator); // Super admins bypass maker/checker rule
 
   return (
-    <Card className="h-full">
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <PolicyCardHeader policy={policy} />
         <PolicyCardContent policy={policy} />
       </CardHeader>
 
-      <CardContent className="pt-0 space-y-4">
+      <CardContent className="pt-0 space-y-4 flex-1">
         {/* Metadata */}
         <div className="text-xs text-gray-500 space-y-1">
           {policy.creator_id && (
@@ -102,15 +102,17 @@ export function PolicyCard({
             </div>
           )}
         </div>
+      </CardContent>
 
-        {/* Actions - Grid layout with 3 buttons per row */}
-        <div className="grid grid-cols-3 gap-2">
+      {/* Actions - Footer with horizontal button layout */}
+      <div className="mt-auto p-6 pt-0 border-t">
+        <div className="flex flex-wrap gap-2 justify-between">
           {onView && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => onView(policy.id)}
-              className="w-full text-xs"
+              className="text-xs"
             >
               <Eye className="w-3 h-3 mr-1" />
               View
@@ -127,24 +129,24 @@ export function PolicyCard({
               variant="outline"
               size="sm"
               onClick={() => onEdit(policy.id)}
-              className="w-full text-xs"
+              className="text-xs"
             >
               <Edit className="w-3 h-3 mr-1" />
               Edit
             </Button>
           )}
 
-          {/* Submit for Review button - Super admins and creators can submit draft policies */}
+          {/* Submit button - Super admins and creators can submit draft policies */}
           {policy.status === 'draft' && (isSuperAdmin || canEdit || isCreator) && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => handleUpdateStatus('under-review')}
               disabled={isUpdating}
-              className="w-full text-xs text-blue-600 border-blue-200 hover:bg-blue-50"
+              className="text-xs text-blue-600 border-blue-200 hover:bg-blue-50"
             >
               <Send className="w-3 h-3 mr-1" />
-              Submit for Review
+              Submit
             </Button>
           )}
 
@@ -155,7 +157,7 @@ export function PolicyCard({
               size="sm"
               onClick={() => handleUpdateStatus('published')}
               disabled={isUpdating}
-              className="w-full text-xs text-green-600 border-green-200 hover:bg-green-50"
+              className="text-xs text-green-600 border-green-200 hover:bg-green-50"
             >
               <CheckCircle className="w-3 h-3 mr-1" />
               Publish
@@ -167,7 +169,7 @@ export function PolicyCard({
               variant="outline"
               size="sm"
               onClick={() => onArchive(policy.id)}
-              className="w-full text-xs text-orange-600 border-orange-200 hover:bg-orange-50"
+              className="text-xs text-orange-600 border-orange-200 hover:bg-orange-50"
             >
               <Archive className="w-3 h-3 mr-1" />
               Archive
@@ -180,7 +182,7 @@ export function PolicyCard({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full text-xs text-red-600 border-red-200 hover:bg-red-50"
+                  className="text-xs text-red-600 border-red-200 hover:bg-red-50"
                 >
                   <Trash2 className="w-3 h-3 mr-1" />
                   Delete
@@ -206,7 +208,7 @@ export function PolicyCard({
             </AlertDialog>
           )}
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 }
