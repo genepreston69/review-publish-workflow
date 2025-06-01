@@ -80,143 +80,101 @@ export function PolicyCardActions({
     }
   };
 
-  // First row buttons - primary actions
-  const firstRowButtons = [];
-  
-  // View button - always first
-  if (onView) {
-    firstRowButtons.push(
-      <Button
-        key="view"
-        size="sm"
-        variant="outline"
-        onClick={() => onView(policyId)}
-        className="text-xs flex-1"
-      >
-        <Eye className="w-3 h-3 mr-1" />
-        View
-      </Button>
-    );
-  }
-
-  // Edit button
-  if (onEdit && (
-    isSuperAdmin ||
-    (isEditor && policyStatus === 'draft') ||
-    (canPublish && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review'))
-  )) {
-    firstRowButtons.push(
-      <Button
-        key="edit"
-        size="sm"
-        variant="outline"
-        onClick={() => onEdit(policyId)}
-        className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50 flex-1"
-      >
-        <Edit className="w-3 h-3 mr-1" />
-        Edit
-      </Button>
-    );
-  }
-
-  // Update Policy button for published policies
-  if (policyStatus === 'published' && (isSuperAdmin || isEditor || canPublish)) {
-    firstRowButtons.push(
-      <Button
-        key="update"
-        size="sm"
-        variant="outline"
-        onClick={handleUpdatePolicy}
-        disabled={isDuplicating}
-        className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50 flex-1"
-      >
-        <RotateCcw className="w-3 h-3 mr-1" />
-        {isDuplicating ? 'Creating...' : 'Update'}
-      </Button>
-    );
-  }
-
-  // Second row buttons - status change actions
-  const secondRowButtons = [];
-
-  // Return to Draft button for under-review policies
-  if ((isSuperAdmin || canPublish) && (policyStatus === 'under-review' || policyStatus === 'under review')) {
-    secondRowButtons.push(
-      <Button
-        key="draft"
-        size="sm"
-        variant="outline"
-        onClick={() => onUpdateStatus(policyId, 'draft')}
-        className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700 hover:bg-yellow-100 flex-1"
-      >
-        <RotateCcw className="w-3 h-3 mr-1" />
-        Return to Draft
-      </Button>
-    );
-  }
-
-  // Publish button
-  if ((isSuperAdmin || canPublish) && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review')) {
-    secondRowButtons.push(
-      <Button
-        key="publish"
-        size="sm"
-        onClick={handlePublish}
-        className="text-xs bg-green-600 hover:bg-green-700 text-white flex-1"
-      >
-        <CheckCircle className="w-3 h-3 mr-1" />
-        Publish
-      </Button>
-    );
-  }
-
-  // Reject button
-  if ((isSuperAdmin || canPublish) && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review')) {
-    secondRowButtons.push(
-      <Button
-        key="reject"
-        size="sm"
-        variant="outline"
-        onClick={() => onUpdateStatus(policyId, 'archived')}
-        className="text-xs bg-red-50 border-red-300 text-red-600 hover:bg-red-100 flex-1"
-      >
-        <XCircle className="w-3 h-3 mr-1" />
-        Reject
-      </Button>
-    );
-  }
-
-  // Delete button - only for super admin
-  if (isSuperAdmin && onDelete) {
-    secondRowButtons.push(
-      <Button
-        key="delete"
-        size="sm"
-        variant="destructive"
-        onClick={() => onDelete(policyId)}
-        className="text-xs bg-red-600 hover:bg-red-700 text-white flex-1"
-      >
-        <Trash2 className="w-3 h-3 mr-1" />
-        Delete
-      </Button>
-    );
-  }
-
   return (
-    <CardFooter className="pt-3 border-t flex-col space-y-2">
-      {/* First row - Primary actions */}
-      {firstRowButtons.length > 0 && (
-        <div className="w-full flex gap-2">
-          {firstRowButtons}
-        </div>
-      )}
+    <CardFooter className="pt-3 border-t">
+      <div className="w-full flex flex-wrap gap-2 justify-between">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onView?.(policyId)}
+          className="text-xs"
+        >
+          <Eye className="w-3 h-3 mr-1" />
+          View
+        </Button>
 
-      {/* Second row - Status change actions */}
-      {secondRowButtons.length > 0 && (
-        <div className="w-full flex gap-2">
-          {secondRowButtons}
-        </div>
-      )}
+        {/* Edit button - Super admins can edit any policy, others follow existing rules */}
+        {onEdit && (
+          isSuperAdmin ||
+          (isEditor && policyStatus === 'draft') ||
+          (canPublish && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review'))
+        ) && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onEdit(policyId)}
+            className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
+          >
+            <Edit className="w-3 h-3 mr-1" />
+            Edit
+          </Button>
+        )}
+
+        {/* Update Policy button for published policies */}
+        {policyStatus === 'published' && (isSuperAdmin || isEditor || canPublish) && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleUpdatePolicy}
+            disabled={isDuplicating}
+            className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
+          >
+            <RotateCcw className="w-3 h-3 mr-1" />
+            {isDuplicating ? 'Creating...' : 'Update'}
+          </Button>
+        )}
+
+        {/* Return to Draft button for under-review policies */}
+        {(isSuperAdmin || canPublish) && (policyStatus === 'under-review' || policyStatus === 'under review') && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onUpdateStatus(policyId, 'draft')}
+            className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+          >
+            <RotateCcw className="w-3 h-3 mr-1" />
+            Return to Draft
+          </Button>
+        )}
+
+        {/* Publish button with archiving - Super admins can publish any policy */}
+        {(isSuperAdmin || canPublish) && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review') && (
+          <Button
+            size="sm"
+            onClick={handlePublish}
+            className="text-xs bg-green-600 hover:bg-green-700 text-white"
+          >
+            <CheckCircle className="w-3 h-3 mr-1" />
+            Publish
+          </Button>
+        )}
+
+        {/* Reject button */}
+        {(isSuperAdmin || canPublish) && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review') && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onUpdateStatus(policyId, 'archived')}
+            className="text-xs bg-red-50 border-red-300 text-red-600 hover:bg-red-100"
+          >
+            <XCircle className="w-3 h-3 mr-1" />
+            Reject
+          </Button>
+        )}
+
+        {/* Delete button */}
+        {isSuperAdmin && onDelete && (
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => onDelete(policyId)}
+            className="text-xs bg-red-600 hover:bg-red-700 text-white"
+          >
+            <Trash2 className="w-3 h-3 mr-1" />
+            Delete
+          </Button>
+        )}
+      </div>
     </CardFooter>
   );
 }
