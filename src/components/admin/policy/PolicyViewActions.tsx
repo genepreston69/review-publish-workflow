@@ -1,11 +1,20 @@
 
 import { Button } from '@/components/ui/button';
-import { RotateCcw, Edit, CheckCircle } from 'lucide-react';
+import { RotateCcw, Edit, CheckCircle, Printer } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePolicyDuplication } from '@/hooks/usePolicyDuplication';
+import { generatePolicyPrintTemplate } from './policyPrintUtils';
 
 interface Policy {
   id: string;
+  name: string | null;
+  policy_number: string | null;
+  policy_type: string | null;
+  purpose: string | null;
+  policy_text: string | null;
+  procedure: string | null;
+  reviewer: string | null;
+  created_at: string;
   status: string | null;
 }
 
@@ -40,9 +49,66 @@ export function PolicyViewActions({
     }
   };
 
+  const handlePrint = () => {
+    // Combine all policy content sections
+    let policyContent = '';
+    
+    if (policy.purpose) {
+      policyContent += `<div class="policy-section">
+        <h2>PURPOSE</h2>
+        <div>${policy.purpose}</div>
+      </div>`;
+    }
+    
+    if (policy.policy_text) {
+      policyContent += `<div class="policy-section">
+        <h2>POLICY</h2>
+        <div>${policy.policy_text}</div>
+      </div>`;
+    }
+    
+    if (policy.procedure) {
+      policyContent += `<div class="policy-section">
+        <h2>PROCEDURE</h2>
+        <div>${policy.procedure}</div>
+      </div>`;
+    }
+
+    const printHtml = generatePolicyPrintTemplate(
+      policy.name || '',
+      policy.policy_number || '',
+      policy.policy_type || '',
+      policyContent,
+      policy.reviewer || '',
+      policy.created_at,
+      policy.status || ''
+    );
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printHtml);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+        }, 250);
+      };
+    }
+  };
+
   return (
     <div className="flex justify-between mt-6 pt-4 border-t">
       <div className="flex gap-2">
+        {/* Print Button - Always visible */}
+        <Button 
+          variant="outline" 
+          onClick={handlePrint}
+          className="border-gray-300 text-gray-600 hover:bg-gray-50"
+        >
+          <Printer className="w-4 h-4 mr-2" />
+          Print
+        </Button>
+
         {/* Return to Draft Button - Show prominently for publishers on under-review policies */}
         {canPublish && onUpdateStatus && (policy.status === 'under-review' || policy.status === 'under review') && (
           <Button 
