@@ -1,4 +1,5 @@
 
+
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -11,7 +12,7 @@ import OrderedList from '@tiptap/extension-ordered-list';
 import { Suggestion } from '../tiptap-extensions/SuggestionMark';
 import { Addition } from '../tiptap-extensions/AdditionMark';
 import { Deletion } from '../tiptap-extensions/DeletionMark';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { isValidTipTapJson, migrateHtmlToJson } from '@/utils/trackingUtils';
 
 interface UseEditorSetupProps {
@@ -121,5 +122,18 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
     },
   });
 
+  // Update editor content when external content changes (like AI suggestions)
+  useEffect(() => {
+    if (editor && content !== undefined) {
+      const currentText = editor.getText();
+      // Only update if the content is different from what's currently in the editor
+      if (currentText !== content) {
+        console.log('Updating editor content:', { currentText, newContent: content });
+        editor.commands.setContent(content);
+      }
+    }
+  }, [editor, content]);
+
   return editor;
 }
+
