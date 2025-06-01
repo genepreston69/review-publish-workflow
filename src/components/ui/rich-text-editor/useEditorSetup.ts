@@ -1,4 +1,3 @@
-
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -55,7 +54,7 @@ const extractTextFromJson = (jsonContent: any): string => {
 };
 
 export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetupProps) {
-  // Clean and prepare initial content
+  // Clean and prepare initial content while preserving formatting
   const getInitialContent = useMemo(() => {
     return processContentForDisplay(content);
   }, [content]);
@@ -102,15 +101,15 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
     ],
     content: getInitialContent,
     onUpdate: ({ editor }) => {
-      // Output HTML to preserve formatting including line breaks
+      // Output HTML to preserve all formatting including spaces and line breaks
       const htmlContent = editor.getHTML();
-      console.log('Editor updated, outputting HTML content:', htmlContent);
+      console.log('Editor updated, outputting HTML content with formatting:', htmlContent);
       onChange(htmlContent);
     },
     editorProps: {
       attributes: {
         class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[200px] p-4 leading-relaxed',
-        style: 'line-height: 1.8;',
+        style: 'line-height: 1.8; white-space: pre-wrap;',
       },
     },
   });
@@ -123,7 +122,7 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
       
       // Only update if the content is different from what's currently in the editor
       if (currentContent !== cleanIncomingContent) {
-        console.log('Updating editor content:', { currentContent, newContent: cleanIncomingContent });
+        console.log('Updating editor content with formatting preserved:', { currentContent, newContent: cleanIncomingContent });
         editor.commands.setContent(cleanIncomingContent);
       }
     }

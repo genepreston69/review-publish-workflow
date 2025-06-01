@@ -1,7 +1,7 @@
 
 import { isValidTipTapJson } from '@/utils/trackingUtils';
 
-// Enhanced HTML stripping function - but preserve line breaks
+// Enhanced HTML stripping function - preserve line breaks and spacing
 export const stripHtmlTags = (html: string): string => {
   if (!html) return '';
   
@@ -18,14 +18,13 @@ export const stripHtmlTags = (html: string): string => {
   tempDiv.innerHTML = cleanText;
   cleanText = tempDiv.textContent || tempDiv.innerText || '';
   
-  // Clean up excessive line breaks but preserve intended ones
-  cleanText = cleanText.replace(/\n\s*\n\s*\n/g, '\n\n');
-  cleanText = cleanText.trim();
+  // Preserve spacing - don't collapse multiple spaces or line breaks
+  cleanText = cleanText.replace(/\n\s*\n\s*\n/g, '\n\n'); // Only collapse excessive line breaks
   
   return cleanText;
 };
 
-// Convert TipTap JSON to plain text with line breaks
+// Convert TipTap JSON to plain text with proper spacing and line breaks
 export const extractTextFromJson = (jsonContent: any): string => {
   if (!jsonContent || typeof jsonContent !== 'object') return '';
   
@@ -49,7 +48,7 @@ export const extractTextFromJson = (jsonContent: any): string => {
   return '';
 };
 
-// Process content for display - preserve formatting including line breaks
+// Process content for display - preserve all formatting
 export const processContentForDisplay = (content: string): string => {
   if (!content) return '';
   
@@ -60,20 +59,21 @@ export const processContentForDisplay = (content: string): string => {
     const parsed = JSON.parse(content);
     if (isValidTipTapJson(parsed)) {
       const textWithBreaks = extractTextFromJson(parsed);
-      console.log('Extracted from JSON with breaks:', textWithBreaks);
+      console.log('Extracted from JSON with formatting:', textWithBreaks);
       return textWithBreaks;
     }
   } catch {
     // Not JSON, continue
   }
   
-  // If content contains HTML, preserve line breaks while cleaning
+  // If content contains HTML, preserve formatting while cleaning
   if (content.includes('<') || content.includes('>') || content.includes('&')) {
     const cleanText = stripHtmlTags(content);
-    console.log('Processed HTML with line breaks:', cleanText);
+    console.log('Processed HTML with formatting preserved:', cleanText);
     return cleanText;
   }
   
+  // Return content as-is to preserve spacing and formatting
   return content;
 };
 
