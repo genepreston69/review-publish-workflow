@@ -1,31 +1,23 @@
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, Edit, CheckCircle, Printer } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { RotateCcw, Edit, CheckCircle, Printer, MessageSquare, Archive } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePolicyDuplication } from '@/hooks/usePolicyDuplication';
 import { generatePolicyPrintTemplate } from './policyPrintUtils';
-
-interface Policy {
-  id: string;
-  name: string | null;
-  policy_number: string | null;
-  policy_type: string | null;
-  purpose: string | null;
-  policy_text: string | null;
-  procedure: string | null;
-  reviewer: string | null;
-  created_at: string;
-  status: string | null;
-}
+import { Policy } from './types';
 
 interface PolicyViewActionsProps {
   policy: Policy;
   onClose: () => void;
   onEdit?: (policyId: string) => void;
-  onUpdateStatus?: (policyId: string, newStatus: string) => void;
+  onUpdateStatus?: (policyId: string, newStatus: string, comment?: string) => void;
   onReturnToDraft: () => void;
   onPublish?: () => void;
   onRefresh?: () => void;
+  onArchive?: (policyId: string) => void;
 }
 
 export function PolicyViewActions({ 
@@ -35,12 +27,22 @@ export function PolicyViewActions({
   onUpdateStatus, 
   onReturnToDraft,
   onPublish,
-  onRefresh
+  onRefresh,
+  onArchive
 }: PolicyViewActionsProps) {
-  const { userRole } = useAuth();
+  const { userRole, currentUser } = useAuth();
+  const [reviewerComment, setReviewerComment] = useState('');
+  const [showCommentSection, setShowCommentSection] = useState(false);
+  const [actionType, setActionType] = useState<'request-changes' | 'publish' | null>(null);
+  
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
   const isEditor = userRole === 'edit';
+  const isSuperAdmin = userRole === 'super-admin';
   const { duplicatePolicyForUpdate, isLoading: isDuplicating } = usePolicyDuplication();
+
+  // Check if current user is the creator (maker/checker enforcement)
+  const isCreator = currentUser?.id === policy.creator_id;
+  const canApproveOrPublish = canPublish && !isCreator;
 
   const handleUpdatePolicy = async () => {
     const newPolicyId = await duplicatePolicyForUpdate(policy.id);
@@ -96,9 +98,82 @@ export function PolicyViewActions({
     }
   };
 
+  const handleCommentAction = async () => {
+    if (!actionType || !onUpdateStatus) return;
+
+    if (actionType === 'request-changes') {
+      await onUpdateStatus(policy.id, 'awaiting-changes', reviewerComment);
+    } else if (actionType === 'publish') {
+      await onUpdateStatus(policy.id, 'published', reviewerComment);
+    }
+
+    setReviewerComment('');
+    setShowCommentSection(false);
+    setActionType(null);
+    onClose();
+  };
+
+  const handleRequestChanges = () => {
+    setActionType('request-changes');
+    setShowCommentSection(true);
+  };
+
+  const handlePublishWithComment = () => {
+    setActionType('publish');
+    setShowCommentSection(true);
+  };
+
+  const handleDirectPublish = async () => {
+    if (onPublish) {
+      await onPublish();
+    }
+  };
+
+  if (showCommentSection) {
+    return (
+      <div className="space-y-4 mt-6 pt-4 border-t">
+        <div className="space-y-2">
+          <Label htmlFor="reviewer-comment">
+            {actionType === 'request-changes' ? 'Request Changes (Required)' : 'Review Comment (Optional)'}
+          </Label>
+          <Textarea
+            id="reviewer-comment"
+            value={reviewerComment}
+            onChange={(e) => setReviewerComment(e.target.value)}
+            placeholder={
+              actionType === 'request-changes' 
+                ? 'Explain what changes are needed...' 
+                : 'Add any review notes...'
+            }
+            className="min-h-[100px]"
+          />
+        </div>
+        <div className="flex justify-between">
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setShowCommentSection(false);
+              setActionType(null);
+              setReviewerComment('');
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleCommentAction}
+            disabled={actionType === 'request-changes' && !reviewerComment.trim()}
+            className={actionType === 'request-changes' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-green-600 hover:bg-green-700'}
+          >
+            {actionType === 'request-changes' ? 'Request Changes' : 'Publish Policy'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex justify-between mt-6 pt-4 border-t">
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         {/* Print Button - Always visible */}
         <Button 
           variant="outline" 
@@ -109,8 +184,20 @@ export function PolicyViewActions({
           Print
         </Button>
 
-        {/* Return to Draft Button - Show prominently for publishers on under-review policies */}
-        {canPublish && onUpdateStatus && (policy.status === 'under-review' || policy.status === 'under review') && (
+        {/* Archive Button - Super admins only */}
+        {isSuperAdmin && onArchive && (
+          <Button 
+            variant="outline" 
+            onClick={() => onArchive(policy.id)}
+            className="border-red-300 text-red-600 hover:bg-red-50"
+          >
+            <Archive className="w-4 h-4 mr-2" />
+            Archive
+          </Button>
+        )}
+
+        {/* Return to Draft Button - Show for reviewers on under-review policies */}
+        {canApproveOrPublish && onUpdateStatus && (policy.status === 'under-review' || policy.status === 'under review') && (
           <Button 
             variant="outline" 
             onClick={onReturnToDraft}
@@ -118,6 +205,18 @@ export function PolicyViewActions({
           >
             <RotateCcw className="w-4 h-4 mr-2" />
             Return to Draft
+          </Button>
+        )}
+
+        {/* Request Changes Button - Show for reviewers on under-review policies */}
+        {canApproveOrPublish && (policy.status === 'under-review' || policy.status === 'under review') && (
+          <Button 
+            variant="outline" 
+            onClick={handleRequestChanges}
+            className="bg-orange-50 border-orange-300 text-orange-700 hover:bg-orange-100"
+          >
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Request Changes
           </Button>
         )}
 
@@ -134,10 +233,10 @@ export function PolicyViewActions({
           </Button>
         )}
 
-        {/* Edit Button */}
+        {/* Edit Button - Only creators can edit their own drafts or awaiting-changes policies */}
         {onEdit && (
-          (isEditor && policy.status === 'draft') ||
-          (canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review'))
+          ((isCreator && (policy.status === 'draft' || policy.status === 'awaiting-changes')) ||
+          (canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review')))
         ) && (
           <Button 
             variant="outline" 
@@ -149,15 +248,42 @@ export function PolicyViewActions({
           </Button>
         )}
 
-        {/* Publish Button - Show for publishers/admins on draft or under-review policies */}
-        {canPublish && onPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') && (
-          <Button 
-            onClick={onPublish}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            <CheckCircle className="w-4 h-4 mr-2" />
-            Publish Policy
-          </Button>
+        {/* Publish Button - Show for non-creators with publish permissions on draft or under-review policies */}
+        {canApproveOrPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') && (
+          <>
+            <Button 
+              onClick={handleDirectPublish}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Publish
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={handlePublishWithComment}
+              className="border-green-300 text-green-600 hover:bg-green-50"
+            >
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Publish with Comment
+            </Button>
+          </>
+        )}
+
+        {/* Show reviewer comment if exists */}
+        {policy.reviewer_comment && (
+          <div className="w-full mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <h4 className="font-medium text-blue-900 mb-2">Reviewer Comment:</h4>
+            <p className="text-blue-800 text-sm">{policy.reviewer_comment}</p>
+          </div>
+        )}
+
+        {/* Show maker/checker warning for creators */}
+        {isCreator && canPublish && (policy.status === 'under-review' || policy.status === 'under review') && (
+          <div className="w-full mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+            <p className="text-amber-800 text-sm">
+              <strong>Note:</strong> You cannot publish this policy since you created it. Another reviewer must approve it.
+            </p>
+          </div>
         )}
       </div>
 

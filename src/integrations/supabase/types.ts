@@ -134,42 +134,85 @@ export type Database = {
       }
       Policies: {
         Row: {
+          archived_at: string | null
           created_at: string
+          creator_id: string | null
           id: string
           name: string | null
+          parent_policy_id: string | null
           policy_number: string | null
           policy_text: string | null
           policy_type: string
           procedure: string | null
+          published_at: string | null
+          publisher_id: string | null
           purpose: string | null
           reviewer: string | null
+          reviewer_comment: string | null
           status: string | null
+          updated_at: string | null
         }
         Insert: {
+          archived_at?: string | null
           created_at?: string
+          creator_id?: string | null
           id?: string
           name?: string | null
+          parent_policy_id?: string | null
           policy_number?: string | null
           policy_text?: string | null
           policy_type: string
           procedure?: string | null
+          published_at?: string | null
+          publisher_id?: string | null
           purpose?: string | null
           reviewer?: string | null
+          reviewer_comment?: string | null
           status?: string | null
+          updated_at?: string | null
         }
         Update: {
+          archived_at?: string | null
           created_at?: string
+          creator_id?: string | null
           id?: string
           name?: string | null
+          parent_policy_id?: string | null
           policy_number?: string | null
           policy_text?: string | null
           policy_type?: string
           procedure?: string | null
+          published_at?: string | null
+          publisher_id?: string | null
           purpose?: string | null
           reviewer?: string | null
+          reviewer_comment?: string | null
           status?: string | null
+          updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "Policies_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Policies_parent_policy_id_fkey"
+            columns: ["parent_policy_id"]
+            isOneToOne: false
+            referencedRelation: "Policies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Policies_publisher_id_fkey"
+            columns: ["publisher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

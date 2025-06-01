@@ -4,24 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { stripColorsFromPolicyFields } from '@/utils/colorUtils';
-
-interface Policy {
-  id: string;
-  name: string | null;
-  policy_number: string | null;
-  policy_text: string | null;
-  procedure: string | null;
-  purpose: string | null;
-  reviewer: string | null;
-  status: string | null;
-  created_at: string;
-}
+import { Policy } from './types';
 
 export const usePolicies = () => {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
   const { toast } = useToast();
-  const { userRole } = useAuth();
+  const { userRole, currentUser } = useAuth();
 
   const isSuperAdmin = userRole === 'super-admin';
 
@@ -30,7 +19,12 @@ export const usePolicies = () => {
       setIsLoadingPolicies(true);
       const { data, error } = await supabase
         .from('Policies')
-        .select('*')
+        .select(`
+          *,
+          creator:creator_id(id, name, email),
+          publisher:publisher_id(id, name, email)
+        `)
+        .is('archived_at', null) // Only show non-archived policies
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -55,25 +49,82 @@ export const usePolicies = () => {
     }
   };
 
-  const updatePolicyStatus = async (policyId: string, newStatus: string) => {
+  const updatePolicyStatus = async (policyId: string, newStatus: string, reviewerComment?: string) => {
     try {
-      // If publishing, we need to strip colors from the content
-      let updateData: any = { status: newStatus };
+      if (!currentUser) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "You must be logged in to update policies.",
+        });
+        return;
+      }
+
+      // Get current policy to check creator
+      const { data: currentPolicy, error: fetchError } = await supabase
+        .from('Policies')
+        .select('creator_id, status')
+        .eq('id', policyId)
+        .single();
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      // Enforce maker/checker rule for publishing
+      if (newStatus === 'published' && currentPolicy.creator_id === currentUser.id) {
+        toast({
+          variant: "destructive",
+          title: "Access Denied",
+          description: "You cannot publish a policy you created. Another reviewer must publish it.",
+        });
+        return;
+      }
+
+      // Check permissions for status changes
+      const canPublish = userRole === 'publish' || userRole === 'super-admin';
+      if ((newStatus === 'published' || newStatus === 'under-review') && !canPublish) {
+        toast({
+          variant: "destructive",
+          title: "Access Denied",
+          description: "You don't have permission to perform this action.",
+        });
+        return;
+      }
+
+      let updateData: any = { 
+        status: newStatus,
+        reviewer_comment: reviewerComment || null
+      };
       
+      // Set publisher_id when publishing
       if (newStatus === 'published') {
-        // First, get the current policy data
-        const { data: currentPolicy, error: fetchError } = await supabase
+        // Get publisher profile
+        const { data: publisherProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', currentUser.id)
+          .single();
+
+        if (profileError) {
+          throw new Error('Could not fetch publisher profile');
+        }
+
+        updateData.publisher_id = publisherProfile.id;
+        updateData.published_at = new Date().toISOString();
+
+        // Strip colors from all content fields when publishing
+        const { data: policyContent, error: contentError } = await supabase
           .from('Policies')
           .select('purpose, policy_text, procedure')
           .eq('id', policyId)
           .single();
 
-        if (fetchError) {
-          throw fetchError;
+        if (contentError) {
+          throw contentError;
         }
 
-        // Strip colors from all content fields
-        const cleanedFields = stripColorsFromPolicyFields(currentPolicy);
+        const cleanedFields = stripColorsFromPolicyFields(policyContent);
         updateData = {
           ...updateData,
           ...cleanedFields
@@ -95,9 +146,23 @@ export const usePolicies = () => {
         return;
       }
 
-      const statusMessage = newStatus === 'published' 
-        ? "Policy published successfully. All colors have been removed from the content."
-        : `Policy status updated to ${newStatus}.`;
+      let statusMessage = '';
+      switch (newStatus) {
+        case 'published':
+          statusMessage = "Policy published successfully. All colors have been removed from the content.";
+          break;
+        case 'draft':
+          statusMessage = "Policy returned to draft status for editing.";
+          break;
+        case 'under-review':
+          statusMessage = "Policy submitted for review.";
+          break;
+        case 'awaiting-changes':
+          statusMessage = "Policy returned for changes. Creator has been notified.";
+          break;
+        default:
+          statusMessage = `Policy status updated to ${newStatus}.`;
+      }
 
       toast({
         title: "Success",
@@ -150,6 +215,40 @@ export const usePolicies = () => {
     }
   };
 
+  const archivePolicy = async (policyId: string) => {
+    try {
+      const { error } = await supabase
+        .from('Policies')
+        .update({ archived_at: new Date().toISOString() })
+        .eq('id', policyId);
+
+      if (error) {
+        console.error('Error archiving policy:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to archive policy.",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Policy archived successfully.",
+      });
+
+      // Refresh the policies list
+      fetchPolicies();
+    } catch (error) {
+      console.error('Error archiving policy:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred.",
+      });
+    }
+  };
+
   useEffect(() => {
     fetchPolicies();
   }, []);
@@ -159,6 +258,7 @@ export const usePolicies = () => {
     isLoadingPolicies,
     updatePolicyStatus,
     deletePolicy,
+    archivePolicy,
     isSuperAdmin,
     fetchPolicies,
   };

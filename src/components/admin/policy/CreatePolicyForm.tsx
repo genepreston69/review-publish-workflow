@@ -13,18 +13,7 @@ import { PolicyFormFields } from './PolicyFormFields';
 import { PolicyNumberDisplay } from './PolicyNumberDisplay';
 import { usePolicyNumberGeneration } from './usePolicyNumberGeneration';
 import { policyFormSchema, PolicyFormValues } from './PolicyFormSchema';
-
-interface Policy {
-  id: string;
-  name: string | null;
-  policy_number: string | null;
-  policy_text: string | null;
-  procedure: string | null;
-  purpose: string | null;
-  reviewer: string | null;
-  status: string | null;
-  created_at: string;
-}
+import { Policy } from './types';
 
 interface CreatePolicyFormProps {
   onPolicyCreated: (policy: Policy) => void;
@@ -83,8 +72,21 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
     setIsSubmitting(true);
 
     try {
-      // For edit users, create as draft and assign to a publisher
-      // For publishers and super-admins, create as under review
+      // Get creator profile to store creator_id
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', currentUser.id)
+        .single();
+
+      if (profileError) {
+        console.error('=== ERROR FETCHING PROFILE ===', profileError);
+        throw new Error('Could not fetch user profile');
+      }
+
+      // Set status based on user role:
+      // - edit users: create as draft
+      // - publish/super-admin users: create as under-review
       const status = userRole === 'edit' ? 'draft' : 'under-review';
 
       console.log('=== INSERTING POLICY ===');
@@ -96,7 +98,8 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
         policy_text: data.policy_text,
         policy_number: generatedPolicyNumber,
         status,
-        reviewer: currentUser.email,
+        creator_id: profileData.id,
+        reviewer: currentUser.email, // Keep for backward compatibility
       };
       console.log('Policy data to insert:', policyData);
 
@@ -112,9 +115,13 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
 
       console.log('=== POLICY CREATED SUCCESSFULLY ===', insertedData);
 
+      const statusMessage = status === 'draft' 
+        ? `Policy created as draft with number ${generatedPolicyNumber}.`
+        : `Policy created and submitted for review with number ${generatedPolicyNumber}.`;
+
       toast({
         title: "Success",
-        description: `Policy created successfully with number ${generatedPolicyNumber}.`,
+        description: statusMessage,
       });
 
       // Reset the form and notify parent
@@ -157,6 +164,16 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
         </CardTitle>
         <CardDescription>
           Fill out the form below to create a new facility policy. The policy number will be automatically generated based on the selected policy type.
+          {userRole === 'edit' && (
+            <span className="block mt-2 text-sm text-blue-600">
+              Note: Your policy will be created as a draft and will need to be reviewed before publication.
+            </span>
+          )}
+          {(userRole === 'publish' || userRole === 'super-admin') && (
+            <span className="block mt-2 text-sm text-green-600">
+              Note: Your policy will be submitted for review and can be published by another reviewer.
+            </span>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
