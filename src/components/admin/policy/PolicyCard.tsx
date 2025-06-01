@@ -6,7 +6,7 @@ import {
   CardHeader,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Eye, Edit, Trash2, Archive } from 'lucide-react';
+import { Eye, Edit, Trash2, Archive, Send } from 'lucide-react';
 import { PolicyCardHeader } from './PolicyCardHeader';
 import { PolicyCardContent } from './PolicyCardContent';
 import { Policy } from './types';
@@ -120,6 +120,20 @@ export function PolicyCard({
             >
               <Edit className="w-3 h-3 mr-1" />
               Edit
+            </Button>
+          )}
+
+          {/* Submit for Review button - only for draft policies */}
+          {policy.status === 'draft' && (canEdit || isCreator) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleUpdateStatus('under-review')}
+              disabled={isUpdating}
+              className="w-full text-xs text-blue-600 border-blue-200 hover:bg-blue-50"
+            >
+              <Send className="w-3 h-3 mr-1" />
+              Submit for Review
             </Button>
           )}
 
