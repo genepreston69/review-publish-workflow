@@ -1,9 +1,12 @@
+
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { PolicyFormValues } from './PolicyFormSchema';
+import { PolicyFormValues, policyFormSchema } from './PolicyFormSchema';
 import { Policy } from './types';
 import { PolicyEditFormHeader } from './PolicyEditFormHeader';
 import { PolicyEditFormContent } from './PolicyEditFormContent';
@@ -23,6 +26,17 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [policy, setPolicy] = useState<Policy | null>(null);
+
+  const form = useForm<PolicyFormValues>({
+    resolver: zodResolver(policyFormSchema),
+    defaultValues: {
+      name: '',
+      policy_type: '',
+      purpose: '',
+      procedure: '',
+      policy_text: '',
+    },
+  });
 
   // Check if user has edit access
   const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
@@ -57,6 +71,16 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
 
         console.log('=== POLICY LOADED FOR EDIT ===', data);
         setPolicy(data);
+
+        // Reset form with policy data
+        const initialData: PolicyFormValues = {
+          name: data.name || '',
+          policy_type: data.policy_type || '',
+          purpose: data.purpose || '',
+          procedure: data.procedure || '',
+          policy_text: data.policy_text || '',
+        };
+        form.reset(initialData);
       } catch (error) {
         console.error('Error loading policy:', error);
         toast({
@@ -73,7 +97,7 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
     if (policyId) {
       loadPolicy();
     }
-  }, [policyId, toast, onCancel]);
+  }, [policyId, toast, onCancel, form]);
 
   const onSubmit = async (data: PolicyFormValues) => {
     console.log('=== UPDATING POLICY ===');
@@ -173,6 +197,7 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
         onSubmit={onSubmit}
         isSubmitting={isSubmitting}
         onCancel={onCancel}
+        form={form}
       />
     </Card>
   );
