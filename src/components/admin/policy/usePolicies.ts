@@ -17,6 +17,8 @@ export const usePolicies = () => {
   const fetchPolicies = async () => {
     try {
       setIsLoadingPolicies(true);
+      console.log('=== FETCHING POLICIES ===');
+      
       const { data, error } = await supabase
         .from('Policies')
         .select(`
@@ -34,7 +36,9 @@ export const usePolicies = () => {
           title: "Error",
           description: "Failed to load policies.",
         });
+        setPolicies([]); // Set empty array on error
       } else {
+        console.log('=== POLICIES FETCHED SUCCESSFULLY ===', data?.length || 0);
         setPolicies(data || []);
       }
     } catch (error) {
@@ -42,8 +46,9 @@ export const usePolicies = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred.",
+        description: "An unexpected error occurred while loading policies.",
       });
+      setPolicies([]); // Set empty array on error
     } finally {
       setIsLoadingPolicies(false);
     }
@@ -51,6 +56,8 @@ export const usePolicies = () => {
 
   const updatePolicyStatus = async (policyId: string, newStatus: string, reviewerComment?: string) => {
     try {
+      console.log('=== UPDATING POLICY STATUS ===', { policyId, newStatus, reviewerComment });
+      
       if (!currentUser) {
         toast({
           variant: "destructive",
@@ -63,13 +70,21 @@ export const usePolicies = () => {
       // Get current policy to check creator and parent info
       const { data: currentPolicy, error: fetchError } = await supabase
         .from('Policies')
-        .select('creator_id, status, parent_policy_id, archived_at, name, reviewer')
+        .select('creator_id, status, parent_policy_id, archived_at, name, reviewer, policy_number')
         .eq('id', policyId)
         .single();
 
       if (fetchError) {
-        throw fetchError;
+        console.error('Error fetching current policy:', fetchError);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load policy details.",
+        });
+        return;
       }
+
+      console.log('=== CURRENT POLICY DATA ===', currentPolicy);
 
       // Enforce maker/checker rule for publishing (except for super admins)
       if (newStatus === 'published' && currentPolicy.creator_id === currentUser.id && !isSuperAdmin) {
@@ -108,6 +123,29 @@ export const usePolicies = () => {
       
       // Set publisher_id when publishing
       if (newStatus === 'published') {
+        console.log('=== PUBLISHING POLICY ===', policyId);
+        
+        // Archive old versions with the same policy number first
+        if (currentPolicy.policy_number) {
+          console.log('=== ARCHIVING OLD VERSIONS ===', currentPolicy.policy_number);
+          const { error: archiveError } = await supabase
+            .from('Policies')
+            .update({ 
+              archived_at: new Date().toISOString(),
+              status: 'archived'
+            })
+            .eq('policy_number', currentPolicy.policy_number)
+            .neq('id', policyId)
+            .is('archived_at', null);
+
+          if (archiveError) {
+            console.error('Error archiving old versions:', archiveError);
+            // Don't fail the publish operation if archiving fails
+          } else {
+            console.log('=== OLD VERSIONS ARCHIVED SUCCESSFULLY ===');
+          }
+        }
+
         // Get publisher profile
         const { data: publisherProfile, error: profileError } = await supabase
           .from('profiles')
@@ -116,7 +154,13 @@ export const usePolicies = () => {
           .single();
 
         if (profileError) {
-          throw new Error('Could not fetch publisher profile');
+          console.error('Error fetching publisher profile:', profileError);
+          toast({
+            variant: "destructive",
+            title: "Error", 
+            description: "Could not fetch publisher profile.",
+          });
+          return;
         }
 
         updateData.publisher_id = publisherProfile.id;
@@ -130,7 +174,13 @@ export const usePolicies = () => {
           .single();
 
         if (contentError) {
-          throw contentError;
+          console.error('Error fetching policy content:', contentError);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to fetch policy content for cleaning.",
+          });
+          return;
         }
 
         const cleanedFields = stripColorsFromPolicyFields(policyContent);
@@ -138,22 +188,6 @@ export const usePolicies = () => {
           ...updateData,
           ...cleanedFields
         };
-
-        // Archive old versions in the same policy family when publishing
-        const parentPolicyId = currentPolicy.parent_policy_id || policyId;
-        try {
-          await supabase
-            .from('Policies')
-            .update({ archived_at: new Date().toISOString() })
-            .or(`id.eq.${parentPolicyId},parent_policy_id.eq.${parentPolicyId}`)
-            .neq('id', policyId)
-            .eq('status', 'published');
-          
-          console.log('=== OLD PUBLISHED VERSIONS ARCHIVED ===');
-        } catch (archiveError) {
-          console.error('Error archiving old versions:', archiveError);
-          // Don't fail the publish operation if archiving fails
-        }
       }
 
       // Set reviewer when assigning for review
@@ -161,13 +195,15 @@ export const usePolicies = () => {
         updateData.reviewer = currentUser.email;
       }
 
-      const { error } = await supabase
+      console.log('=== UPDATING POLICY WITH DATA ===', updateData);
+
+      const { error: updateError } = await supabase
         .from('Policies')
         .update(updateData)
         .eq('id', policyId);
 
-      if (error) {
-        console.error('Error updating policy status:', error);
+      if (updateError) {
+        console.error('Error updating policy status:', updateError);
         toast({
           variant: "destructive",
           title: "Error",
@@ -224,14 +260,16 @@ export const usePolicies = () => {
         description: statusMessage,
       });
 
+      console.log('=== POLICY STATUS UPDATED SUCCESSFULLY ===');
+
       // Refresh the policies list
-      fetchPolicies();
+      await fetchPolicies();
     } catch (error) {
       console.error('Error updating policy status:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred.",
+        description: "An unexpected error occurred while updating policy status.",
       });
     }
   };

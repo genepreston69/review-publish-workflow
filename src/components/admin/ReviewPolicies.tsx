@@ -9,7 +9,7 @@ import { Policy } from './policy/types';
 
 export function ReviewPolicies() {
   const { currentUser, userRole } = useAuth();
-  const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, archivePolicy, isSuperAdmin } = usePolicies();
+  const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, archivePolicy, isSuperAdmin, fetchPolicies } = usePolicies();
   const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
 
@@ -19,6 +19,7 @@ export function ReviewPolicies() {
   console.log('Current user:', currentUser?.email);
   console.log('User role:', userRole);
   console.log('Is super admin:', isSuperAdmin);
+  console.log('Is loading:', isLoadingPolicies);
 
   // All possible status variations that need review
   const reviewStatuses = ['draft', 'under-review', 'under review', 'awaiting-changes', 'awaiting changes'];
@@ -35,7 +36,7 @@ export function ReviewPolicies() {
 
     // Check if policy needs review (case-insensitive and flexible matching)
     const needsReview = policy.status && reviewStatuses.some(status => 
-      policy.status.toLowerCase().trim() === status.toLowerCase()
+      policy.status?.toLowerCase().trim() === status.toLowerCase()
     );
     
     console.log(`Policy ${policy.id} needs review:`, needsReview);
@@ -91,7 +92,8 @@ export function ReviewPolicies() {
   const handlePolicyUpdated = (updatedPolicy: Policy) => {
     console.log('Policy updated:', updatedPolicy);
     setEditingPolicyId(null);
-    // The policy list will automatically refresh from the database
+    // Refresh the policy list
+    fetchPolicies();
   };
 
   const handleCancelEdit = () => {
@@ -106,6 +108,11 @@ export function ReviewPolicies() {
     if (canArchive) {
       await archivePolicy(policyId);
     }
+  };
+
+  const handleUpdateStatus = async (policyId: string, newStatus: string) => {
+    console.log('=== HANDLE UPDATE STATUS ===', { policyId, newStatus });
+    await updatePolicyStatus(policyId, newStatus);
   };
 
   if (!canPublish) {
@@ -144,7 +151,7 @@ export function ReviewPolicies() {
   // Count policies by status for debug (with flexible matching)
   const draftCount = policies.filter(p => p.status?.toLowerCase() === 'draft').length;
   const underReviewCount = policies.filter(p => p.status && reviewStatuses.some(status => 
-    p.status.toLowerCase().trim() === status.toLowerCase()
+    p.status?.toLowerCase().trim() === status.toLowerCase()
   )).length;
   const publishedCount = policies.filter(p => p.status?.toLowerCase() === 'published').length;
 
@@ -172,6 +179,7 @@ export function ReviewPolicies() {
           <p>Debug: Total policies: {policies.length}, User role: {userRole}, Can publish: {canPublish ? 'Yes' : 'No'}</p>
           <p>Policies by status: Draft: {draftCount}, Under Review: {underReviewCount}, Published: {publishedCount}</p>
           <p>Raw status values: {policies.map(p => `"${p.status}"`).slice(0, 10).join(', ')}{policies.length > 10 ? '...' : ''}</p>
+          <p>Loading: {isLoadingPolicies ? 'Yes' : 'No'}</p>
         </div>
       </div>
 
@@ -181,7 +189,7 @@ export function ReviewPolicies() {
         isEditor={false}
         canPublish={true}
         editingPolicyId={editingPolicyId}
-        onUpdateStatus={updatePolicyStatus}
+        onUpdateStatus={handleUpdateStatus}
         onEdit={handleEditPolicy}
         onView={handleViewPolicy}
         onDelete={isSuperAdmin ? deletePolicy : undefined}
@@ -193,7 +201,8 @@ export function ReviewPolicies() {
           policyId={viewingPolicyId}
           onClose={handleCloseView}
           onEdit={handleEditPolicy}
-          onUpdateStatus={updatePolicyStatus}
+          onUpdateStatus={handleUpdateStatus}
+          onRefresh={fetchPolicies}
         />
       )}
     </div>
