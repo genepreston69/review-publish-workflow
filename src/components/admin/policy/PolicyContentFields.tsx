@@ -6,7 +6,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Control, UseFormSetValue } from 'react-hook-form';
 import { PolicyFormValues } from './PolicyFormSchema';
@@ -26,12 +25,10 @@ export function PolicyContentFields({ control, setValue }: PolicyContentFieldsPr
           <FormItem>
             <FormLabel>Purpose</FormLabel>
             <FormControl>
-              <Textarea
+              <RichTextEditor
+                content={field.value || ''}
+                onChange={field.onChange}
                 placeholder="Describe the purpose of this policy"
-                className="min-h-[100px]"
-                {...field}
-                value={field.value || ''}
-                onChange={(e) => field.onChange(e.target.value)}
               />
             </FormControl>
             <FormMessage />
