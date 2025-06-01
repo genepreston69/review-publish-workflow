@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { PolicyList } from './policy/PolicyList';
@@ -19,6 +20,9 @@ export function ReviewPolicies() {
   console.log('User role:', userRole);
   console.log('Is super admin:', isSuperAdmin);
 
+  // All possible status variations that need review
+  const reviewStatuses = ['under-review', 'under review', 'awaiting-changes', 'awaiting changes'];
+
   // Filter to show policies that need review with proper access control
   const reviewPolicies = policies.filter(policy => {
     console.log(`Checking policy ${policy.id}:`, {
@@ -29,9 +33,10 @@ export function ReviewPolicies() {
       currentUserId: currentUser?.id
     });
 
-    const needsReview = policy.status === 'under-review' || 
-                       policy.status === 'under review' ||
-                       policy.status === 'awaiting-changes';
+    // Check if policy needs review (case-insensitive and flexible matching)
+    const needsReview = policy.status && reviewStatuses.some(status => 
+      policy.status.toLowerCase().trim() === status.toLowerCase()
+    );
     
     console.log(`Policy ${policy.id} needs review:`, needsReview);
     
@@ -136,6 +141,13 @@ export function ReviewPolicies() {
     );
   }
 
+  // Count policies by status for debug (with flexible matching)
+  const draftCount = policies.filter(p => p.status?.toLowerCase() === 'draft').length;
+  const underReviewCount = policies.filter(p => p.status && reviewStatuses.some(status => 
+    p.status.toLowerCase().trim() === status.toLowerCase()
+  )).length;
+  const publishedCount = policies.filter(p => p.status?.toLowerCase() === 'published').length;
+
   return (
     <div className="space-y-6">
       <div>
@@ -148,8 +160,8 @@ export function ReviewPolicies() {
           <div className="text-sm text-gray-600 mt-1">
             <p>Showing {reviewPolicies.length} {reviewPolicies.length === 1 ? 'policy' : 'policies'} awaiting review</p>
             <div className="flex gap-4 mt-1">
-              <span>Under Review: {reviewPolicies.filter(p => p.status === 'under-review' || p.status === 'under review').length}</span>
-              <span>Awaiting Changes: {reviewPolicies.filter(p => p.status === 'awaiting-changes').length}</span>
+              <span>Under Review: {reviewPolicies.filter(p => p.status?.toLowerCase().includes('under')).length}</span>
+              <span>Awaiting Changes: {reviewPolicies.filter(p => p.status?.toLowerCase().includes('awaiting')).length}</span>
             </div>
           </div>
         )}
@@ -157,7 +169,8 @@ export function ReviewPolicies() {
         {/* Debug info for troubleshooting */}
         <div className="text-xs text-gray-400 mt-2 p-2 bg-gray-50 rounded">
           <p>Debug: Total policies: {policies.length}, User role: {userRole}, Can publish: {canPublish ? 'Yes' : 'No'}</p>
-          <p>Policies by status: Draft: {policies.filter(p => p.status === 'draft').length}, Under Review: {policies.filter(p => p.status === 'under-review' || p.status === 'under review').length}, Published: {policies.filter(p => p.status === 'published').length}</p>
+          <p>Policies by status: Draft: {draftCount}, Under Review: {underReviewCount}, Published: {publishedCount}</p>
+          <p>Raw status values: {policies.map(p => `"${p.status}"`).slice(0, 10).join(', ')}{policies.length > 10 ? '...' : ''}</p>
         </div>
       </div>
 
