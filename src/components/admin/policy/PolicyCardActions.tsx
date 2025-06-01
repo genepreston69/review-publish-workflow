@@ -1,4 +1,3 @@
-
 import { CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trash2, Edit, Eye, RotateCcw } from 'lucide-react';
@@ -31,7 +30,7 @@ export function PolicyCardActions({
   const { userRole } = useAuth();
   const isSuperAdmin = userRole === 'super-admin';
   const isEditor = userRole === 'edit';
-  const { duplicatePolicyForUpdate, isLoading: isDuplicating } = usePolicyDuplication();
+  const { duplicatePolicyForUpdate, archiveByPolicyNumber, isLoading: isDuplicating } = usePolicyDuplication();
   const { toast } = useToast();
 
   const handleUpdatePolicy = async () => {
@@ -55,17 +54,8 @@ export function PolicyCardActions({
       if (currentPolicy && currentPolicy.policy_number) {
         console.log('=== ARCHIVING POLICIES WITH SAME POLICY NUMBER ===', currentPolicy.policy_number);
         
-        // Archive all other policies with the same policy number
-        const { error: archiveError } = await supabase
-          .from('Policies')
-          .update({ archived_at: new Date().toISOString() })
-          .eq('policy_number', currentPolicy.policy_number)
-          .neq('id', policyId)
-          .is('archived_at', null);
-
-        if (archiveError) {
-          console.error('Error archiving old versions:', archiveError);
-        }
+        // Archive all other policies with the same policy number using the new method
+        await archiveByPolicyNumber(currentPolicy.policy_number, policyId);
       }
 
       // Now publish the current policy

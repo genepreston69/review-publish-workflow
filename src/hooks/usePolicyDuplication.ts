@@ -40,6 +40,31 @@ export function usePolicyDuplication() {
         return null;
       }
 
+      console.log('=== ORIGINAL POLICY FETCHED ===', originalPolicy);
+
+      // Archive the current published policy before creating new version
+      if (originalPolicy.status === 'published') {
+        console.log('=== ARCHIVING CURRENT PUBLISHED POLICY ===', originalPolicyId);
+        const { error: archiveError } = await supabase
+          .from('Policies')
+          .update({ 
+            archived_at: new Date().toISOString(),
+            status: 'archived'
+          })
+          .eq('id', originalPolicyId);
+
+        if (archiveError) {
+          console.error('Error archiving current policy:', archiveError);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to archive the current policy.",
+          });
+          return null;
+        }
+        console.log('=== CURRENT POLICY ARCHIVED SUCCESSFULLY ===');
+      }
+
       // Create a new policy as a copy with draft status
       const newPolicyData = {
         name: originalPolicy.name,
@@ -77,7 +102,7 @@ export function usePolicyDuplication() {
 
       toast({
         title: "Success",
-        description: "New draft version created for editing. The policy has been returned to draft status.",
+        description: "New draft version created for editing. The previous published version has been archived.",
       });
 
       return newPolicy.id;
@@ -96,23 +121,52 @@ export function usePolicyDuplication() {
 
   const archiveOldVersions = async (parentPolicyId: string, excludePolicyId: string) => {
     try {
-      console.log('=== ARCHIVING OLD VERSIONS ===', { parentPolicyId, excludePolicyId });
+      console.log('=== ARCHIVING OLD VERSIONS BY PARENT ===', { parentPolicyId, excludePolicyId });
 
       const { error } = await supabase
         .from('Policies')
-        .update({ archived_at: new Date().toISOString() })
+        .update({ 
+          archived_at: new Date().toISOString(),
+          status: 'archived'
+        })
         .or(`id.eq.${parentPolicyId},parent_policy_id.eq.${parentPolicyId}`)
         .neq('id', excludePolicyId)
         .is('archived_at', null);
 
       if (error) {
-        console.error('Error archiving old versions:', error);
+        console.error('Error archiving old versions by parent:', error);
         throw error;
       }
 
-      console.log('=== OLD VERSIONS ARCHIVED SUCCESSFULLY ===');
+      console.log('=== OLD VERSIONS ARCHIVED SUCCESSFULLY BY PARENT ===');
     } catch (error) {
       console.error('Error in archiveOldVersions:', error);
+      throw error;
+    }
+  };
+
+  const archiveByPolicyNumber = async (policyNumber: string, excludePolicyId: string) => {
+    try {
+      console.log('=== ARCHIVING BY POLICY NUMBER ===', { policyNumber, excludePolicyId });
+
+      const { error } = await supabase
+        .from('Policies')
+        .update({ 
+          archived_at: new Date().toISOString(),
+          status: 'archived'
+        })
+        .eq('policy_number', policyNumber)
+        .neq('id', excludePolicyId)
+        .is('archived_at', null);
+
+      if (error) {
+        console.error('Error archiving by policy number:', error);
+        throw error;
+      }
+
+      console.log('=== POLICIES ARCHIVED SUCCESSFULLY BY POLICY NUMBER ===');
+    } catch (error) {
+      console.error('Error in archiveByPolicyNumber:', error);
       throw error;
     }
   };
@@ -120,6 +174,7 @@ export function usePolicyDuplication() {
   return {
     duplicatePolicyForUpdate,
     archiveOldVersions,
+    archiveByPolicyNumber,
     isLoading,
   };
 }

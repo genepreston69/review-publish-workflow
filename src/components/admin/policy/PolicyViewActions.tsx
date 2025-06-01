@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -38,7 +37,7 @@ export function PolicyViewActions({
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
   const isEditor = userRole === 'edit';
   const isSuperAdmin = userRole === 'super-admin';
-  const { duplicatePolicyForUpdate, archiveOldVersions, isLoading: isDuplicating } = usePolicyDuplication();
+  const { duplicatePolicyForUpdate, archiveByPolicyNumber, isLoading: isDuplicating } = usePolicyDuplication();
 
   // Check if current user is the creator (maker/checker enforcement)
   const isCreator = currentUser?.id === policy.creator_id;
@@ -105,10 +104,11 @@ export function PolicyViewActions({
     if (actionType === 'request-changes') {
       await onUpdateStatus(policy.id, 'awaiting-changes', reviewerComment);
     } else if (actionType === 'publish') {
-      // When publishing, archive old versions first
+      // When publishing, archive old versions first using policy number
       try {
-        const parentPolicyId = policy.parent_policy_id || policy.id;
-        await archiveOldVersions(parentPolicyId, policy.id);
+        if (policy.policy_number) {
+          await archiveByPolicyNumber(policy.policy_number, policy.id);
+        }
         await onUpdateStatus(policy.id, 'published', reviewerComment);
       } catch (error) {
         console.error('Error during publish with versioning:', error);
@@ -135,10 +135,11 @@ export function PolicyViewActions({
 
   const handleDirectPublish = async () => {
     if (onPublish) {
-      // Archive old versions before publishing
+      // Archive old versions before publishing using policy number
       try {
-        const parentPolicyId = policy.parent_policy_id || policy.id;
-        await archiveOldVersions(parentPolicyId, policy.id);
+        if (policy.policy_number) {
+          await archiveByPolicyNumber(policy.policy_number, policy.id);
+        }
         await onPublish();
       } catch (error) {
         console.error('Error during direct publish with versioning:', error);
