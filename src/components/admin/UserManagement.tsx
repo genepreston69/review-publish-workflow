@@ -10,6 +10,7 @@ import { RoleBadge } from '@/components/RoleBadge';
 import { CreateUserForm } from './CreateUserForm';
 import { UserRole } from '@/types/user';
 import { User, Loader2, Trash2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface UserWithRole {
   id: string;
@@ -24,6 +25,7 @@ export const UserManagement = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { currentUser, userRole } = useAuth();
 
   const fetchUsers = async () => {
     try {
@@ -72,29 +74,59 @@ export const UserManagement = () => {
 
   const updateUserRole = async (userId: string, newRole: UserRole) => {
     try {
-      console.log('Updating user role:', { userId, newRole });
+      console.log('=== ROLE UPDATE ATTEMPT ===');
+      console.log('Current user ID:', currentUser?.id);
+      console.log('Current user role:', userRole);
+      console.log('Target user ID:', userId);
+      console.log('New role:', newRole);
       
-      // First, delete any existing roles for this user
-      const { error: deleteError } = await supabase
+      // Check if current user is super admin
+      const { data: currentUserRoles, error: roleCheckError } = await supabase
         .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
+        .select('role')
+        .eq('user_id', currentUser?.id);
+      
+      console.log('Current user roles from DB:', currentUserRoles);
+      console.log('Role check error:', roleCheckError);
+      
+      // Use upsert approach which handles both insert and update
+      const { error: upsertError } = await supabase
+        .from('user_roles')
+        .upsert(
+          { user_id: userId, role: newRole },
+          { 
+            onConflict: 'user_id,role',
+            ignoreDuplicates: false 
+          }
+        );
 
-      if (deleteError) {
-        console.error('Error deleting existing roles:', deleteError);
-        throw deleteError;
+      if (upsertError) {
+        console.error('Upsert failed, trying delete then insert approach:', upsertError);
+        
+        // If upsert fails, try the delete-then-insert approach
+        const { error: deleteError } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', userId);
+
+        if (deleteError) {
+          console.error('Error deleting existing roles:', deleteError);
+          throw deleteError;
+        }
+
+        // Then insert the new role
+        const { error: insertError } = await supabase
+          .from('user_roles')
+          .insert({ user_id: userId, role: newRole });
+
+        if (insertError) {
+          console.error('Error inserting new role:', insertError);
+          throw insertError;
+        }
       }
 
-      // Then insert the new role
-      const { error: insertError } = await supabase
-        .from('user_roles')
-        .insert({ user_id: userId, role: newRole });
-
-      if (insertError) {
-        console.error('Error inserting new role:', insertError);
-        throw insertError;
-      }
-
+      console.log('=== ROLE UPDATE SUCCESS ===');
+      
       toast({
         title: "Success",
         description: "User role updated successfully.",
@@ -103,11 +135,11 @@ export const UserManagement = () => {
       // Refresh the users list
       fetchUsers();
     } catch (error) {
-      console.error('Error updating user role:', error);
+      console.error('=== ROLE UPDATE FAILED ===', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to update user role.",
+        description: "Failed to update user role. You may not have sufficient privileges.",
       });
     }
   };
