@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { stripColorsFromPolicyFields } from '@/utils/colorUtils';
+import { notifyPolicyStatusChange, notifyPolicyComment } from '@/utils/notificationHelpers';
 import { Policy } from './types';
 
 export const usePolicies = () => {
@@ -62,7 +63,7 @@ export const usePolicies = () => {
       // Get current policy to check creator and parent info
       const { data: currentPolicy, error: fetchError } = await supabase
         .from('Policies')
-        .select('creator_id, status, parent_policy_id, archived_at')
+        .select('creator_id, status, parent_policy_id, archived_at, name, reviewer')
         .eq('id', policyId)
         .single();
 
@@ -155,6 +156,11 @@ export const usePolicies = () => {
         }
       }
 
+      // Set reviewer when assigning for review
+      if (newStatus === 'under-review' && !currentPolicy.reviewer) {
+        updateData.reviewer = currentUser.email;
+      }
+
       const { error } = await supabase
         .from('Policies')
         .update(updateData)
@@ -168,6 +174,29 @@ export const usePolicies = () => {
           description: "Failed to update policy status.",
         });
         return;
+      }
+
+      // Send notifications
+      await notifyPolicyStatusChange({
+        policyId,
+        policyName: currentPolicy.name || 'Untitled Policy',
+        oldStatus: currentPolicy.status,
+        newStatus,
+        creatorId: currentPolicy.creator_id,
+        reviewerId: newStatus === 'under-review' ? currentUser.id : currentPolicy.reviewer ? 
+          (await supabase.from('profiles').select('id').eq('email', currentPolicy.reviewer).single())?.data?.id : undefined,
+        reviewerComment,
+        publisherId: newStatus === 'published' ? currentUser.id : undefined,
+      });
+
+      // Send comment notification if reviewer comment is added
+      if (reviewerComment && currentPolicy.creator_id && currentPolicy.creator_id !== currentUser.id) {
+        await notifyPolicyComment(
+          policyId,
+          currentPolicy.name || 'Untitled Policy',
+          currentPolicy.creator_id,
+          reviewerComment
+        );
       }
 
       let statusMessage = '';

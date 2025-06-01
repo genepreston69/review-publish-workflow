@@ -1,9 +1,7 @@
 
-import { Button } from '@/components/ui/button';
-import { RoleBadge } from '@/components/RoleBadge';
-import { useAuth } from '@/hooks/useAuth';
-import { User, LogOut, Shield } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 interface AdminHeaderProps {
   isSuperAdmin: boolean;
@@ -11,53 +9,15 @@ interface AdminHeaderProps {
 }
 
 export function AdminHeader({ isSuperAdmin, pageTitle }: AdminHeaderProps) {
-  const { currentUser, userRole, signOut } = useAuth();
-
-  const handleLogout = async () => {
-    await signOut();
-  };
-
-  // Get user name from metadata or email
-  const userName = currentUser?.user_metadata?.name || 
-                  currentUser?.email?.split('@')[0] || 
-                  'User';
-
   return (
-    <header className="border-b bg-white">
-      <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <h1 className="text-3xl font-bold text-gray-900">{pageTitle}</h1>
-          </div>
-          
-          {currentUser && userRole && (
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-gray-500" />
-                <span className="text-sm font-medium">{userName}</span>
-                <RoleBadge role={userRole} />
-              </div>
-              <div className="flex items-center gap-2">
-                {userRole === 'super-admin' && (
-                  <Link to="/admin">
-                    <Button variant="outline" size="sm">
-                      <Shield className="w-4 h-4 mr-1" />
-                      Admin
-                    </Button>
-                  </Link>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="w-4 h-4 mr-1" />
-                  Logout
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
+    <header className="flex h-16 shrink-0 items-center gap-2 bg-white border-b px-4">
+      <SidebarTrigger className="-ml-1" />
+      <Separator orientation="vertical" className="mr-2 h-4" />
+      <div className="flex-1">
+        <h1 className="font-semibold">{pageTitle}</h1>
+      </div>
+      <div className="flex items-center gap-2">
+        <NotificationBell />
       </div>
     </header>
   );

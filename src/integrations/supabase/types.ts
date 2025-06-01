@@ -132,6 +132,94 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          created_at: string | null
+          email_policy_assignment: boolean | null
+          email_policy_comment: boolean | null
+          email_policy_published: boolean | null
+          email_policy_returned: boolean | null
+          email_policy_status_change: boolean | null
+          id: string
+          in_app_notifications: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_policy_assignment?: boolean | null
+          email_policy_comment?: boolean | null
+          email_policy_published?: boolean | null
+          email_policy_returned?: boolean | null
+          email_policy_status_change?: boolean | null
+          id?: string
+          in_app_notifications?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_policy_assignment?: boolean | null
+          email_policy_comment?: boolean | null
+          email_policy_published?: boolean | null
+          email_policy_returned?: boolean | null
+          email_policy_status_change?: boolean | null
+          id?: string
+          in_app_notifications?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          read: boolean | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          read?: boolean | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          read?: boolean | null
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       Policies: {
         Row: {
           archived_at: string | null
@@ -301,6 +389,12 @@ export type Database = {
     }
     Enums: {
       app_role: "read-only" | "edit" | "publish" | "super-admin"
+      notification_type:
+        | "policy_status_change"
+        | "policy_assignment"
+        | "policy_comment"
+        | "policy_published"
+        | "policy_returned"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -417,6 +511,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["read-only", "edit", "publish", "super-admin"],
+      notification_type: [
+        "policy_status_change",
+        "policy_assignment",
+        "policy_comment",
+        "policy_published",
+        "policy_returned",
+      ],
     },
   },
 } as const
