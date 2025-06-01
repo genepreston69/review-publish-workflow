@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { PolicyViewLoading } from './PolicyViewLoading';
 import { PolicyNotFound } from './PolicyNotFound';
@@ -9,6 +10,7 @@ import { PolicyViewHeader } from './PolicyViewHeader';
 import { PolicyViewMetadata } from './PolicyViewMetadata';
 import { PolicyViewContent } from './PolicyViewContent';
 import { PolicyViewActions } from './PolicyViewActions';
+import { PolicyVersionHistory } from './PolicyVersionHistory';
 import { Policy } from './types';
 
 interface PolicyViewModalProps {
@@ -23,12 +25,13 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [policy, setPolicy] = useState<Policy | null>(null);
+  const [viewingVersionId, setViewingVersionId] = useState<string>(policyId);
 
   useEffect(() => {
     const loadPolicy = async () => {
       try {
         setIsLoading(true);
-        console.log('=== LOADING POLICY FOR VIEW ===', policyId);
+        console.log('=== LOADING POLICY FOR VIEW ===', viewingVersionId);
 
         const { data, error } = await supabase
           .from('Policies')
@@ -37,7 +40,7 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
             creator:creator_id(id, name, email),
             publisher:publisher_id(id, name, email)
           `)
-          .eq('id', policyId)
+          .eq('id', viewingVersionId)
           .single();
 
         if (error) {
@@ -66,10 +69,10 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
       }
     };
 
-    if (policyId) {
+    if (viewingVersionId) {
       loadPolicy();
     }
-  }, [policyId, toast, onClose]);
+  }, [viewingVersionId, toast, onClose]);
 
   const handleReturnToDraft = async () => {
     if (!policy || !onUpdateStatus) return;
@@ -117,6 +120,10 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
     }
   };
 
+  const handleViewVersion = (versionId: string) => {
+    setViewingVersionId(versionId);
+  };
+
   if (isLoading) {
     return <PolicyViewLoading onClose={onClose} />;
   }
@@ -127,10 +134,30 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto [&>button]:hidden">
+      <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden [&>button]:hidden">
         <PolicyViewHeader policy={policy} onClose={onClose} />
-        <PolicyViewMetadata policy={policy} />
-        <PolicyViewContent policy={policy} />
+        
+        <Tabs defaultValue="content" className="flex-1 overflow-hidden">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="content">Policy Content</TabsTrigger>
+            <TabsTrigger value="versions">Version History</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="content" className="overflow-y-auto max-h-[60vh]">
+            <div className="space-y-4">
+              <PolicyViewMetadata policy={policy} />
+              <PolicyViewContent policy={policy} />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="versions" className="overflow-y-auto max-h-[60vh]">
+            <PolicyVersionHistory 
+              policyId={policyId} 
+              onViewVersion={handleViewVersion}
+            />
+          </TabsContent>
+        </Tabs>
+
         <PolicyViewActions
           policy={policy}
           onClose={onClose}

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Policy } from './types';
 
@@ -37,9 +36,45 @@ export const fetchPoliciesByType = async (policyType: string): Promise<Policy[]>
   }
 
   console.log(`=== ${policyType.toUpperCase()} POLICIES FETCHED ===`, data?.length || 0);
-  console.log('Sample policies:', data?.slice(0, 3));
 
-  return data || [];
+  // Filter to show only the latest version of each policy family
+  const latestVersions = filterLatestVersions(data || []);
+  
+  console.log(`=== LATEST VERSIONS FILTERED ===`, latestVersions.length);
+  
+  return latestVersions;
+};
+
+const filterLatestVersions = (policies: Policy[]): Policy[] => {
+  // Group policies by their policy family (parent_policy_id or original id)
+  const policyFamilies = new Map<string, Policy[]>();
+  
+  policies.forEach(policy => {
+    const familyId = policy.parent_policy_id || policy.id;
+    if (!policyFamilies.has(familyId)) {
+      policyFamilies.set(familyId, []);
+    }
+    policyFamilies.get(familyId)!.push(policy);
+  });
+  
+  // For each family, find the latest published version
+  const latestVersions: Policy[] = [];
+  
+  policyFamilies.forEach(familyPolicies => {
+    // Sort by created_at descending to get the latest first
+    const sortedPolicies = familyPolicies.sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    
+    // Find the latest published version
+    const latestPublished = sortedPolicies.find(p => p.status === 'published');
+    
+    if (latestPublished) {
+      latestVersions.push(latestPublished);
+    }
+  });
+  
+  return latestVersions;
 };
 
 export const fetchPoliciesByPrefix = async (prefix: string): Promise<Policy[]> => {
@@ -60,7 +95,7 @@ export const fetchPoliciesByPrefix = async (prefix: string): Promise<Policy[]> =
     throw error;
   }
 
-  return data || [];
+  return filterLatestVersions(data || []);
 };
 
 export const fetchAllPolicies = async (): Promise<Policy[]> => {

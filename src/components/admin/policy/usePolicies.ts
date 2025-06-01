@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -60,10 +59,10 @@ export const usePolicies = () => {
         return;
       }
 
-      // Get current policy to check creator
+      // Get current policy to check creator and parent info
       const { data: currentPolicy, error: fetchError } = await supabase
         .from('Policies')
-        .select('creator_id, status')
+        .select('creator_id, status, parent_policy_id')
         .eq('id', policyId)
         .single();
 
@@ -129,6 +128,22 @@ export const usePolicies = () => {
           ...updateData,
           ...cleanedFields
         };
+
+        // Archive old versions in the same policy family when publishing
+        const parentPolicyId = currentPolicy.parent_policy_id || policyId;
+        try {
+          await supabase
+            .from('Policies')
+            .update({ archived_at: new Date().toISOString() })
+            .or(`id.eq.${parentPolicyId},parent_policy_id.eq.${parentPolicyId}`)
+            .neq('id', policyId)
+            .eq('status', 'published');
+          
+          console.log('=== OLD PUBLISHED VERSIONS ARCHIVED ===');
+        } catch (archiveError) {
+          console.error('Error archiving old versions:', archiveError);
+          // Don't fail the publish operation if archiving fails
+        }
       }
 
       const { error } = await supabase
@@ -149,7 +164,7 @@ export const usePolicies = () => {
       let statusMessage = '';
       switch (newStatus) {
         case 'published':
-          statusMessage = "Policy published successfully. All colors have been removed from the content.";
+          statusMessage = "Policy published successfully. All colors have been removed from the content and old versions archived.";
           break;
         case 'draft':
           statusMessage = "Policy returned to draft status for editing.";
