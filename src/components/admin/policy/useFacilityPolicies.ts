@@ -71,17 +71,33 @@ export function useFacilityPolicies() {
 
   const updatePolicyStatus = async (policyId: string, newStatus: string) => {
     try {
-      // If publishing, first archive old versions
+      console.log('=== UPDATING POLICY STATUS ===', { policyId, newStatus });
+
+      // If publishing, first find and archive old versions by policy number
       if (newStatus === 'published') {
-        const { data: policyData } = await supabase
+        // Get the policy being published to find its policy number
+        const { data: currentPolicy } = await supabase
           .from('Policies')
-          .select('parent_policy_id')
+          .select('policy_number, parent_policy_id')
           .eq('id', policyId)
           .single();
 
-        if (policyData) {
-          const parentPolicyId = policyData.parent_policy_id || policyId;
-          await archiveOldVersions(parentPolicyId, policyId);
+        if (currentPolicy && currentPolicy.policy_number) {
+          console.log('=== ARCHIVING POLICIES WITH SAME POLICY NUMBER ===', currentPolicy.policy_number);
+          
+          // Archive all other policies with the same policy number
+          const { error: archiveError } = await supabase
+            .from('Policies')
+            .update({ archived_at: new Date().toISOString() })
+            .eq('policy_number', currentPolicy.policy_number)
+            .neq('id', policyId)
+            .is('archived_at', null);
+
+          if (archiveError) {
+            console.error('Error archiving old versions by policy number:', archiveError);
+          } else {
+            console.log('=== SUCCESSFULLY ARCHIVED OLD VERSIONS ===');
+          }
         }
       }
 

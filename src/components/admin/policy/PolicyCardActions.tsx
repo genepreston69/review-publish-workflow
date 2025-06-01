@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trash2, Edit, Eye, RotateCcw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePolicyDuplication } from '@/hooks/usePolicyDuplication';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface PolicyCardActionsProps {
   policyId: string;
@@ -30,11 +32,51 @@ export function PolicyCardActions({
   const isSuperAdmin = userRole === 'super-admin';
   const isEditor = userRole === 'edit';
   const { duplicatePolicyForUpdate, isLoading: isDuplicating } = usePolicyDuplication();
+  const { toast } = useToast();
 
   const handleUpdatePolicy = async () => {
     const newPolicyId = await duplicatePolicyForUpdate(policyId);
     if (newPolicyId && onRefresh) {
       onRefresh();
+    }
+  };
+
+  const handlePublish = async () => {
+    try {
+      console.log('=== PUBLISHING POLICY WITH ARCHIVING ===', policyId);
+
+      // Get the policy being published to find its policy number
+      const { data: currentPolicy } = await supabase
+        .from('Policies')
+        .select('policy_number')
+        .eq('id', policyId)
+        .single();
+
+      if (currentPolicy && currentPolicy.policy_number) {
+        console.log('=== ARCHIVING POLICIES WITH SAME POLICY NUMBER ===', currentPolicy.policy_number);
+        
+        // Archive all other policies with the same policy number
+        const { error: archiveError } = await supabase
+          .from('Policies')
+          .update({ archived_at: new Date().toISOString() })
+          .eq('policy_number', currentPolicy.policy_number)
+          .neq('id', policyId)
+          .is('archived_at', null);
+
+        if (archiveError) {
+          console.error('Error archiving old versions:', archiveError);
+        }
+      }
+
+      // Now publish the current policy
+      await onUpdateStatus(policyId, 'published');
+    } catch (error) {
+      console.error('Error in publish process:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to publish policy.",
+      });
     }
   };
 
@@ -99,11 +141,11 @@ export function PolicyCardActions({
 
         {/* Second Row - Status actions and delete */}
         <div className="flex gap-2">
-          {/* Publish button */}
+          {/* Publish button with archiving */}
           {canPublish && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review') && (
             <Button
               size="sm"
-              onClick={() => onUpdateStatus(policyId, 'published')}
+              onClick={handlePublish}
               className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs"
             >
               <CheckCircle className="w-3 h-3 mr-1" />
