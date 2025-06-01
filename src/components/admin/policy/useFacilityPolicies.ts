@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { usePolicyDuplication } from '@/hooks/usePolicyDuplication';
 
 interface Policy {
   id: string;
@@ -13,12 +13,14 @@ interface Policy {
   reviewer: string | null;
   status: string | null;
   created_at: string;
+  parent_policy_id: string | null;
 }
 
 export function useFacilityPolicies() {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { archiveOldVersions } = usePolicyDuplication();
 
   const fetchPolicies = async () => {
     try {
@@ -69,6 +71,20 @@ export function useFacilityPolicies() {
 
   const updatePolicyStatus = async (policyId: string, newStatus: string) => {
     try {
+      // If publishing, first archive old versions
+      if (newStatus === 'published') {
+        const { data: policyData } = await supabase
+          .from('Policies')
+          .select('parent_policy_id')
+          .eq('id', policyId)
+          .single();
+
+        if (policyData) {
+          const parentPolicyId = policyData.parent_policy_id || policyId;
+          await archiveOldVersions(parentPolicyId, policyId);
+        }
+      }
+
       const { error } = await supabase
         .from('Policies')
         .update({ status: newStatus })

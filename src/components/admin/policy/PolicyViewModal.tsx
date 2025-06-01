@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { usePolicyDuplication } from '@/hooks/usePolicyDuplication';
 import { PolicyViewLoading } from './PolicyViewLoading';
 import { PolicyNotFound } from './PolicyNotFound';
 import { PolicyViewHeader } from './PolicyViewHeader';
@@ -23,6 +24,7 @@ interface PolicyViewModalProps {
 
 export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onRefresh }: PolicyViewModalProps) {
   const { toast } = useToast();
+  const { archiveOldVersions } = usePolicyDuplication();
   const [isLoading, setIsLoading] = useState(true);
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [viewingVersionId, setViewingVersionId] = useState<string>(policyId);
@@ -102,12 +104,16 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
   const handlePublish = async () => {
     if (!policy || !onUpdateStatus) return;
 
-    console.log('=== PUBLISHING POLICY ===', policy.id);
+    console.log('=== PUBLISHING POLICY WITH VERSIONING ===', policy.id);
     try {
+      // Archive old versions before publishing
+      const parentPolicyId = policy.parent_policy_id || policy.id;
+      await archiveOldVersions(parentPolicyId, policy.id);
+      
       await onUpdateStatus(policy.id, 'published');
       toast({
         title: "Success",
-        description: "Policy published successfully.",
+        description: "Policy published successfully. Previous versions have been archived.",
       });
       onClose();
     } catch (error) {
