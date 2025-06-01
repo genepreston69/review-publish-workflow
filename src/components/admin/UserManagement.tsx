@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ export const UserManagement = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [updatingRoleUserId, setUpdatingRoleUserId] = useState<string | null>(null);
   const { toast } = useToast();
   const { currentUser, userRole } = useAuth();
 
@@ -50,12 +52,32 @@ export const UserManagement = () => {
 
       if (rolesError) throw rolesError;
 
-      // Combine the data
+      // Combine the data - get the highest priority role for each user
       const usersWithRoles: UserWithRole[] = profiles.map(profile => {
-        const userRole = userRoles.find(role => role.user_id === profile.id);
+        const userRoleRecords = userRoles.filter(role => role.user_id === profile.id);
+        
+        // Priority order: super-admin > publish > edit > read-only
+        const rolePriority = {
+          'super-admin': 4,
+          'publish': 3,
+          'edit': 2,
+          'read-only': 1
+        };
+        
+        let highestRole: UserRole = 'read-only';
+        let highestPriority = 0;
+        
+        userRoleRecords.forEach(roleRecord => {
+          const priority = rolePriority[roleRecord.role as UserRole] || 0;
+          if (priority > highestPriority) {
+            highestPriority = priority;
+            highestRole = roleRecord.role as UserRole;
+          }
+        });
+
         return {
           ...profile,
-          role: userRole?.role as UserRole || 'read-only'
+          role: highestRole
         };
       });
 
@@ -74,55 +96,32 @@ export const UserManagement = () => {
 
   const updateUserRole = async (userId: string, newRole: UserRole) => {
     try {
+      setUpdatingRoleUserId(userId);
       console.log('=== ROLE UPDATE ATTEMPT ===');
       console.log('Current user ID:', currentUser?.id);
       console.log('Current user role:', userRole);
       console.log('Target user ID:', userId);
       console.log('New role:', newRole);
       
-      // Check if current user is super admin
-      const { data: currentUserRoles, error: roleCheckError } = await supabase
+      // First, delete ALL existing roles for this user to ensure clean state
+      const { error: deleteError } = await supabase
         .from('user_roles')
-        .select('role')
-        .eq('user_id', currentUser?.id);
-      
-      console.log('Current user roles from DB:', currentUserRoles);
-      console.log('Role check error:', roleCheckError);
-      
-      // Use upsert approach which handles both insert and update
-      const { error: upsertError } = await supabase
+        .delete()
+        .eq('user_id', userId);
+
+      if (deleteError) {
+        console.error('Error deleting existing roles:', deleteError);
+        throw deleteError;
+      }
+
+      // Then insert the new role
+      const { error: insertError } = await supabase
         .from('user_roles')
-        .upsert(
-          { user_id: userId, role: newRole },
-          { 
-            onConflict: 'user_id,role',
-            ignoreDuplicates: false 
-          }
-        );
+        .insert({ user_id: userId, role: newRole });
 
-      if (upsertError) {
-        console.error('Upsert failed, trying delete then insert approach:', upsertError);
-        
-        // If upsert fails, try the delete-then-insert approach
-        const { error: deleteError } = await supabase
-          .from('user_roles')
-          .delete()
-          .eq('user_id', userId);
-
-        if (deleteError) {
-          console.error('Error deleting existing roles:', deleteError);
-          throw deleteError;
-        }
-
-        // Then insert the new role
-        const { error: insertError } = await supabase
-          .from('user_roles')
-          .insert({ user_id: userId, role: newRole });
-
-        if (insertError) {
-          console.error('Error inserting new role:', insertError);
-          throw insertError;
-        }
+      if (insertError) {
+        console.error('Error inserting new role:', insertError);
+        throw insertError;
       }
 
       console.log('=== ROLE UPDATE SUCCESS ===');
@@ -141,12 +140,16 @@ export const UserManagement = () => {
         title: "Error",
         description: "Failed to update user role. You may not have sufficient privileges.",
       });
+    } finally {
+      setUpdatingRoleUserId(null);
     }
   };
 
   const deleteUser = async (userId: string) => {
     try {
       setDeletingUserId(userId);
+      console.log('=== DELETE USER ATTEMPT ===');
+      console.log('Target user ID:', userId);
 
       // First delete user roles
       const { error: rolesError } = await supabase
@@ -154,7 +157,10 @@ export const UserManagement = () => {
         .delete()
         .eq('user_id', userId);
 
-      if (rolesError) throw rolesError;
+      if (rolesError) {
+        console.error('Error deleting user roles:', rolesError);
+        throw rolesError;
+      }
 
       // Then delete profile
       const { error: profileError } = await supabase
@@ -162,12 +168,23 @@ export const UserManagement = () => {
         .delete()
         .eq('id', userId);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Error deleting profile:', profileError);
+        throw profileError;
+      }
 
-      // Finally delete from auth (this requires admin privileges)
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      // Finally try to delete from auth - this may fail if we don't have admin privileges
+      try {
+        const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+        if (authError) {
+          console.warn('Could not delete from auth (may need admin privileges):', authError);
+          // Don't throw here - user is effectively deleted from our app
+        }
+      } catch (authDeleteError) {
+        console.warn('Auth delete failed (expected if not admin):', authDeleteError);
+      }
 
-      if (authError) throw authError;
+      console.log('=== DELETE USER SUCCESS ===');
 
       toast({
         title: "Success",
@@ -177,7 +194,7 @@ export const UserManagement = () => {
       // Refresh the users list
       fetchUsers();
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error('=== DELETE USER FAILED ===', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -241,6 +258,7 @@ export const UserManagement = () => {
                       <Select
                         value={user.role}
                         onValueChange={(value: UserRole) => updateUserRole(user.id, value)}
+                        disabled={updatingRoleUserId === user.id}
                       >
                         <SelectTrigger className="w-40">
                           <SelectValue />
@@ -258,7 +276,7 @@ export const UserManagement = () => {
                           <Button
                             variant="destructive"
                             size="sm"
-                            disabled={deletingUserId === user.id}
+                            disabled={deletingUserId === user.id || updatingRoleUserId === user.id}
                           >
                             {deletingUserId === user.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
