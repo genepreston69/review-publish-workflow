@@ -8,22 +8,38 @@ import { usePolicies } from './policy/usePolicies';
 import { Policy } from './policy/types';
 
 export function DraftPolicies() {
-  const { userRole, currentUser } = useAuth();
-  const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, isSuperAdmin } = usePolicies();
+  const { currentUser, userRole } = useAuth();
+  const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, archivePolicy, isSuperAdmin } = usePolicies();
   const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
 
-  // Filter to show only draft policies for the current user (unless super-admin who can see all)
+  // Filter to show user-specific drafts based on role
   const draftPolicies = policies.filter(policy => {
-    const isDraft = policy.status === 'draft';
-    if (isSuperAdmin) {
-      return isDraft; // Super-admins can see all drafts
+    const isDraft = policy.status === 'draft' || policy.status === 'awaiting-changes';
+    
+    if (!isDraft) return false;
+    
+    // Super-admins can see all drafts
+    if (isSuperAdmin) return true;
+    
+    // Editors can only see their own drafts
+    if (userRole === 'edit') {
+      return policy.creator_id === currentUser?.id;
     }
-    // Regular users can only see their own drafts
-    return isDraft && policy.creator_id === currentUser?.id;
+    
+    // Publishers can see drafts assigned to them for review or their own
+    if (userRole === 'publish') {
+      return policy.creator_id === currentUser?.id || 
+             policy.reviewer === currentUser?.email ||
+             policy.publisher_id === currentUser?.id;
+    }
+    
+    return false;
   });
 
-  const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
+  const canEdit = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
+  const canDelete = isSuperAdmin;
+  const canArchive = isSuperAdmin;
 
   const handleEditPolicy = (policyId: string) => {
     console.log('Edit policy:', policyId);
@@ -51,7 +67,13 @@ export function DraftPolicies() {
     setViewingPolicyId(null);
   };
 
-  if (!hasEditAccess) {
+  const handleArchivePolicy = async (policyId: string) => {
+    if (canArchive) {
+      await archivePolicy(policyId);
+    }
+  };
+
+  if (!canEdit) {
     return (
       <div className="space-y-6">
         <div>
@@ -69,9 +91,9 @@ export function DraftPolicies() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Edit Draft Policy</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Edit Policy</h2>
           <p className="text-muted-foreground">
-            Make changes to your draft policy and save when ready.
+            Make changes to the policy and save when ready.
           </p>
         </div>
 
@@ -89,27 +111,32 @@ export function DraftPolicies() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Draft Policies</h2>
         <p className="text-muted-foreground">
-          {isSuperAdmin 
-            ? 'Manage all draft policies in the system.' 
-            : 'Manage your draft policies before they are sent for review.'
-          }
+          {userRole === 'edit' && "Manage your draft policies. Submit them for review when ready."}
+          {userRole === 'publish' && "View drafts you've created or have been assigned to review."}
+          {isSuperAdmin && "Manage all draft policies in the system."}
         </p>
         {draftPolicies.length > 0 && (
-          <p className="text-sm text-gray-600 mt-1">
-            Showing {draftPolicies.length} draft {draftPolicies.length === 1 ? 'policy' : 'policies'}
-          </p>
+          <div className="text-sm text-gray-600 mt-1">
+            <p>Showing {draftPolicies.length} {draftPolicies.length === 1 ? 'policy' : 'policies'}</p>
+            <div className="flex gap-4 mt-1">
+              <span>Draft: {draftPolicies.filter(p => p.status === 'draft').length}</span>
+              <span>Awaiting Changes: {draftPolicies.filter(p => p.status === 'awaiting-changes').length}</span>
+            </div>
+          </div>
         )}
       </div>
 
       <PolicyList
         policies={draftPolicies}
         isLoading={isLoadingPolicies}
-        isEditor={true}
-        canPublish={false}
+        isEditor={userRole === 'edit'}
+        canPublish={userRole === 'publish' || userRole === 'super-admin'}
+        editingPolicyId={editingPolicyId}
         onUpdateStatus={updatePolicyStatus}
         onEdit={handleEditPolicy}
         onView={handleViewPolicy}
-        onDelete={isSuperAdmin ? deletePolicy : undefined}
+        onDelete={canDelete ? deletePolicy : undefined}
+        onArchive={canArchive ? handleArchivePolicy : undefined}
       />
 
       {viewingPolicyId && (

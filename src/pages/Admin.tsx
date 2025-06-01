@@ -16,6 +16,7 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
 import { ReviewForms } from '@/components/admin/ReviewForms';
+import { ArchivedPolicies } from '@/components/admin/ArchivedPolicies';
 
 const Admin = () => {
   const { userRole, isLoading } = useAuth();
@@ -59,6 +60,8 @@ const Admin = () => {
         return <HRPolicies />;
       case 'facility-policies':
         return <FacilityPolicies />;
+      case 'archived-policies':
+        return <ArchivedPolicies />;
       case 'policy-manuals':
         return <PolicyManualGenerator />;
       case 'create-form':

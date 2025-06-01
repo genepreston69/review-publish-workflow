@@ -14,6 +14,7 @@ interface PolicyListProps {
   onEdit?: (policyId: string) => void;
   onView?: (policyId: string) => void;
   onDelete?: (policyId: string) => void;
+  onArchive?: (policyId: string) => void;
 }
 
 export function PolicyList({ 
@@ -25,7 +26,8 @@ export function PolicyList({
   onUpdateStatus, 
   onEdit, 
   onView, 
-  onDelete 
+  onDelete,
+  onArchive
 }: PolicyListProps) {
   if (isLoading) {
     return (
@@ -67,6 +69,7 @@ export function PolicyList({
           onEdit={onEdit}
           onView={onView}
           onDelete={onDelete}
+          onArchive={onArchive}
         />
       ))}
     </div>

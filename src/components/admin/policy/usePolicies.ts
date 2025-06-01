@@ -62,7 +62,7 @@ export const usePolicies = () => {
       // Get current policy to check creator and parent info
       const { data: currentPolicy, error: fetchError } = await supabase
         .from('Policies')
-        .select('creator_id, status, parent_policy_id')
+        .select('creator_id, status, parent_policy_id, archived_at')
         .eq('id', policyId)
         .single();
 
@@ -95,6 +95,15 @@ export const usePolicies = () => {
         status: newStatus,
         reviewer_comment: reviewerComment || null
       };
+      
+      // Handle restoration from archive
+      if (newStatus === 'draft' && currentPolicy.archived_at) {
+        updateData.archived_at = null;
+        toast({
+          title: "Success",
+          description: "Policy restored from archive to draft status.",
+        });
+      }
       
       // Set publisher_id when publishing
       if (newStatus === 'published') {
@@ -167,7 +176,9 @@ export const usePolicies = () => {
           statusMessage = "Policy published successfully. All colors have been removed from the content and old versions archived.";
           break;
         case 'draft':
-          statusMessage = "Policy returned to draft status for editing.";
+          statusMessage = currentPolicy.archived_at 
+            ? "Policy restored from archive to draft status."
+            : "Policy returned to draft status for editing.";
           break;
         case 'under-review':
           statusMessage = "Policy submitted for review.";

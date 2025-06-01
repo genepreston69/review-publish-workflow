@@ -1,4 +1,3 @@
-
 import {
   Sidebar,
   SidebarContent,
@@ -13,7 +12,7 @@ import {
 } from "@/components/ui/sidebar";
 import { 
   Users, FileText, FileClock, FileCheck, Plus, BookOpen, 
-  Building, Eye, CheckCircle, BarChart3, Settings, ClipboardList 
+  Building, Eye, CheckCircle, BarChart3, Settings, ClipboardList, Archive 
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
@@ -54,6 +53,11 @@ export function AppSidebar() {
       id: "review-policies",
       title: "Review Policies",
       icon: FileCheck,
+    }] : []),
+    ...(isSuperAdmin ? [{
+      id: "archived-policies",
+      title: "Archived Policies",
+      icon: Archive,
     }] : []),
   ];
 
