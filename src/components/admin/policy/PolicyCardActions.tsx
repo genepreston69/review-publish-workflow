@@ -1,3 +1,4 @@
+
 import { CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trash2, Edit, Eye, RotateCcw } from 'lucide-react';
@@ -94,7 +95,7 @@ export function PolicyCardActions({
   const showDeleteButton = isSuperAdmin && onDelete;
 
   return (
-    <CardFooter className="pt-6 border-t">
+    <CardFooter className="pt-6">
       <div className="w-full space-y-3">
         {/* First row - View, Edit, Submit/Update */}
         <div className="grid grid-cols-3 gap-2 w-full">
