@@ -9,19 +9,7 @@ import { PolicyViewHeader } from './PolicyViewHeader';
 import { PolicyViewMetadata } from './PolicyViewMetadata';
 import { PolicyViewContent } from './PolicyViewContent';
 import { PolicyViewActions } from './PolicyViewActions';
-
-interface Policy {
-  id: string;
-  name: string | null;
-  policy_number: string | null;
-  policy_text: string | null;
-  procedure: string | null;
-  purpose: string | null;
-  reviewer: string | null;
-  status: string | null;
-  policy_type: string | null;
-  created_at: string;
-}
+import { Policy } from './types';
 
 interface PolicyViewModalProps {
   policyId: string;
@@ -44,7 +32,11 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
 
         const { data, error } = await supabase
           .from('Policies')
-          .select('*')
+          .select(`
+            *,
+            creator:creator_id(id, name, email),
+            publisher:publisher_id(id, name, email)
+          `)
           .eq('id', policyId)
           .single();
 

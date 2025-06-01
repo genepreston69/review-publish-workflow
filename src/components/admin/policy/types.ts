@@ -18,3 +18,5 @@ export interface Policy {
   archived_at: string | null;
   parent_policy_id: string | null;
 }
+
+export type ManualType = 'HR' | 'Facility';
