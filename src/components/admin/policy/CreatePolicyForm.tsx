@@ -38,7 +38,7 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
 
   // Watch policy type changes to generate policy number
   const selectedPolicyType = form.watch('policy_type');
-  const generatedPolicyNumber = usePolicyNumberGeneration(selectedPolicyType);
+  const { generatedPolicyNumber, isLoading: isGeneratingNumber, error: numberGenerationError } = usePolicyNumberGeneration(selectedPolicyType);
 
   const onSubmit = async (data: PolicyFormValues) => {
     console.log('=== FORM SUBMISSION STARTED ===');
@@ -46,6 +46,8 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
     console.log('Current user:', currentUser);
     console.log('User role:', userRole);
     console.log('Generated policy number:', generatedPolicyNumber);
+    console.log('Number generation error:', numberGenerationError);
+    console.log('Is generating number:', isGeneratingNumber);
 
     if (!currentUser || !hasEditAccess) {
       console.log('=== ACCESS DENIED ===');
@@ -57,12 +59,32 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
       return;
     }
 
-    if (!generatedPolicyNumber) {
-      console.log('=== NO POLICY NUMBER ===');
+    if (numberGenerationError) {
+      console.log('=== POLICY NUMBER GENERATION ERROR ===', numberGenerationError);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Policy number could not be generated. Please try again.",
+        description: numberGenerationError,
+      });
+      return;
+    }
+
+    if (isGeneratingNumber) {
+      console.log('=== STILL GENERATING POLICY NUMBER ===');
+      toast({
+        variant: "destructive",
+        title: "Please Wait",
+        description: "Policy number is still being generated. Please wait a moment and try again.",
+      });
+      return;
+    }
+
+    if (!generatedPolicyNumber) {
+      console.log('=== NO POLICY NUMBER AVAILABLE ===');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Policy number could not be generated. Please select a policy type and try again.",
       });
       return;
     }
@@ -151,6 +173,8 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
         onSubmit={onSubmit}
         isSubmitting={isSubmitting}
         generatedPolicyNumber={generatedPolicyNumber}
+        isGeneratingNumber={isGeneratingNumber}
+        numberGenerationError={numberGenerationError}
       />
     </Card>
   );
