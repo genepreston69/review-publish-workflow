@@ -19,6 +19,23 @@ interface RichTextEditorProps {
   isEditMode?: boolean;
 }
 
+// Helper function to strip HTML tags and return clean text
+const stripHtmlTags = (html: string): string => {
+  if (!html) return '';
+  
+  // Create a temporary div to parse HTML
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+  
+  // Get text content and clean up
+  let textContent = tempDiv.textContent || tempDiv.innerText || '';
+  
+  // Clean up multiple spaces and line breaks
+  textContent = textContent.replace(/\s+/g, ' ').trim();
+  
+  return textContent;
+};
+
 export function RichTextEditor({ 
   content, 
   onChange, 
@@ -83,7 +100,16 @@ export function RichTextEditor({
     }
   }, [content]);
 
-  const editor = useEditorSetup({ content, onChange, isJsonMode });
+  // Clean the content for display - strip HTML if present
+  const displayContent = content.includes('<') && content.includes('>') && !content.includes('"type":') 
+    ? stripHtmlTags(content) 
+    : content;
+
+  const editor = useEditorSetup({ 
+    content: displayContent, 
+    onChange, 
+    isJsonMode 
+  });
 
   if (!editor) {
     return null;
@@ -113,7 +139,7 @@ export function RichTextEditor({
         userInitials={userInitials}
         onToggleTracking={() => {}}
         position="top"
-        content={content}
+        content={displayContent}
         onContentChange={onChange}
       />
       <EditorContent 
@@ -128,7 +154,7 @@ export function RichTextEditor({
           userInitials={userInitials}
           onToggleTracking={() => {}}
           position="bottom"
-          content={content}
+          content={displayContent}
           onContentChange={onChange}
         />
       )}

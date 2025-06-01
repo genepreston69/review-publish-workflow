@@ -1,3 +1,4 @@
+
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -19,10 +20,33 @@ interface UseEditorSetupProps {
   isJsonMode: boolean;
 }
 
+// Helper function to strip HTML tags and return clean text
+const stripHtmlTags = (html: string): string => {
+  if (!html) return '';
+  
+  // Create a temporary div to parse HTML
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+  
+  // Get text content and clean up
+  let textContent = tempDiv.textContent || tempDiv.innerText || '';
+  
+  // Clean up multiple spaces and line breaks
+  textContent = textContent.replace(/\s+/g, ' ').trim();
+  
+  return textContent;
+};
+
 export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetupProps) {
   // Determine if content is JSON or HTML and prepare initial content
   const getInitialContent = useMemo(() => {
     if (!content) return '';
+    
+    // If content contains HTML tags, strip them and show as plain text
+    if (content.includes('<') && content.includes('>') && !content.includes('"type":')) {
+      const cleanText = stripHtmlTags(content);
+      return cleanText;
+    }
     
     // Try to parse as JSON first
     try {
@@ -31,10 +55,10 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
         return parsed;
       }
     } catch {
-      // Not JSON, treat as HTML
+      // Not JSON, treat as plain text
     }
     
-    // If it's HTML, migrate to JSON format
+    // If it's TipTap JSON format, migrate to proper format
     if (content.includes('<') && content.includes('>')) {
       return migrateHtmlToJson(content);
     }
@@ -85,10 +109,9 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
     ],
     content: getInitialContent,
     onUpdate: ({ editor }) => {
-      const updatedContent = isJsonMode 
-        ? JSON.stringify(editor.getJSON())
-        : editor.getHTML();
-      onChange(updatedContent);
+      // Always output as clean text to suppress HTML
+      const plainText = editor.getText();
+      onChange(plainText);
     },
     editorProps: {
       attributes: {
