@@ -1,3 +1,4 @@
+
 import { CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trash2, Edit, Eye, RotateCcw } from 'lucide-react';
@@ -79,6 +80,47 @@ export function PolicyCardActions({
     }
   };
 
+  // Special layout for published policies
+  if (policyStatus === 'published') {
+    const showUpdateButton = (isSuperAdmin || isEditor || canPublish);
+
+    return (
+      <CardFooter className="pt-6">
+        <div className="w-full">
+          <div className="grid grid-cols-2 gap-2 w-full">
+            {/* View button */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onView?.(policyId)}
+              className="text-xs"
+            >
+              <Eye className="w-3 h-3 mr-1" />
+              View
+            </Button>
+
+            {/* Update button or placeholder */}
+            {showUpdateButton ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleUpdatePolicy}
+                disabled={isDuplicating}
+                className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
+              >
+                <RotateCcw className="w-3 h-3 mr-1" />
+                {isDuplicating ? 'Creating...' : 'Update'}
+              </Button>
+            ) : (
+              <div></div>
+            )}
+          </div>
+        </div>
+      </CardFooter>
+    );
+  }
+
+  // Original layout for non-published policies
   // Determine which buttons to show in each row
   const showEditButton = onEdit && (
     isSuperAdmin ||
@@ -87,16 +129,15 @@ export function PolicyCardActions({
   );
 
   const showSubmitButton = policyStatus === 'draft' && (isSuperAdmin || isEditor || canPublish);
-  const showUpdateButton = policyStatus === 'published' && (isSuperAdmin || isEditor || canPublish);
 
   const showPublishButton = (isSuperAdmin || canPublish) && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review');
   const showArchiveButton = (isSuperAdmin || canPublish) && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review');
   const showDeleteButton = isSuperAdmin && onDelete;
 
   return (
-    <CardFooter className="pt-6 border-t">
+    <CardFooter className="pt-6">
       <div className="w-full space-y-3">
-        {/* First row - View, Edit, Submit/Update */}
+        {/* First row - View, Edit, Submit */}
         <div className="grid grid-cols-3 gap-2 w-full">
           {/* View button - always shown */}
           <Button
@@ -124,7 +165,7 @@ export function PolicyCardActions({
             <div></div>
           )}
 
-          {/* Submit/Update button or placeholder */}
+          {/* Submit button or placeholder */}
           {showSubmitButton ? (
             <Button
               size="sm"
@@ -133,17 +174,6 @@ export function PolicyCardActions({
               className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
             >
               Submit
-            </Button>
-          ) : showUpdateButton ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleUpdatePolicy}
-              disabled={isDuplicating}
-              className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
-            >
-              <RotateCcw className="w-3 h-3 mr-1" />
-              {isDuplicating ? 'Creating...' : 'Update'}
             </Button>
           ) : (
             <div></div>
