@@ -38,7 +38,15 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
 
   // Watch policy type changes to generate policy number
   const selectedPolicyType = form.watch('policy_type');
+  console.log('=== WATCHED POLICY TYPE ===', selectedPolicyType);
+  
   const { generatedPolicyNumber, isLoading: isGeneratingNumber, error: numberGenerationError } = usePolicyNumberGeneration(selectedPolicyType);
+
+  console.log('=== FORM STATE DEBUG ===');
+  console.log('Selected policy type from form:', selectedPolicyType);
+  console.log('Generated policy number:', generatedPolicyNumber);
+  console.log('Is generating number:', isGeneratingNumber);
+  console.log('Number generation error:', numberGenerationError);
 
   const onSubmit = async (data: PolicyFormValues) => {
     console.log('=== FORM SUBMISSION STARTED ===');
@@ -175,6 +183,7 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
         generatedPolicyNumber={generatedPolicyNumber}
         isGeneratingNumber={isGeneratingNumber}
         numberGenerationError={numberGenerationError}
+        form={form}
       />
     </Card>
   );

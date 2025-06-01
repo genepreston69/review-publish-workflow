@@ -4,6 +4,8 @@ import { PolicyFormFields } from './PolicyFormFields';
 import { PolicyNumberDisplay } from './PolicyNumberDisplay';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { UseFormReturn } from 'react-hook-form';
+import { PolicyFormValues } from './PolicyFormSchema';
 
 interface PolicyFormContentProps {
   onSubmit: (data: any) => void;
@@ -11,6 +13,7 @@ interface PolicyFormContentProps {
   generatedPolicyNumber: string;
   isGeneratingNumber?: boolean;
   numberGenerationError?: string | null;
+  form: UseFormReturn<PolicyFormValues>;
 }
 
 export function PolicyFormContent({ 
@@ -18,7 +21,8 @@ export function PolicyFormContent({
   isSubmitting, 
   generatedPolicyNumber,
   isGeneratingNumber = false,
-  numberGenerationError = null
+  numberGenerationError = null,
+  form
 }: PolicyFormContentProps) {
   return (
     <CardContent>
@@ -26,6 +30,7 @@ export function PolicyFormContent({
         onSubmit={onSubmit}
         isLoading={isSubmitting}
         submitLabel="Create Policy"
+        form={form}
       />
       
       {/* Policy number generation status */}

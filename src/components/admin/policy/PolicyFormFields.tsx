@@ -1,11 +1,10 @@
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
 import { Form } from '@/components/ui/form';
-import { PolicyFormValues, policyFormSchema } from './PolicyFormSchema';
+import { PolicyFormValues } from './PolicyFormSchema';
 import { PolicyBasicFields } from './PolicyBasicFields';
 import { PolicyContentFields } from './PolicyContentFields';
 import { PolicyFormActions } from './PolicyFormActions';
+import { UseFormReturn } from 'react-hook-form';
 
 interface PolicyFormFieldsProps {
   initialData?: Partial<PolicyFormValues>;
@@ -13,27 +12,16 @@ interface PolicyFormFieldsProps {
   isLoading: boolean;
   submitLabel: string;
   onCancel?: () => void;
+  form: UseFormReturn<PolicyFormValues>;
 }
 
 export function PolicyFormFields({
-  initialData,
   onSubmit,
   isLoading,
   submitLabel,
   onCancel,
+  form,
 }: PolicyFormFieldsProps) {
-  const form = useForm<PolicyFormValues>({
-    resolver: zodResolver(policyFormSchema),
-    defaultValues: {
-      name: '',
-      policy_type: '',
-      purpose: '',
-      policy_text: '',
-      procedure: '',
-      ...initialData,
-    },
-  });
-
   const handleSubmit = (data: PolicyFormValues) => {
     onSubmit(data);
   };
