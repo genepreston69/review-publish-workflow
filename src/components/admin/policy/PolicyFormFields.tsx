@@ -1,28 +1,11 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { RichTextEditor } from '@/components/ui/rich-text-editor';
-import { AIWritingAssistant } from '@/components/ui/ai-writing-assistant';
+import { Form } from '@/components/ui/form';
 import { PolicyFormValues, policyFormSchema } from './PolicyFormSchema';
-import { useAuth } from '@/hooks/useAuth';
+import { PolicyBasicFields } from './PolicyBasicFields';
+import { PolicyContentFields } from './PolicyContentFields';
+import { PolicyFormActions } from './PolicyFormActions';
 
 interface PolicyFormFieldsProps {
   initialData?: Partial<PolicyFormValues>;
@@ -39,8 +22,6 @@ export function PolicyFormFields({
   submitLabel,
   onCancel,
 }: PolicyFormFieldsProps) {
-  const { currentUser } = useAuth();
-  
   const form = useForm<PolicyFormValues>({
     resolver: zodResolver(policyFormSchema),
     defaultValues: {
@@ -57,168 +38,16 @@ export function PolicyFormFields({
     onSubmit(data);
   };
 
-  // Helper function to extract plain text from HTML content
-  const extractPlainText = (htmlContent: string): string => {
-    if (!htmlContent) return '';
-    
-    // Create a temporary DOM element to extract text
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = htmlContent;
-    return tempDiv.textContent || tempDiv.innerText || '';
-  };
-
-  // Helper function to convert plain text back to HTML
-  const convertTextToHtml = (plainText: string): string => {
-    if (!plainText) return '';
-    
-    // Convert line breaks to paragraphs and preserve formatting
-    const paragraphs = plainText.split('\n\n').filter(p => p.trim());
-    if (paragraphs.length === 0) return `<p>${plainText}</p>`;
-    
-    return paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
-  };
-
-  // Helper function to update form field values from AI Assistant
-  const updateFormField = (fieldName: keyof PolicyFormValues, newValue: string) => {
-    // Convert the plain text response to HTML format for rich text fields
-    const htmlValue = fieldName === 'policy_text' || fieldName === 'procedure' || fieldName === 'purpose' 
-      ? convertTextToHtml(newValue)
-      : newValue;
-    
-    form.setValue(fieldName, htmlValue, { shouldDirty: true, shouldValidate: true });
-  };
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Policy Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter policy name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="policy_type"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Policy Type</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select policy type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="HR">HR Policy</SelectItem>
-                    <SelectItem value="RP">RP - Recovery Point Policy</SelectItem>
-                    <SelectItem value="S">S - Staff Policy</SelectItem>
-                    <SelectItem value="OTHER">Other Policy Type</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="purpose"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="flex items-center justify-between">
-                Purpose
-                <AIWritingAssistant
-                  text={extractPlainText(field.value || '')}
-                  onChange={(newValue) => updateFormField('purpose', newValue)}
-                  context="Policy purpose section"
-                  className="ml-2"
-                />
-              </FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Describe the purpose of this policy"
-                  className="min-h-[100px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+        <PolicyBasicFields control={form.control} />
+        <PolicyContentFields control={form.control} setValue={form.setValue} />
+        <PolicyFormActions 
+          isLoading={isLoading}
+          submitLabel={submitLabel}
+          onCancel={onCancel}
         />
-
-        <FormField
-          control={form.control}
-          name="policy_text"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="flex items-center justify-between">
-                Policy Content
-                <AIWritingAssistant
-                  text={extractPlainText(field.value || '')}
-                  onChange={(newValue) => updateFormField('policy_text', newValue)}
-                  context="Main policy content"
-                  className="ml-2"
-                />
-              </FormLabel>
-              <FormControl>
-                <RichTextEditor
-                  content={field.value || ''}
-                  onChange={field.onChange}
-                  placeholder="Enter the main policy content..."
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="procedure"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="flex items-center justify-between">
-                Procedures
-                <AIWritingAssistant
-                  text={extractPlainText(field.value || '')}
-                  onChange={(newValue) => updateFormField('procedure', newValue)}
-                  context="Policy procedures and implementation steps"
-                  className="ml-2"
-                />
-              </FormLabel>
-              <FormControl>
-                <RichTextEditor
-                  content={field.value || ''}
-                  onChange={field.onChange}
-                  placeholder="Enter the procedures and implementation steps..."
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex justify-end space-x-4">
-          {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-          )}
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? 'Saving...' : submitLabel}
-          </Button>
-        </div>
       </form>
     </Form>
   );
