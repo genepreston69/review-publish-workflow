@@ -57,9 +57,35 @@ export function PolicyFormFields({
     onSubmit(data);
   };
 
+  // Helper function to extract plain text from HTML content
+  const extractPlainText = (htmlContent: string): string => {
+    if (!htmlContent) return '';
+    
+    // Create a temporary DOM element to extract text
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    return tempDiv.textContent || tempDiv.innerText || '';
+  };
+
+  // Helper function to convert plain text back to HTML
+  const convertTextToHtml = (plainText: string): string => {
+    if (!plainText) return '';
+    
+    // Convert line breaks to paragraphs and preserve formatting
+    const paragraphs = plainText.split('\n\n').filter(p => p.trim());
+    if (paragraphs.length === 0) return `<p>${plainText}</p>`;
+    
+    return paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+  };
+
   // Helper function to update form field values from AI Assistant
   const updateFormField = (fieldName: keyof PolicyFormValues, newValue: string) => {
-    form.setValue(fieldName, newValue, { shouldDirty: true, shouldValidate: true });
+    // Convert the plain text response to HTML format for rich text fields
+    const htmlValue = fieldName === 'policy_text' || fieldName === 'procedure' || fieldName === 'purpose' 
+      ? convertTextToHtml(newValue)
+      : newValue;
+    
+    form.setValue(fieldName, htmlValue, { shouldDirty: true, shouldValidate: true });
   };
 
   return (
@@ -94,7 +120,9 @@ export function PolicyFormFields({
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="HR">HR Policy</SelectItem>
-                    <SelectItem value="Facility">Facility Policy</SelectItem>
+                    <SelectItem value="RP">RP - Recovery Point Policy</SelectItem>
+                    <SelectItem value="S">S - Staff Policy</SelectItem>
+                    <SelectItem value="OTHER">Other Policy Type</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -111,7 +139,7 @@ export function PolicyFormFields({
               <FormLabel className="flex items-center justify-between">
                 Purpose
                 <AIWritingAssistant
-                  text={field.value || ''}
+                  text={extractPlainText(field.value || '')}
                   onChange={(newValue) => updateFormField('purpose', newValue)}
                   context="Policy purpose section"
                   className="ml-2"
@@ -134,7 +162,15 @@ export function PolicyFormFields({
           name="policy_text"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Policy Content</FormLabel>
+              <FormLabel className="flex items-center justify-between">
+                Policy Content
+                <AIWritingAssistant
+                  text={extractPlainText(field.value || '')}
+                  onChange={(newValue) => updateFormField('policy_text', newValue)}
+                  context="Main policy content"
+                  className="ml-2"
+                />
+              </FormLabel>
               <FormControl>
                 <RichTextEditor
                   content={field.value || ''}
@@ -152,7 +188,15 @@ export function PolicyFormFields({
           name="procedure"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Procedures</FormLabel>
+              <FormLabel className="flex items-center justify-between">
+                Procedures
+                <AIWritingAssistant
+                  text={extractPlainText(field.value || '')}
+                  onChange={(newValue) => updateFormField('procedure', newValue)}
+                  context="Policy procedures and implementation steps"
+                  className="ml-2"
+                />
+              </FormLabel>
               <FormControl>
                 <RichTextEditor
                   content={field.value || ''}
