@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import {
   Card,
@@ -81,11 +82,11 @@ export function PolicyCard({
       <CardContent className="pt-0 space-y-4">
         {/* Metadata */}
         <div className="text-xs text-gray-500 space-y-1">
-          {policy.creator && (
-            <div>Created by: {policy.creator.name}</div>
+          {policy.creator_id && (
+            <div>Created by: {policy.creator_id}</div>
           )}
-          {policy.publisher && (
-            <div>Published by: {policy.publisher.name}</div>
+          {policy.publisher_id && (
+            <div>Published by: {policy.publisher_id}</div>
           )}
           {policy.published_at && (
             <div>Published: {formatDate(policy.published_at)}</div>
@@ -124,10 +125,13 @@ export function PolicyCard({
           )}
 
           <PolicyCardActions
-            policy={policy}
+            policyId={policy.id}
+            policyStatus={policy.status}
             canPublish={canPublish}
-            isUpdating={isUpdating}
             onUpdateStatus={handleUpdateStatus}
+            onEdit={onEdit}
+            onView={onView}
+            onDelete={onDelete}
           />
 
           {/* Super-admin only actions */}
