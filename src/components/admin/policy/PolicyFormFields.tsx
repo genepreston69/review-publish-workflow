@@ -134,15 +134,7 @@ export function PolicyFormFields({
           name="policy_text"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="flex items-center justify-between">
-                Policy Content
-                <AIWritingAssistant
-                  text={field.value || ''}
-                  onChange={(newValue) => updateFormField('policy_text', newValue)}
-                  context="Main policy content"
-                  className="ml-2"
-                />
-              </FormLabel>
+              <FormLabel>Policy Content</FormLabel>
               <FormControl>
                 <RichTextEditor
                   content={field.value || ''}
@@ -160,15 +152,7 @@ export function PolicyFormFields({
           name="procedure"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="flex items-center justify-between">
-                Procedures
-                <AIWritingAssistant
-                  text={field.value || ''}
-                  onChange={(newValue) => updateFormField('procedure', newValue)}
-                  context="Policy procedures and implementation steps"
-                  className="ml-2"
-                />
-              </FormLabel>
+              <FormLabel>Procedures</FormLabel>
               <FormControl>
                 <RichTextEditor
                   content={field.value || ''}
