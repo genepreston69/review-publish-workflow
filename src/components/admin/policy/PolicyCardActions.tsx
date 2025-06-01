@@ -1,3 +1,4 @@
+
 import { CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trash2, Edit, Eye, RotateCcw } from 'lucide-react';
@@ -83,13 +84,13 @@ export function PolicyCardActions({
     <CardFooter className="pt-6 border-t">
       <div className="w-full space-y-3">
         {/* First row - View, Edit, Submit */}
-        <div className="flex gap-2 w-full">
+        <div className="grid grid-cols-3 gap-2 w-full">
           {/* View button */}
           <Button
             size="sm"
             variant="outline"
             onClick={() => onView?.(policyId)}
-            className="text-xs flex-1"
+            className="text-xs"
           >
             <Eye className="w-3 h-3 mr-1" />
             View
@@ -105,7 +106,7 @@ export function PolicyCardActions({
               size="sm"
               variant="outline"
               onClick={() => onEdit(policyId)}
-              className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50 flex-1"
+              className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
             >
               <Edit className="w-3 h-3 mr-1" />
               Edit
@@ -118,7 +119,7 @@ export function PolicyCardActions({
               size="sm"
               variant="outline"
               onClick={() => onUpdateStatus(policyId, 'under-review')}
-              className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50 flex-1"
+              className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
             >
               Submit
             </Button>
@@ -130,7 +131,7 @@ export function PolicyCardActions({
               variant="outline"
               onClick={handleUpdatePolicy}
               disabled={isDuplicating}
-              className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50 flex-1"
+              className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
             >
               <RotateCcw className="w-3 h-3 mr-1" />
               {isDuplicating ? 'Creating...' : 'Update'}
@@ -139,13 +140,13 @@ export function PolicyCardActions({
         </div>
 
         {/* Second row - Publish, Archive, Delete */}
-        <div className="flex gap-2 w-full">
+        <div className="grid grid-cols-3 gap-2 w-full">
           {/* Publish button */}
           {(isSuperAdmin || canPublish) && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review') && (
             <Button
               size="sm"
               onClick={handlePublish}
-              className="text-xs bg-green-600 hover:bg-green-700 text-white flex-1"
+              className="text-xs bg-green-600 hover:bg-green-700 text-white"
             >
               <CheckCircle className="w-3 h-3 mr-1" />
               Publish
@@ -158,7 +159,7 @@ export function PolicyCardActions({
               size="sm"
               variant="outline"
               onClick={() => onUpdateStatus(policyId, 'archived')}
-              className="text-xs bg-red-50 border-red-300 text-red-600 hover:bg-red-100 flex-1"
+              className="text-xs bg-red-50 border-red-300 text-red-600 hover:bg-red-100"
             >
               <XCircle className="w-3 h-3 mr-1" />
               Archive
@@ -171,7 +172,7 @@ export function PolicyCardActions({
               size="sm"
               variant="destructive"
               onClick={() => onDelete(policyId)}
-              className="text-xs bg-red-600 hover:bg-red-700 text-white flex-1"
+              className="text-xs bg-red-600 hover:bg-red-700 text-white"
             >
               <Trash2 className="w-3 h-3 mr-1" />
               Delete
