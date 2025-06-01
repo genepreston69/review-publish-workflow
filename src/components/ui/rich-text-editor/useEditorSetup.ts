@@ -11,7 +11,8 @@ import { Suggestion } from '../tiptap-extensions/SuggestionMark';
 import { Addition } from '../tiptap-extensions/AdditionMark';
 import { Deletion } from '../tiptap-extensions/DeletionMark';
 import { useMemo, useEffect } from 'react';
-import { isValidTipTapJson, migrateHtmlToJson } from '@/utils/trackingUtils';
+import { isValidTipTapJson } from '@/utils/trackingUtils';
+import { processContentForDisplay } from './contentUtils';
 
 interface UseEditorSetupProps {
   content: string;
@@ -55,31 +56,7 @@ const extractTextFromJson = (jsonContent: any): string => {
 export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetupProps) {
   // Clean and prepare initial content
   const getInitialContent = useMemo(() => {
-    if (!content) return '';
-    
-    console.log('Processing initial content:', content);
-    
-    // Try to parse as JSON first
-    try {
-      const parsed = JSON.parse(content);
-      if (isValidTipTapJson(parsed)) {
-        const plainText = extractTextFromJson(parsed);
-        console.log('Extracted text from JSON:', plainText);
-        return plainText;
-      }
-    } catch {
-      // Not JSON, continue processing
-    }
-    
-    // If content contains HTML tags, strip them completely
-    if (content.includes('<') && content.includes('>')) {
-      const cleanText = stripHtmlTags(content);
-      console.log('Stripped HTML, result:', cleanText);
-      return cleanText;
-    }
-    
-    // Return as plain text
-    return content;
+    return processContentForDisplay(content);
   }, [content]);
 
   const editor = useEditor({
@@ -141,24 +118,7 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
   useEffect(() => {
     if (editor && content !== undefined) {
       const currentText = editor.getText();
-      
-      // Clean the incoming content before comparing
-      let cleanIncomingContent = content;
-      
-      // Strip HTML if present
-      if (content.includes('<') && content.includes('>')) {
-        cleanIncomingContent = stripHtmlTags(content);
-      }
-      
-      // Try to extract from JSON if it's TipTap JSON
-      try {
-        const parsed = JSON.parse(content);
-        if (isValidTipTapJson(parsed)) {
-          cleanIncomingContent = extractTextFromJson(parsed);
-        }
-      } catch {
-        // Not JSON, use the cleaned content
-      }
+      const cleanIncomingContent = processContentForDisplay(content);
       
       // Only update if the content is different from what's currently in the editor
       if (currentText !== cleanIncomingContent) {
