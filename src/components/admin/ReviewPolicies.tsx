@@ -21,7 +21,7 @@ export function ReviewPolicies() {
   console.log('Is super admin:', isSuperAdmin);
 
   // All possible status variations that need review
-  const reviewStatuses = ['under-review', 'under review', 'awaiting-changes', 'awaiting changes'];
+  const reviewStatuses = ['draft', 'under-review', 'under review', 'awaiting-changes', 'awaiting changes'];
 
   // Filter to show policies that need review with proper access control
   const reviewPolicies = policies.filter(policy => {
@@ -153,13 +153,14 @@ export function ReviewPolicies() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Review Policies</h2>
         <p className="text-muted-foreground">
-          Review and approve policies for publication. You can edit policies before approving them.
+          Review and approve policies for publication. This includes draft policies ready for review and policies awaiting changes.
           {!isSuperAdmin && " (You cannot review policies you created due to maker/checker controls)"}
         </p>
         {reviewPolicies.length > 0 && (
           <div className="text-sm text-gray-600 mt-1">
             <p>Showing {reviewPolicies.length} {reviewPolicies.length === 1 ? 'policy' : 'policies'} awaiting review</p>
             <div className="flex gap-4 mt-1">
+              <span>Draft: {reviewPolicies.filter(p => p.status?.toLowerCase() === 'draft').length}</span>
               <span>Under Review: {reviewPolicies.filter(p => p.status?.toLowerCase().includes('under')).length}</span>
               <span>Awaiting Changes: {reviewPolicies.filter(p => p.status?.toLowerCase().includes('awaiting')).length}</span>
             </div>
