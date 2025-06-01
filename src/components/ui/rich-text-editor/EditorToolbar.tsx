@@ -8,6 +8,7 @@ import { ListButtons } from './toolbar/ListButtons';
 import { AlignmentButtons } from './toolbar/AlignmentButtons';
 import { UndoRedoButtons } from './toolbar/UndoRedoButtons';
 import { ToolbarDivider } from './toolbar/ToolbarDivider';
+import { AIWritingAssistant } from '@/components/ui/ai-writing-assistant';
 
 interface EditorToolbarProps {
   editor: Editor;
@@ -15,6 +16,8 @@ interface EditorToolbarProps {
   userInitials: string;
   onToggleTracking: () => void;
   position?: 'top' | 'bottom';
+  content?: string;
+  onContentChange?: (content: string) => void;
 }
 
 export function EditorToolbar({
@@ -22,30 +25,43 @@ export function EditorToolbar({
   trackingEnabled,
   userInitials,
   onToggleTracking,
-  position = 'top'
+  position = 'top',
+  content = '',
+  onContentChange
 }: EditorToolbarProps) {
   const borderClass = position === 'top' ? 'border-b' : 'border-t';
   
   return (
     <TooltipProvider>
-      <div className={cn("p-2 flex flex-wrap gap-1", borderClass)}>
-        <FormattingButtons editor={editor} />
+      <div className={cn("p-2 flex flex-wrap gap-1 justify-between", borderClass)}>
+        <div className="flex flex-wrap gap-1">
+          <FormattingButtons editor={editor} />
+          
+          <ToolbarDivider />
+          
+          <ColorButtons editor={editor} />
+          
+          <ToolbarDivider />
+          
+          <ListButtons editor={editor} />
+          
+          <ToolbarDivider />
+          
+          <AlignmentButtons editor={editor} />
+          
+          <ToolbarDivider />
+          
+          <UndoRedoButtons editor={editor} />
+        </div>
         
-        <ToolbarDivider />
-        
-        <ColorButtons editor={editor} />
-        
-        <ToolbarDivider />
-        
-        <ListButtons editor={editor} />
-        
-        <ToolbarDivider />
-        
-        <AlignmentButtons editor={editor} />
-        
-        <ToolbarDivider />
-        
-        <UndoRedoButtons editor={editor} />
+        {onContentChange && (
+          <AIWritingAssistant
+            text={content}
+            onChange={onContentChange}
+            context="policy content"
+            className="ml-auto"
+          />
+        )}
       </div>
     </TooltipProvider>
   );

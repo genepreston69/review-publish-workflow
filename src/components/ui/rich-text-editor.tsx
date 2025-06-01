@@ -113,6 +113,8 @@ export function RichTextEditor({
         userInitials={userInitials}
         onToggleTracking={() => {}}
         position="top"
+        content={content}
+        onContentChange={onChange}
       />
       <EditorContent 
         editor={editor} 
@@ -126,6 +128,8 @@ export function RichTextEditor({
           userInitials={userInitials}
           onToggleTracking={() => {}}
           position="bottom"
+          content={content}
+          onContentChange={onChange}
         />
       )}
       <EditorStyles />
