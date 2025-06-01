@@ -4,16 +4,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Form } from '@/components/ui/form';
-import { Plus, Loader2 } from 'lucide-react';
-import { PolicyFormFields } from './PolicyFormFields';
-import { PolicyNumberDisplay } from './PolicyNumberDisplay';
 import { usePolicyNumberGeneration } from './usePolicyNumberGeneration';
 import { policyFormSchema, PolicyFormValues } from './PolicyFormSchema';
 import { Policy } from './types';
+import { PolicyFormValidation } from './PolicyFormValidation';
+import { PolicyFormHeader } from './PolicyFormHeader';
+import { PolicyFormContent } from './PolicyFormContent';
 
 interface CreatePolicyFormProps {
   onPolicyCreated: (policy: Policy) => void;
@@ -141,50 +139,19 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
     }
   };
 
+  // Show access denied component if user doesn't have permission
   if (!hasEditAccess) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <Plus className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium">Access Denied</h3>
-            <p className="text-gray-500">You need edit access or higher to create policies.</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <PolicyFormValidation hasEditAccess={hasEditAccess} />;
   }
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Plus className="w-5 h-5" />
-          New Policy Form
-        </CardTitle>
-        <CardDescription>
-          Fill out the form below to create a new facility policy. The policy number will be automatically generated based on the selected policy type.
-          {userRole === 'edit' && (
-            <span className="block mt-2 text-sm text-blue-600">
-              Note: Your policy will be created as a draft and will need to be reviewed before publication.
-            </span>
-          )}
-          {(userRole === 'publish' || userRole === 'super-admin') && (
-            <span className="block mt-2 text-sm text-green-600">
-              Note: Your policy will be submitted for review and can be published by another reviewer.
-            </span>
-          )}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <PolicyFormFields 
-          onSubmit={onSubmit}
-          isLoading={isSubmitting}
-          submitLabel="Create Policy"
-        />
-        
-        <PolicyNumberDisplay policyNumber={generatedPolicyNumber} />
-      </CardContent>
+      <PolicyFormHeader userRole={userRole} />
+      <PolicyFormContent 
+        onSubmit={onSubmit}
+        isSubmitting={isSubmitting}
+        generatedPolicyNumber={generatedPolicyNumber}
+      />
     </Card>
   );
 }
