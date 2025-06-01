@@ -1,4 +1,3 @@
-
 import { CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trash2, Edit, Eye, RotateCcw } from 'lucide-react';
@@ -81,9 +80,9 @@ export function PolicyCardActions({
   };
 
   return (
-    <CardFooter className="pt-3 border-t">
-      <div className="w-full space-y-2">
-        {/* First row - View, Edit, Submit/Update buttons */}
+    <CardFooter className="pt-6 border-t">
+      <div className="w-full space-y-3">
+        {/* First row - View, Edit, Submit */}
         <div className="flex gap-2 w-full">
           {/* View button */}
           <Button
@@ -113,7 +112,7 @@ export function PolicyCardActions({
             </Button>
           )}
 
-          {/* Submit button for draft policies */}
+          {/* Submit button for draft policies OR Update Policy button for published policies */}
           {policyStatus === 'draft' && (isSuperAdmin || isEditor || canPublish) && (
             <Button
               size="sm"
@@ -125,7 +124,6 @@ export function PolicyCardActions({
             </Button>
           )}
 
-          {/* Update Policy button for published policies */}
           {policyStatus === 'published' && (isSuperAdmin || isEditor || canPublish) && (
             <Button
               size="sm"
@@ -140,7 +138,7 @@ export function PolicyCardActions({
           )}
         </div>
 
-        {/* Second row - Status change buttons */}
+        {/* Second row - Publish, Archive, Delete */}
         <div className="flex gap-2 w-full">
           {/* Publish button */}
           {(isSuperAdmin || canPublish) && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review') && (
@@ -151,19 +149,6 @@ export function PolicyCardActions({
             >
               <CheckCircle className="w-3 h-3 mr-1" />
               Publish
-            </Button>
-          )}
-
-          {/* Return to Draft button */}
-          {(isSuperAdmin || canPublish) && (policyStatus === 'under-review' || policyStatus === 'under review') && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onUpdateStatus(policyId, 'draft')}
-              className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700 hover:bg-yellow-100 flex-1"
-            >
-              <RotateCcw className="w-3 h-3 mr-1" />
-              Return to Draft
             </Button>
           )}
 
