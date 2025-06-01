@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Eye, Edit, Trash2, Archive } from 'lucide-react';
 import { PolicyCardHeader } from './PolicyCardHeader';
 import { PolicyCardContent } from './PolicyCardContent';
-import { PolicyCardActions } from './PolicyCardActions';
 import { Policy } from './types';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -168,16 +167,6 @@ export function PolicyCard({
             </AlertDialog>
           )}
         </div>
-
-        <PolicyCardActions
-          policyId={policy.id}
-          policyStatus={policy.status}
-          canPublish={canPublish}
-          onUpdateStatus={handleUpdateStatus}
-          onEdit={onEdit}
-          onView={onView}
-          onDelete={onDelete}
-        />
       </CardContent>
     </Card>
   );
