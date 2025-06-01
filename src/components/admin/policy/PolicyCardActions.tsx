@@ -95,8 +95,9 @@ export function PolicyCardActions({
             View
           </Button>
 
-          {/* Edit button for draft policies */}
+          {/* Edit button - Super admins can edit any policy, others follow existing rules */}
           {onEdit && (
+            isSuperAdmin ||
             (isEditor && policyStatus === 'draft') ||
             (canPublish && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review'))
           ) && (
@@ -112,7 +113,7 @@ export function PolicyCardActions({
           )}
 
           {/* Update Policy button for published policies */}
-          {policyStatus === 'published' && (isEditor || canPublish) && (
+          {policyStatus === 'published' && (isSuperAdmin || isEditor || canPublish) && (
             <Button
               size="sm"
               variant="outline"
@@ -126,7 +127,7 @@ export function PolicyCardActions({
           )}
 
           {/* Return to Draft button for under-review policies */}
-          {canPublish && (policyStatus === 'under-review' || policyStatus === 'under review') && (
+          {(isSuperAdmin || canPublish) && (policyStatus === 'under-review' || policyStatus === 'under review') && (
             <Button
               size="sm"
               variant="outline"
@@ -141,8 +142,8 @@ export function PolicyCardActions({
 
         {/* Second Row - Status actions and delete */}
         <div className="flex gap-2">
-          {/* Publish button with archiving */}
-          {canPublish && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review') && (
+          {/* Publish button with archiving - Super admins can publish any policy */}
+          {(isSuperAdmin || canPublish) && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review') && (
             <Button
               size="sm"
               onClick={handlePublish}
@@ -154,7 +155,7 @@ export function PolicyCardActions({
           )}
 
           {/* Reject button */}
-          {canPublish && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review') && (
+          {(isSuperAdmin || canPublish) && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review') && (
             <Button
               size="sm"
               variant="outline"

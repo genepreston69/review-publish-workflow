@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -41,7 +42,8 @@ export function PolicyViewActions({
 
   // Check if current user is the creator (maker/checker enforcement)
   const isCreator = currentUser?.id === policy.creator_id;
-  const canApproveOrPublish = canPublish && !isCreator;
+  // Super admins can approve/publish any policy, regular publishers can't approve their own
+  const canApproveOrPublish = isSuperAdmin || (canPublish && !isCreator);
 
   const handleUpdatePolicy = async () => {
     const newPolicyId = await duplicatePolicyForUpdate(policy.id);
@@ -237,8 +239,8 @@ export function PolicyViewActions({
           </Button>
         )}
 
-        {/* Update Policy Button - Show for published policies for users with edit/publish permissions */}
-        {policy.status === 'published' && (isEditor || canPublish) && (
+        {/* Update Policy Button - Show for published policies for users with edit/publish permissions or super admins */}
+        {policy.status === 'published' && (isSuperAdmin || isEditor || canPublish) && (
           <Button 
             variant="outline" 
             onClick={handleUpdatePolicy}
@@ -250,9 +252,10 @@ export function PolicyViewActions({
           </Button>
         )}
 
-        {/* Edit Button - Only creators can edit their own drafts or awaiting-changes policies */}
+        {/* Edit Button - Super admins can edit any policy, others follow existing rules */}
         {onEdit && (
-          ((isCreator && (policy.status === 'draft' || policy.status === 'awaiting-changes')) ||
+          (isSuperAdmin ||
+          (isCreator && (policy.status === 'draft' || policy.status === 'awaiting-changes')) ||
           (canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review')))
         ) && (
           <Button 
@@ -265,7 +268,7 @@ export function PolicyViewActions({
           </Button>
         )}
 
-        {/* Publish Button - Show for non-creators with publish permissions on draft or under-review policies */}
+        {/* Publish Button - Super admins can publish any policy, others follow maker/checker rules */}
         {canApproveOrPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') && (
           <>
             <Button 
@@ -294,8 +297,8 @@ export function PolicyViewActions({
           </div>
         )}
 
-        {/* Show maker/checker warning for creators */}
-        {isCreator && canPublish && (policy.status === 'under-review' || policy.status === 'under review') && (
+        {/* Show maker/checker warning for creators (but not super admins) */}
+        {isCreator && canPublish && !isSuperAdmin && (policy.status === 'under-review' || policy.status === 'under review') && (
           <div className="w-full mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
             <p className="text-amber-800 text-sm">
               <strong>Note:</strong> You cannot publish this policy since you created it. Another reviewer must approve it.

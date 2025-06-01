@@ -71,8 +71,8 @@ export const usePolicies = () => {
         throw fetchError;
       }
 
-      // Enforce maker/checker rule for publishing
-      if (newStatus === 'published' && currentPolicy.creator_id === currentUser.id) {
+      // Enforce maker/checker rule for publishing (except for super admins)
+      if (newStatus === 'published' && currentPolicy.creator_id === currentUser.id && !isSuperAdmin) {
         toast({
           variant: "destructive",
           title: "Access Denied",
@@ -81,7 +81,7 @@ export const usePolicies = () => {
         return;
       }
 
-      // Check permissions for status changes
+      // Check permissions for status changes (super admins bypass these checks)
       const canPublish = userRole === 'publish' || userRole === 'super-admin';
       if ((newStatus === 'published' || newStatus === 'under-review') && !canPublish) {
         toast({

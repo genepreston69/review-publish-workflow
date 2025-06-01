@@ -69,6 +69,7 @@ export function PolicyCard({
   const canEdit = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
   const canDelete = userRole === 'super-admin';
   const canArchive = userRole === 'super-admin';
+  const isSuperAdmin = userRole === 'super-admin';
   const isCreator = policy.creator_id === currentUser?.id;
 
   return (
@@ -111,7 +112,12 @@ export function PolicyCard({
             </Button>
           )}
 
-          {onEdit && canEdit && (policy.status === 'draft' || policy.status === 'awaiting-changes' || canPublish) && (
+          {/* Edit button - Super admins can edit any policy, others follow existing rules */}
+          {onEdit && canEdit && (
+            isSuperAdmin || 
+            (policy.status === 'draft' || policy.status === 'awaiting-changes') ||
+            canPublish
+          ) && (
             <Button
               variant="outline"
               size="sm"
@@ -123,8 +129,8 @@ export function PolicyCard({
             </Button>
           )}
 
-          {/* Submit for Review button - only for draft policies */}
-          {policy.status === 'draft' && (canEdit || isCreator) && (
+          {/* Submit for Review button - Super admins and creators can submit draft policies */}
+          {policy.status === 'draft' && (isSuperAdmin || canEdit || isCreator) && (
             <Button
               variant="outline"
               size="sm"
