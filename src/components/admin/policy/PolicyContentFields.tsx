@@ -10,7 +10,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Control, UseFormSetValue } from 'react-hook-form';
 import { PolicyFormValues } from './PolicyFormSchema';
-import { processContentForDisplay } from '@/components/ui/rich-text-editor/contentUtils';
 
 interface PolicyContentFieldsProps {
   control: Control<PolicyFormValues>;
@@ -31,7 +30,7 @@ export function PolicyContentFields({ control, setValue }: PolicyContentFieldsPr
                 placeholder="Describe the purpose of this policy"
                 className="min-h-[100px]"
                 {...field}
-                value={processContentForDisplay(field.value || '')}
+                value={field.value || ''}
                 onChange={(e) => field.onChange(e.target.value)}
               />
             </FormControl>

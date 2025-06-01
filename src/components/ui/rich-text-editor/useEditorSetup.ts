@@ -1,3 +1,4 @@
+
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -101,10 +102,10 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
     ],
     content: getInitialContent,
     onUpdate: ({ editor }) => {
-      // Always output as clean plain text
-      const plainText = editor.getText();
-      console.log('Editor updated, outputting plain text:', plainText);
-      onChange(plainText);
+      // Output HTML to preserve formatting including line breaks
+      const htmlContent = editor.getHTML();
+      console.log('Editor updated, outputting HTML content:', htmlContent);
+      onChange(htmlContent);
     },
     editorProps: {
       attributes: {
@@ -117,12 +118,12 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
   // Update editor content when external content changes (like AI suggestions)
   useEffect(() => {
     if (editor && content !== undefined) {
-      const currentText = editor.getText();
+      const currentContent = editor.getHTML();
       const cleanIncomingContent = processContentForDisplay(content);
       
       // Only update if the content is different from what's currently in the editor
-      if (currentText !== cleanIncomingContent) {
-        console.log('Updating editor content:', { currentText, newContent: cleanIncomingContent });
+      if (currentContent !== cleanIncomingContent) {
+        console.log('Updating editor content:', { currentContent, newContent: cleanIncomingContent });
         editor.commands.setContent(cleanIncomingContent);
       }
     }
