@@ -16,13 +16,19 @@ export function EditorStyles() {
         max-width: none !important;
         margin: 0 !important;
         padding: 16px !important;
-        min-height: 400px;
-        max-height: 70vh; /* Allows scrolling when content gets too tall */
+        min-height: 300px;
+        max-height: 60vh; /* This makes it scrollable */
         overflow-y: auto;
         border: 1px solid #d1d5db;
         border-radius: 8px;
         line-height: 1.8;
         white-space: pre-wrap;
+      }
+
+      /* Remove prose width constraints */
+      .prose, .prose-sm, .prose-lg {
+        max-width: none !important;
+        width: 100% !important;
       }
 
       /* Remove prose classes that limit width */
@@ -53,6 +59,16 @@ export function EditorStyles() {
         border-bottom: 1px solid #e5e7eb;
         padding: 12px;
         margin-bottom: 0;
+      }
+
+      /* AI Writing Assistant header sticky */
+      .ai-writing-assistant-header {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 10;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 8px;
       }
 
       /* Admin controls styling */

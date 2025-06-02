@@ -1,3 +1,4 @@
+
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextStyle from '@tiptap/extension-text-style';
@@ -108,8 +109,8 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[200px] p-4 leading-relaxed',
-        style: 'line-height: 1.8; white-space: pre-wrap;',
+        class: 'focus:outline-none min-h-[200px] p-4 leading-relaxed',
+        style: 'line-height: 1.8; white-space: pre-wrap; width: 100%; max-width: none;',
       },
     },
   });
