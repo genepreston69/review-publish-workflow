@@ -25,6 +25,7 @@ interface RichTextEditorProps {
   policyId?: string;
   fieldName?: string;
   showChangeTracking?: boolean;
+  isNewPolicy?: boolean;
 }
 
 export function RichTextEditor({ 
@@ -37,7 +38,8 @@ export function RichTextEditor({
   isEditMode = false,
   policyId,
   fieldName = 'content',
-  showChangeTracking = false
+  showChangeTracking = false,
+  isNewPolicy = false
 }: RichTextEditorProps) {
   const { userRole } = useAuth();
   const userInitials = useUserProfile();
@@ -227,6 +229,7 @@ export function RichTextEditor({
           editor={editor}
           userRole={userRole || 'read-only'}
           onContentChange={onChange}
+          isNewPolicy={isNewPolicy}
         />
         
         <EditorStyles />
