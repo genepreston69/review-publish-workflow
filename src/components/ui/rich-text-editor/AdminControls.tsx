@@ -11,7 +11,7 @@ import {
   getCleanHTML,
   getPlainText,
   canAcceptChanges
-} from '@/utils/aiSuggestionUtils';
+} from './acceptChangesUtils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,18 +29,53 @@ interface AdminControlsProps {
   editor: any;
   userRole: string;
   onContentChange?: (content: string) => void;
+  isNewPolicy?: boolean; // NEW: Flag to indicate if this is a new policy
+  showControls?: boolean; // NEW: Manual override to show/hide controls
 }
+
+// Function to check if editor content has AI suggestions
+const hasAISuggestions = (editor: any): boolean => {
+  if (!editor) return false;
+  
+  const { state } = editor;
+  const { doc } = state;
+  let hasSuggestions = false;
+  
+  doc.descendants((node: any) => {
+    if (node.marks) {
+      const suggestionMark = node.marks.find(
+        (mark: any) => mark.type.name === 'suggestion' || 
+                      mark.type.name === 'addition' || 
+                      mark.type.name === 'deletion'
+      );
+      if (suggestionMark) {
+        hasSuggestions = true;
+        return false; // Stop searching
+      }
+    }
+  });
+  
+  return hasSuggestions;
+};
 
 export function AdminControls({
   editor,
   userRole,
-  onContentChange
+  onContentChange,
+  isNewPolicy = false,
+  showControls = true
 }: AdminControlsProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
   const hasPermission = canAcceptChanges(userRole);
-
-  if (!hasPermission) {
+  const hasActiveSuggestions = hasAISuggestions(editor);
+  
+  // Don't show controls if:
+  // 1. User doesn't have permission
+  // 2. This is a new policy (no existing content to clean)
+  // 3. Manual override is false
+  // 4. No AI suggestions are present
+  if (!hasPermission || isNewPolicy || !showControls || !hasActiveSuggestions) {
     return null;
   }
 
@@ -137,11 +172,16 @@ export function AdminControls({
         <span className="text-sm font-semibold text-gray-700">
           {userRole.charAt(0).toUpperCase() + userRole.slice(1)} Controls
         </span>
-        {editor && (
-          <span className="text-xs text-gray-500">
-            Selection: {editor.state.selection.from}-{editor.state.selection.to}
+        <div className="flex items-center gap-4">
+          <span className="text-xs text-blue-600">
+            {hasActiveSuggestions ? 'AI suggestions detected' : 'No suggestions found'}
           </span>
-        )}
+          {editor && (
+            <span className="text-xs text-gray-500">
+              Selection: {editor.state.selection.from}-{editor.state.selection.to}
+            </span>
+          )}
+        </div>
       </div>
       
       <div className="flex flex-wrap gap-2">
@@ -231,6 +271,13 @@ export function AdminControls({
           <FileDown className="w-4 h-4 mr-1" />
           Export Clean
         </Button>
+      </div>
+
+      {/* Status indicator */}
+      <div className="text-xs text-gray-500 mt-2">
+        Editing mode: {isNewPolicy ? 'New Policy' : 'Existing Policy'} | 
+        Suggestions: {hasActiveSuggestions ? 'Present' : 'None'} |
+        {editor ? ` Selection: ${editor.state.selection.from}-${editor.state.selection.to}` : ' Editor not ready'}
       </div>
     </div>
   );
