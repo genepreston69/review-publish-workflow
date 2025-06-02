@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 export const policyFormSchema = z.object({
@@ -17,5 +18,6 @@ export const POLICY_TYPES = [
   { value: 'RP', label: 'RP - Recovery Point Policy' },
   { value: 'HR', label: 'HR - Human Resources Policy' },
   { value: 'S', label: 'S - Staff Policy' },
+  { value: 'Admin', label: 'Admin - Administrative Policy' },
   { value: 'OTHER', label: 'Other Policy Type' },
 ];
