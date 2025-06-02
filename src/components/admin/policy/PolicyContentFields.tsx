@@ -13,9 +13,16 @@ import { PolicyFormValues } from './PolicyFormSchema';
 interface PolicyContentFieldsProps {
   control: Control<PolicyFormValues>;
   setValue: UseFormSetValue<PolicyFormValues>;
+  policyId?: string;
+  showChangeTracking?: boolean;
 }
 
-export function PolicyContentFields({ control, setValue }: PolicyContentFieldsProps) {
+export function PolicyContentFields({ 
+  control, 
+  setValue, 
+  policyId, 
+  showChangeTracking = false 
+}: PolicyContentFieldsProps) {
   return (
     <>
       <FormField
@@ -29,6 +36,9 @@ export function PolicyContentFields({ control, setValue }: PolicyContentFieldsPr
                 content={field.value || ''}
                 onChange={field.onChange}
                 placeholder="Describe the purpose of this policy"
+                policyId={policyId}
+                fieldName="purpose"
+                showChangeTracking={showChangeTracking}
               />
             </FormControl>
             <FormMessage />
@@ -47,6 +57,9 @@ export function PolicyContentFields({ control, setValue }: PolicyContentFieldsPr
                 content={field.value || ''}
                 onChange={field.onChange}
                 placeholder="Enter the main policy content..."
+                policyId={policyId}
+                fieldName="policy_text"
+                showChangeTracking={showChangeTracking}
               />
             </FormControl>
             <FormMessage />
@@ -65,6 +78,9 @@ export function PolicyContentFields({ control, setValue }: PolicyContentFieldsPr
                 content={field.value || ''}
                 onChange={field.onChange}
                 placeholder="Enter the procedures and implementation steps..."
+                policyId={policyId}
+                fieldName="procedure"
+                showChangeTracking={showChangeTracking}
               />
             </FormControl>
             <FormMessage />

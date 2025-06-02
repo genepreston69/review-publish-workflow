@@ -1,14 +1,13 @@
 
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { Editor } from '@tiptap/react';
 import { cn } from '@/lib/utils';
 import { FormattingButtons } from './toolbar/FormattingButtons';
-import { ColorButtons } from './toolbar/ColorButtons';
-import { ListButtons } from './toolbar/ListButtons';
 import { AlignmentButtons } from './toolbar/AlignmentButtons';
+import { ListButtons } from './toolbar/ListButtons';
+import { ColorButtons } from './toolbar/ColorButtons';
 import { UndoRedoButtons } from './toolbar/UndoRedoButtons';
 import { ToolbarDivider } from './toolbar/ToolbarDivider';
-import { AIWritingAssistant } from '@/components/ui/ai-writing-assistant';
+import { TrackingButton } from './toolbar/TrackingButton';
 
 interface EditorToolbarProps {
   editor: Editor;
@@ -16,53 +15,51 @@ interface EditorToolbarProps {
   userInitials: string;
   onToggleTracking: () => void;
   position?: 'top' | 'bottom';
-  content?: string;
-  onContentChange?: (content: string) => void;
+  content: string;
+  onContentChange: (content: string) => void;
+  showTrackingToggle?: boolean;
 }
 
-export function EditorToolbar({
-  editor,
-  trackingEnabled,
-  userInitials,
-  onToggleTracking,
+export function EditorToolbar({ 
+  editor, 
+  trackingEnabled, 
+  userInitials, 
+  onToggleTracking, 
   position = 'top',
-  content = '',
-  onContentChange
+  content,
+  onContentChange,
+  showTrackingToggle = false
 }: EditorToolbarProps) {
-  const borderClass = position === 'top' ? 'border-b' : 'border-t';
-  
+  const toolbarClassName = cn(
+    "flex flex-wrap items-center gap-1 p-2 border-gray-200 bg-gray-50",
+    position === 'top' ? "border-b" : "border-t"
+  );
+
   return (
-    <TooltipProvider>
-      <div className={cn("p-2 flex flex-wrap gap-1 justify-between", borderClass)}>
-        <div className="flex flex-wrap gap-1">
-          <FormattingButtons editor={editor} />
-          
+    <div className={toolbarClassName}>
+      <UndoRedoButtons editor={editor} />
+      <ToolbarDivider />
+      
+      <FormattingButtons editor={editor} />
+      <ToolbarDivider />
+      
+      <AlignmentButtons editor={editor} />
+      <ToolbarDivider />
+      
+      <ListButtons editor={editor} />
+      <ToolbarDivider />
+      
+      <ColorButtons editor={editor} />
+      
+      {showTrackingToggle && (
+        <>
           <ToolbarDivider />
-          
-          <ColorButtons editor={editor} />
-          
-          <ToolbarDivider />
-          
-          <ListButtons editor={editor} />
-          
-          <ToolbarDivider />
-          
-          <AlignmentButtons editor={editor} />
-          
-          <ToolbarDivider />
-          
-          <UndoRedoButtons editor={editor} />
-        </div>
-        
-        {onContentChange && (
-          <AIWritingAssistant
-            text={content}
-            onChange={onContentChange}
-            context="policy content"
-            className="ml-auto"
+          <TrackingButton 
+            trackingEnabled={trackingEnabled}
+            onToggleTracking={onToggleTracking}
           />
-        )}
-      </div>
-    </TooltipProvider>
+        </>
+      )}
+    </div>
   );
 }

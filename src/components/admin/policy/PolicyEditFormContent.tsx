@@ -10,6 +10,8 @@ interface PolicyEditFormContentProps {
   isSubmitting: boolean;
   onCancel: () => void;
   form: UseFormReturn<PolicyFormValues>;
+  policyId?: string;
+  showChangeTracking?: boolean;
 }
 
 export function PolicyEditFormContent({ 
@@ -17,7 +19,9 @@ export function PolicyEditFormContent({
   onSubmit, 
   isSubmitting, 
   onCancel,
-  form
+  form,
+  policyId,
+  showChangeTracking = false
 }: PolicyEditFormContentProps) {
   return (
     <CardContent>
@@ -28,6 +32,8 @@ export function PolicyEditFormContent({
         submitLabel="Save Changes"
         onCancel={onCancel}
         form={form}
+        policyId={policyId}
+        showChangeTracking={showChangeTracking}
       />
     </CardContent>
   );

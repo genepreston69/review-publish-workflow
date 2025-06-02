@@ -13,6 +13,8 @@ interface PolicyFormFieldsProps {
   submitLabel: string;
   onCancel?: () => void;
   form: UseFormReturn<PolicyFormValues>;
+  policyId?: string;
+  showChangeTracking?: boolean;
 }
 
 export function PolicyFormFields({
@@ -21,6 +23,8 @@ export function PolicyFormFields({
   submitLabel,
   onCancel,
   form,
+  policyId,
+  showChangeTracking = false,
 }: PolicyFormFieldsProps) {
   const handleSubmit = (data: PolicyFormValues) => {
     onSubmit(data);
@@ -30,7 +34,12 @@ export function PolicyFormFields({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <PolicyBasicFields control={form.control} />
-        <PolicyContentFields control={form.control} setValue={form.setValue} />
+        <PolicyContentFields 
+          control={form.control} 
+          setValue={form.setValue}
+          policyId={policyId}
+          showChangeTracking={showChangeTracking}
+        />
         <PolicyFormActions 
           isLoading={isLoading}
           submitLabel={submitLabel}

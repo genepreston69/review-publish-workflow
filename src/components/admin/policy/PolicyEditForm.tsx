@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -198,6 +197,8 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
         isSubmitting={isSubmitting}
         onCancel={onCancel}
         form={form}
+        policyId={policyId}
+        showChangeTracking={true}
       />
     </Card>
   );
