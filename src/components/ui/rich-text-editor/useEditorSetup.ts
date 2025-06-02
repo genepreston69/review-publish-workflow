@@ -109,8 +109,16 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
     },
     editorProps: {
       attributes: {
-        class: 'focus:outline-none min-h-[200px] p-4 leading-relaxed',
-        style: 'line-height: 1.8; white-space: pre-wrap; width: 100%; max-width: none;',
+        class: 'focus:outline-none min-h-[200px] p-4 leading-relaxed tiptap-editor-container',
+        style: `
+          line-height: 1.8; 
+          white-space: pre-wrap; 
+          width: 100% !important; 
+          max-width: none !important; 
+          min-width: 100% !important;
+          box-sizing: border-box !important;
+          display: block !important;
+        `,
       },
     },
   });
