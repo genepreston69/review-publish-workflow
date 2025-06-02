@@ -15,13 +15,15 @@ interface PolicyContentFieldsProps {
   setValue: UseFormSetValue<PolicyFormValues>;
   policyId?: string;
   showChangeTracking?: boolean;
+  isNewPolicy?: boolean;
 }
 
 export function PolicyContentFields({ 
   control, 
   setValue, 
   policyId, 
-  showChangeTracking = false 
+  showChangeTracking = false,
+  isNewPolicy = false
 }: PolicyContentFieldsProps) {
   return (
     <>
@@ -39,6 +41,7 @@ export function PolicyContentFields({
                 policyId={policyId}
                 fieldName="purpose"
                 showChangeTracking={showChangeTracking}
+                isNewPolicy={isNewPolicy}
               />
             </FormControl>
             <FormMessage />
@@ -60,6 +63,7 @@ export function PolicyContentFields({
                 policyId={policyId}
                 fieldName="policy_text"
                 showChangeTracking={showChangeTracking}
+                isNewPolicy={isNewPolicy}
               />
             </FormControl>
             <FormMessage />
@@ -81,6 +85,7 @@ export function PolicyContentFields({
                 policyId={policyId}
                 fieldName="procedure"
                 showChangeTracking={showChangeTracking}
+                isNewPolicy={isNewPolicy}
               />
             </FormControl>
             <FormMessage />
