@@ -1,8 +1,100 @@
 
-
 export function EditorStyles() {
   return (
     <style>{`
+      /* CSS fixes for editor width and height issues */
+      
+      /* Make editor container full width */
+      .editor-container {
+        width: 100%;
+        max-width: none;
+      }
+
+      /* Full width editor content */
+      .ProseMirror {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 16px !important;
+        min-height: 400px;
+        max-height: 70vh; /* Allows scrolling when content gets too tall */
+        overflow-y: auto;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        line-height: 1.8;
+        white-space: pre-wrap;
+      }
+
+      /* Remove prose classes that limit width */
+      .ProseMirror.prose {
+        max-width: none !important;
+      }
+
+      /* Full width for the TipTap editor wrapper */
+      .tiptap {
+        width: 100% !important;
+        max-width: none !important;
+      }
+
+      /* Ensure parent containers are full width */
+      .editor-wrapper,
+      .content-wrapper {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Style for the AI Assistant toolbar to be sticky */
+      .ai-toolbar-sticky {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 10;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 12px;
+        margin-bottom: 0;
+      }
+
+      /* Admin controls styling */
+      .admin-controls {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        border-top: 1px solid #e5e7eb;
+        padding: 12px;
+        z-index: 10;
+      }
+
+      /* Optional: Full screen editor mode */
+      .editor-fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 50;
+        background: white;
+        padding: 20px;
+        overflow-y: auto;
+      }
+
+      .editor-fullscreen .ProseMirror {
+        max-height: calc(100vh - 200px);
+        min-height: calc(100vh - 200px);
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .ProseMirror {
+          padding: 12px !important;
+          max-height: 60vh;
+        }
+        
+        .ai-toolbar-sticky {
+          padding: 8px;
+        }
+      }
+      
       /* Edit mode text styling - company blue color with higher specificity */
       .edit-mode-text .ProseMirror {
         color: #2563eb !important;
@@ -216,4 +308,3 @@ export function EditorStyles() {
     `}</style>
   );
 }
-
