@@ -15,6 +15,7 @@ interface PolicyFormFieldsProps {
   form: UseFormReturn<PolicyFormValues>;
   policyId?: string;
   showChangeTracking?: boolean;
+  isNewPolicy?: boolean;
 }
 
 export function PolicyFormFields({
@@ -25,6 +26,7 @@ export function PolicyFormFields({
   form,
   policyId,
   showChangeTracking = false,
+  isNewPolicy = false,
 }: PolicyFormFieldsProps) {
   const handleSubmit = (data: PolicyFormValues) => {
     onSubmit(data);
@@ -39,6 +41,7 @@ export function PolicyFormFields({
           setValue={form.setValue}
           policyId={policyId}
           showChangeTracking={showChangeTracking}
+          isNewPolicy={isNewPolicy}
         />
         <PolicyFormActions 
           isLoading={isLoading}

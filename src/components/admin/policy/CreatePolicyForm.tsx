@@ -184,6 +184,7 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
         isGeneratingNumber={isGeneratingNumber}
         numberGenerationError={numberGenerationError}
         form={form}
+        isNewPolicy={true}
       />
     </Card>
   );

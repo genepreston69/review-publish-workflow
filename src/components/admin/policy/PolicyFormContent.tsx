@@ -14,6 +14,7 @@ interface PolicyFormContentProps {
   isGeneratingNumber?: boolean;
   numberGenerationError?: string | null;
   form: UseFormReturn<PolicyFormValues>;
+  isNewPolicy?: boolean;
 }
 
 export function PolicyFormContent({ 
@@ -22,7 +23,8 @@ export function PolicyFormContent({
   generatedPolicyNumber,
   isGeneratingNumber = false,
   numberGenerationError = null,
-  form
+  form,
+  isNewPolicy = false
 }: PolicyFormContentProps) {
   return (
     <CardContent>
@@ -31,6 +33,7 @@ export function PolicyFormContent({
         isLoading={isSubmitting}
         submitLabel="Create Policy"
         form={form}
+        isNewPolicy={isNewPolicy}
       />
       
       {/* Policy number generation status */}
