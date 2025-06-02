@@ -55,7 +55,6 @@ export function EditorToolbar({
           <ToolbarDivider />
           <TrackingButton
             trackingEnabled={trackingEnabled}
-            userInitials={userInitials}
             onToggleTracking={onToggleTracking}
           />
         </>
