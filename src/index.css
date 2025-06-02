@@ -93,3 +93,137 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Full width editor styles */
+@layer components {
+  /* Force the main editor container to full width */
+  .ProseMirror {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 16px !important;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    min-height: 200px;
+    background: white;
+  }
+
+  /* Remove any prose class width constraints */
+  .ProseMirror.prose,
+  .ProseMirror.prose-sm,
+  .ProseMirror.prose-lg,
+  .ProseMirror.prose-xl,
+  .ProseMirror.prose-2xl {
+    max-width: none !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Force the TipTap wrapper to full width */
+  .tiptap,
+  .tiptap-editor,
+  .editor-content {
+    width: 100% !important;
+    max-width: none !important;
+    display: block !important;
+  }
+
+  /* Force the EditorContent wrapper to full width */
+  div[class*="ProseMirror"] {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  /* Target the form field containers specifically */
+  .form-field,
+  .editor-field,
+  .rich-text-field {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  /* Force any container that might be limiting the editor width */
+  .policy-form-container,
+  .form-container,
+  .editor-container {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  /* Make sure the toolbar and editor wrapper take full width */
+  .ai-toolbar,
+  .editor-wrapper,
+  .tiptap-wrapper {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  /* Target any grid or flex containers */
+  .form-grid,
+  .editor-grid {
+    width: 100% !important;
+    max-width: none !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Ensure the parent form takes full width */
+  form,
+  .new-policy-form {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  /* Override any Tailwind width classes that might be limiting */
+  .w-auto,
+  .max-w-md,
+  .max-w-lg,
+  .max-w-xl,
+  .max-w-2xl,
+  .max-w-3xl,
+  .max-w-4xl,
+  .max-w-5xl,
+  .max-w-6xl,
+  .max-w-7xl {
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  /* If using specific component classes, target them */
+  .purpose-editor .ProseMirror,
+  .policy-content-editor .ProseMirror {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+/* Responsive full width */
+@media (min-width: 640px) {
+  .ProseMirror {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .ProseMirror {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .ProseMirror {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  .ProseMirror {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
