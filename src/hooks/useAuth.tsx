@@ -72,6 +72,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('=== AUTH STATE CHANGED ===', event, session?.user?.email);
+        
+        if (event === 'SIGNED_OUT' || !session) {
+          console.log('=== USER SIGNED OUT OR NO SESSION ===');
+          setSession(null);
+          setCurrentUser(null);
+          setUserRole(null);
+          setIsLoading(false);
+          return;
+        }
+        
         setSession(session);
         setCurrentUser(session?.user ?? null);
         
@@ -94,10 +104,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           } finally {
             setIsLoading(false);
           }
-        } else {
-          console.log('=== NO USER, CLEARING STATE ===');
-          setUserRole(null);
-          setIsLoading(false);
         }
       }
     );
@@ -152,9 +158,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const signOut = async () => {
     console.log('=== SIGNING OUT ===');
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error signing out:', error);
+    try {
+      // Clear local state first to provide immediate feedback
+      setSession(null);
+      setCurrentUser(null);
+      setUserRole(null);
+      
+      // Then sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+        // Even if there's an error, we want to clear the local state
+        // This handles cases where the session might already be expired
+      } else {
+        console.log('=== SIGN OUT SUCCESSFUL ===');
+      }
+    } catch (error) {
+      console.error('=== UNEXPECTED SIGN OUT ERROR ===', error);
+      // Clear local state even on unexpected errors
+      setSession(null);
+      setCurrentUser(null);
+      setUserRole(null);
     }
   };
 
