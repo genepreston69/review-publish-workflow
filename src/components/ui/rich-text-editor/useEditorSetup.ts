@@ -109,7 +109,8 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
     },
     editorProps: {
       attributes: {
-        class: 'focus:outline-none min-h-[200px] p-4 leading-relaxed tiptap-editor-container',
+        // REMOVE prose classes that limit width
+        class: 'focus:outline-none min-h-[200px] p-4 leading-relaxed',
         style: `
           line-height: 1.8; 
           white-space: pre-wrap; 
@@ -118,8 +119,20 @@ export function useEditorSetup({ content, onChange, isJsonMode }: UseEditorSetup
           min-width: 100% !important;
           box-sizing: border-box !important;
           display: block !important;
+          margin: 0 !important;
         `,
       },
+      handleDOMEvents: {
+        // Ensure the editor maintains full width on focus
+        focus: () => {
+          const editor = document.querySelector('.ProseMirror');
+          if (editor) {
+            (editor as HTMLElement).style.width = '100%';
+            (editor as HTMLElement).style.maxWidth = 'none';
+          }
+          return false;
+        }
+      }
     },
   });
 
