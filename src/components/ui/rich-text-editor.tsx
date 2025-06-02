@@ -9,7 +9,7 @@ import { useEditorSetup } from './rich-text-editor/useEditorSetup';
 import { useUserProfile } from './rich-text-editor/useUserProfile';
 import { processContentForDisplay, determineJsonMode } from './rich-text-editor/contentUtils';
 import { ChangeTrackingPanel } from './rich-text-editor/ChangeTrackingPanel';
-import { usePolicyChangeTracking } from '@/hooks/usePolicyChangeTracking';
+import { usePolicyChangeTracking } from '@/hooks/usePolicyChangeTrackingSimple';
 
 interface RichTextEditorProps {
   content: string;
