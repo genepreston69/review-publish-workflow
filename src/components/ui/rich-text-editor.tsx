@@ -9,7 +9,10 @@ import { useEditorSetup } from './rich-text-editor/useEditorSetup';
 import { useUserProfile } from './rich-text-editor/useUserProfile';
 import { processContentForDisplay, determineJsonMode } from './rich-text-editor/contentUtils';
 import { EnhancedChangeTrackingPanel } from './rich-text-editor/EnhancedChangeTrackingPanel';
+import { AdminControls } from './rich-text-editor/AdminControls';
+import { AIToolbar } from './rich-text-editor/AIToolbar';
 import { usePolicyChangeTracking } from '@/hooks/usePolicyChangeTrackingSimple';
+import { useAuth } from '@/hooks/useAuth';
 
 interface RichTextEditorProps {
   content: string;
@@ -36,6 +39,7 @@ export function RichTextEditor({
   fieldName = 'content',
   showChangeTracking = false
 }: RichTextEditorProps) {
+  const { userRole } = useAuth();
   const userInitials = useUserProfile();
   const [isJsonMode, setIsJsonMode] = useState<boolean>(false);
   const [trackingEnabled, setTrackingEnabled] = useState(false);
@@ -161,6 +165,9 @@ export function RichTextEditor({
     });
   };
 
+  // Check if user can use AI tools (edit, publish, super-admin)
+  const canUseAITools = userRole && ['edit', 'publish', 'super-admin'].includes(userRole);
+
   // Enhance changes with AI metadata
   const enhancedChanges = changeTracking.changes.map(change => ({
     ...change,
@@ -183,11 +190,23 @@ export function RichTextEditor({
           onAISuggestion={handleAISuggestion}
           context={context}
         />
+        
+        {/* AI Toolbar - Show for users who can edit */}
+        {canUseAITools && (
+          <AIToolbar
+            editor={editor}
+            userInitials={userInitials}
+            context={context}
+            onAISuggestion={handleAISuggestion}
+          />
+        )}
+        
         <EditorContent 
           editor={editor} 
           className={editorContentClassName}
           placeholder={placeholder}
         />
+        
         {showBottomToolbar && (
           <EditorToolbar
             editor={editor}
@@ -202,6 +221,14 @@ export function RichTextEditor({
             context={context}
           />
         )}
+        
+        {/* Admin Controls - Show for publishers and super-admins */}
+        <AdminControls
+          editor={editor}
+          userRole={userRole || 'read-only'}
+          onContentChange={onChange}
+        />
+        
         <EditorStyles />
       </EditorContainer>
 
