@@ -8,7 +8,7 @@ import { EditorContainer } from './rich-text-editor/EditorContainer';
 import { useEditorSetup } from './rich-text-editor/useEditorSetup';
 import { useUserProfile } from './rich-text-editor/useUserProfile';
 import { processContentForDisplay, determineJsonMode } from './rich-text-editor/contentUtils';
-import { ChangeTrackingPanel } from './rich-text-editor/ChangeTrackingPanel';
+import { EnhancedChangeTrackingPanel } from './rich-text-editor/EnhancedChangeTrackingPanel';
 import { usePolicyChangeTracking } from '@/hooks/usePolicyChangeTrackingSimple';
 
 interface RichTextEditorProps {
@@ -46,9 +46,6 @@ export function RichTextEditor({
     fieldName
   });
 
-  // Debug log to verify edit mode is being passed correctly
-  console.log('RichTextEditor - isEditMode:', isEditMode);
-
   // Set JSON mode based on content type
   useEffect(() => {
     setIsJsonMode(determineJsonMode(content));
@@ -61,7 +58,7 @@ export function RichTextEditor({
     }
   }, [showChangeTracking, policyId]);
 
-  // Always clean the content for display - aggressively strip any HTML
+  // Always clean the content for display
   const displayContent = useMemo(() => {
     return processContentForDisplay(content);
   }, [content]);
@@ -73,12 +70,10 @@ export function RichTextEditor({
       
       // Record change if tracking is enabled and policy context exists
       if (trackingEnabled && policyId && changeTracking.recordChange) {
-        // Simple change detection - in a real implementation you'd want more sophisticated diffing
         const oldLength = content.length;
         const newLength = newContent.length;
         
         if (newLength > oldLength) {
-          // Content was added
           changeTracking.recordChange({
             changeType: 'insert',
             contentAfter: newContent.substring(oldLength),
@@ -87,7 +82,6 @@ export function RichTextEditor({
             metadata: { oldLength, newLength }
           });
         } else if (newLength < oldLength) {
-          // Content was removed
           changeTracking.recordChange({
             changeType: 'delete',
             contentBefore: content.substring(newLength),
@@ -96,7 +90,6 @@ export function RichTextEditor({
             metadata: { oldLength, newLength }
           });
         } else if (newContent !== content) {
-          // Content was modified
           changeTracking.recordChange({
             changeType: 'modify',
             contentBefore: content,
@@ -120,10 +113,26 @@ export function RichTextEditor({
     isEditMode && "edit-mode-text"
   );
 
-  console.log('Editor content className:', editorContentClassName);
-
   const handleToggleTracking = () => {
     setTrackingEnabled(!trackingEnabled);
+  };
+
+  const handleAISuggestion = (changeId: string, operation: string, originalText: string, suggestedText: string) => {
+    // Record AI suggestion in change tracking
+    if (policyId && changeTracking.recordChange) {
+      changeTracking.recordChange({
+        changeType: 'modify',
+        contentBefore: originalText,
+        contentAfter: suggestedText,
+        positionStart: 0,
+        positionEnd: suggestedText.length,
+        metadata: { 
+          isAISuggestion: true, 
+          aiOperation: operation,
+          changeId 
+        }
+      });
+    }
   };
 
   const handleAcceptChange = (changeId: string) => {
@@ -133,6 +142,31 @@ export function RichTextEditor({
   const handleRejectChange = (changeId: string) => {
     changeTracking.updateChangeStatus(changeId, false);
   };
+
+  const handleBulkAcceptAI = () => {
+    const aiSuggestions = changeTracking.changes.filter(
+      change => change.metadata?.isAISuggestion && !change.is_accepted
+    );
+    aiSuggestions.forEach(change => {
+      changeTracking.updateChangeStatus(change.id, true);
+    });
+  };
+
+  const handleBulkRejectAI = () => {
+    const aiSuggestions = changeTracking.changes.filter(
+      change => change.metadata?.isAISuggestion && !change.is_accepted
+    );
+    aiSuggestions.forEach(change => {
+      changeTracking.updateChangeStatus(change.id, false);
+    });
+  };
+
+  // Enhance changes with AI metadata
+  const enhancedChanges = changeTracking.changes.map(change => ({
+    ...change,
+    is_ai_suggestion: change.metadata?.isAISuggestion || false,
+    ai_operation: change.metadata?.aiOperation
+  }));
 
   return (
     <div className="flex">
@@ -146,6 +180,8 @@ export function RichTextEditor({
           content={displayContent}
           onContentChange={onChange}
           showTrackingToggle={!!policyId}
+          onAISuggestion={handleAISuggestion}
+          context={context}
         />
         <EditorContent 
           editor={editor} 
@@ -162,19 +198,23 @@ export function RichTextEditor({
             content={displayContent}
             onContentChange={onChange}
             showTrackingToggle={!!policyId}
+            onAISuggestion={handleAISuggestion}
+            context={context}
           />
         )}
         <EditorStyles />
       </EditorContainer>
 
       {showChangeTracking && policyId && (
-        <ChangeTrackingPanel
-          changes={changeTracking.changes}
+        <EnhancedChangeTrackingPanel
+          changes={enhancedChanges}
           isLoading={changeTracking.isLoading}
           canReviewChanges={changeTracking.canReviewChanges}
           onAcceptChange={handleAcceptChange}
           onRejectChange={handleRejectChange}
           onRefresh={changeTracking.loadChanges}
+          onBulkAcceptAI={handleBulkAcceptAI}
+          onBulkRejectAI={handleBulkRejectAI}
         />
       )}
     </div>
