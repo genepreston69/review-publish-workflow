@@ -133,8 +133,23 @@ export function PolicyCardActions({
 
   const showSubmitButton = policyStatus === 'draft' && (isSuperAdmin || isEditor || canPublish);
 
-  const showPublishButton = (isSuperAdmin || canPublish) && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review');
-  const showArchiveButton = (isSuperAdmin || canPublish) && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review');
+  // Enhanced publish button logic - ensure it shows for review policies
+  const showPublishButton = canPublish && (
+    policyStatus === 'draft' || 
+    policyStatus === 'under-review' || 
+    policyStatus === 'under review' ||
+    policyStatus === 'awaiting-changes' ||
+    policyStatus === 'awaiting changes'
+  );
+  
+  const showArchiveButton = (isSuperAdmin || canPublish) && (
+    policyStatus === 'draft' || 
+    policyStatus === 'under-review' || 
+    policyStatus === 'under review' ||
+    policyStatus === 'awaiting-changes' ||
+    policyStatus === 'awaiting changes'
+  );
+  
   const showDeleteButton = isSuperAdmin && onDelete;
 
   return (
