@@ -19,5 +19,6 @@ export const POLICY_TYPES = [
   { value: 'HR', label: 'HR - Human Resources Policy' },
   { value: 'S', label: 'S - Staff Policy' },
   { value: 'Admin', label: 'Admin - Administrative Policy' },
+  { value: 'Finance', label: 'Finance - Financial Policy' },
   { value: 'OTHER', label: 'Other Policy Type' },
 ];

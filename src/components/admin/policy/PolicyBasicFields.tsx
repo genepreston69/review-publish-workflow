@@ -55,6 +55,7 @@ export function PolicyBasicFields({ control }: PolicyBasicFieldsProps) {
                 <SelectItem value="RP">RP - Recovery Point Policy</SelectItem>
                 <SelectItem value="S">S - Staff Policy</SelectItem>
                 <SelectItem value="Admin">Admin - Administrative Policy</SelectItem>
+                <SelectItem value="Finance">Finance - Financial Policy</SelectItem>
                 <SelectItem value="OTHER">Other Policy Type</SelectItem>
               </SelectContent>
             </Select>
