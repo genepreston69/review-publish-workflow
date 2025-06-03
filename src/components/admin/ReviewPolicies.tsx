@@ -83,6 +83,12 @@ export function ReviewPolicies() {
     await updatePolicyStatus(policyId, newStatus);
   };
 
+  // Force refresh function to reload policies from database
+  const handleRefresh = () => {
+    console.log('=== FORCE REFRESHING POLICIES ===');
+    fetchPolicies();
+  };
+
   if (!canPublish) {
     return (
       <div className="space-y-6">
@@ -119,21 +125,31 @@ export function ReviewPolicies() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Review Policies</h2>
-        <p className="text-muted-foreground">
-          Review and approve policies for publication. This includes draft policies ready for review and policies awaiting changes.
-          {!isSuperAdmin && " (You cannot review policies you created due to maker/checker controls)"}
-        </p>
-        {reviewPolicies.length > 0 && (
-          <div className="text-sm text-gray-600 mt-1">
-            <p>Showing {reviewPolicies.length} {reviewPolicies.length === 1 ? 'policy' : 'policies'} awaiting review</p>
-            <div className="flex gap-4 mt-1">
-              <span>Draft: {reviewPolicies.filter(p => p.status?.toLowerCase() === 'draft').length}</span>
-              <span>Under Review: {reviewPolicies.filter(p => p.status?.toLowerCase().includes('under')).length}</span>
-              <span>Awaiting Changes: {reviewPolicies.filter(p => p.status?.toLowerCase().includes('awaiting')).length}</span>
-            </div>
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Review Policies</h2>
+            <p className="text-muted-foreground">
+              Review and approve policies for publication. This includes draft policies ready for review and policies awaiting changes.
+              {!isSuperAdmin && " (You cannot review policies you created due to maker/checker controls)"}
+            </p>
+            {reviewPolicies.length > 0 && (
+              <div className="text-sm text-gray-600 mt-1">
+                <p>Showing {reviewPolicies.length} {reviewPolicies.length === 1 ? 'policy' : 'policies'} awaiting review</p>
+                <div className="flex gap-4 mt-1">
+                  <span>Draft: {reviewPolicies.filter(p => p.status?.toLowerCase() === 'draft').length}</span>
+                  <span>Under Review: {reviewPolicies.filter(p => p.status?.toLowerCase().includes('under')).length}</span>
+                  <span>Awaiting Changes: {reviewPolicies.filter(p => p.status?.toLowerCase().includes('awaiting')).length}</span>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+          <button
+            onClick={handleRefresh}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       <PolicyList
