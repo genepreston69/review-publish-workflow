@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -165,7 +166,7 @@ export const useUserManagement = () => {
       const { error: profilesError } = await supabase
         .from('profiles')
         .delete()
-        .in('id', userIds);
+        .in('user_id', userIds);
 
       if (profilesError) throw profilesError;
 
