@@ -17,6 +17,11 @@ export const getContentStyles = (): string => {
       page-break-before: always; /* Only break before major sections */
     }
     
+    /* Add page break before each policy header */
+    .policy-page {
+      page-break-before: always; /* Each policy starts on a new page */
+    }
+    
     /* TOC Table Styles */
     .toc-table {
       width: 100%;

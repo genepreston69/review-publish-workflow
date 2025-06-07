@@ -1,7 +1,7 @@
 
 export const getPrintStyles = (): string => {
   return `
-    /* Print-optimized styles with natural flow */
+    /* Print-optimized styles with proper page breaks */
     @media print {
       @page {
         margin: 0.75in 0.75in 1.25in 0.75in;
@@ -68,7 +68,16 @@ export const getPrintStyles = (): string => {
         display: none !important;
       }
       
-      /* Simple pagination - let content flow naturally */
+      /* Page breaks for policies */
+      .policy-page {
+        page-break-before: always !important; /* Each policy starts on new page */
+        break-before: always !important;
+        position: relative;
+        min-height: auto;
+        padding-bottom: 0;
+      }
+      
+      /* Keep policy sections together but allow natural flow */
       .policy-section {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
@@ -86,14 +95,6 @@ export const getPrintStyles = (): string => {
       .major-section-header {
         page-break-before: always !important;
         break-before: always !important;
-      }
-      
-      .policy-page {
-        position: relative;
-        min-height: auto;
-        padding-bottom: 0;
-        page-break-before: auto !important; /* Let policies flow naturally */
-        break-before: auto !important;
       }
       
       .cover-page {
