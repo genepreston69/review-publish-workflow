@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { UserRole } from '@/types/user';
+import type { User } from '@supabase/supabase-js';
 
 interface UserWithRole {
   id: string;
@@ -25,14 +26,15 @@ export const useUserManagement = () => {
       console.log('=== FETCHING USERS FOR MANAGEMENT ===');
       
       // First, get all users from auth.users via admin API to ensure we have complete data
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
       
       if (authError) {
         console.error('Error fetching auth users:', authError);
         // If admin access fails, fall back to profiles only
       }
 
-      console.log('=== AUTH USERS FETCHED ===', authUsers?.users?.length || 0);
+      const authUsers = authData?.users || [];
+      console.log('=== AUTH USERS FETCHED ===', authUsers.length);
 
       // Fetch profiles with their roles
       const { data: profiles, error: profilesError } = await supabase
@@ -69,7 +71,7 @@ export const useUserManagement = () => {
         const userRoleRecords = userRoles?.filter(role => role.user_id === profile.id) || [];
         
         // Find corresponding auth user
-        const authUser = authUsers?.users?.find(user => user.id === profile.id);
+        const authUser = authUsers.find((user: User) => user.id === profile.id);
         
         // Priority order: super-admin > publish > edit > read-only
         const rolePriority = {
@@ -96,8 +98,6 @@ export const useUserManagement = () => {
           // Check if email is confirmed
           if (!authUser.email_confirmed_at) {
             status = 'pending';
-          } else if (authUser.banned_until) {
-            status = 'inactive';
           } else {
             status = 'active';
           }
