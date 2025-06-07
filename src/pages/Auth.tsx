@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -166,10 +165,11 @@ const Auth = () => {
         <Card className="shadow-xl border-0 bg-white/95 backdrop-blur max-w-sm mx-auto">
           <CardHeader className="text-center pb-6 px-6">
             <div className="mx-auto mb-3">
-              <div className="text-xl font-bold text-slate-800 mb-1">
-                RECOVERY<span className="text-blue-600">POINT</span>
-              </div>
-              <div className="text-xs text-slate-600 font-medium">WEST VIRGINIA</div>
+              <img 
+                src="/lovable-uploads/574646d6-6de7-444f-a9a2-327c1a816521.png" 
+                alt="Recovery Point West Virginia" 
+                className="h-16 w-auto mx-auto"
+              />
             </div>
             <CardTitle className="text-lg text-slate-700">Content Management System</CardTitle>
             <CardDescription className="text-sm text-slate-500">
