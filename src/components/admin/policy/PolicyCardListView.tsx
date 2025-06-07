@@ -54,7 +54,7 @@ export function PolicyCardListView({
           </div>
           <p className="text-sm text-slate-600 line-clamp-1">{stripHtml(policy.purpose)}</p>
           <div className="flex items-center gap-4 mt-1 text-xs text-slate-500">
-            {policy.creator_id && <span>By {policy.creator_id}</span>}
+            {(policy as any).creator?.name && <span>By {(policy as any).creator.name}</span>}
             <span>{formatDate(policy.created_at)}</span>
             <Badge 
               variant="outline" 

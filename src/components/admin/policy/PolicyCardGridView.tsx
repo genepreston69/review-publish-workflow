@@ -92,10 +92,10 @@ export function PolicyCardGridView({
           )}
           
           <div className="grid grid-cols-1 gap-2 text-xs">
-            {policy.creator_id && (
+            {(policy as any).creator?.name && (
               <div className="flex justify-between">
                 <span className="text-slate-500">Creator:</span>
-                <span className="text-slate-700 font-medium truncate ml-2">{policy.creator_id}</span>
+                <span className="text-slate-700 font-medium truncate ml-2">{(policy as any).creator.name}</span>
               </div>
             )}
             <div className="flex justify-between">
