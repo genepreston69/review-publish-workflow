@@ -1,13 +1,12 @@
 
 export const getPrintStyles = (): string => {
   return `
-    /* Print-optimized styles with CSS @page margin boxes */
+    /* Print-optimized styles with natural flow */
     @media print {
       @page {
-        margin: 0.75in 0.75in 1.25in 0.75in; /* top, right, bottom, left - extra bottom for footer */
+        margin: 0.75in 0.75in 1.25in 0.75in;
         size: letter;
         
-        /* CSS @page margin box for page numbers - bottom right */
         @bottom-right {
           content: counter(page);
           font-family: Arial, Helvetica, sans-serif;
@@ -17,13 +16,11 @@ export const getPrintStyles = (): string => {
           margin-right: 0;
         }
         
-        /* Hide any browser-generated headers */
         @top-left { content: none; }
         @top-center { content: none; }
         @top-right { content: none; }
       }
       
-      /* Reset page counter for the manual */
       body {
         counter-reset: page 0;
         -webkit-print-color-adjust: exact;
@@ -40,7 +37,7 @@ export const getPrintStyles = (): string => {
       @page cover {
         margin: 0.75in;
         @bottom-right {
-          content: none; /* No page number on cover */
+          content: none;
         }
         @top-left { content: none; }
         @top-center { content: none; }
@@ -67,59 +64,36 @@ export const getPrintStyles = (): string => {
         @top-right { content: none; }
       }
       
-      /* Remove fallback page footer to avoid content boxes */
       .page-footer {
         display: none !important;
       }
       
-      /* Smart Pagination Print Controls */
-      .policy-compact {
+      /* Simple pagination - let content flow naturally */
+      .policy-section {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
-        page-break-before: auto !important;
-        break-before: auto !important;
+        orphans: 2 !important;
+        widows: 2 !important;
       }
       
-      .complex-policy {
-        orphans: 3 !important;
-        widows: 3 !important;
-        page-break-before: auto !important;
-        break-before: auto !important;
+      /* Remove forced page breaks after PURPOSE */
+      .policy-purpose {
+        page-break-after: auto !important;
+        break-after: auto !important;
       }
       
-      .section-group {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-      
-      .policy-group {
-        page-break-before: auto !important;
-        break-before: auto !important;
-      }
-      
-      .policy-group.new-group {
+      /* Only break before major section headers */
+      .major-section-header {
         page-break-before: always !important;
         break-before: always !important;
       }
       
-      .policy-separator {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-        height: 1px;
-        background-color: #ddd !important;
-        margin: 20px 0 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-      
-      .page-break {
-        page-break-before: always;
-      }
-      
-      .policy-page, .cover-page, .toc-page {
+      .policy-page {
         position: relative;
-        min-height: auto; /* Let CSS @page handle spacing */
-        padding-bottom: 0; /* Remove excessive padding */
+        min-height: auto;
+        padding-bottom: 0;
+        page-break-before: auto !important; /* Let policies flow naturally */
+        break-before: auto !important;
       }
       
       .cover-page {
@@ -129,7 +103,6 @@ export const getPrintStyles = (): string => {
         padding-bottom: 0;
       }
       
-      /* Policy metadata and title sections should stay together */
       .policy-title-section,
       .policy-metadata-box {
         page-break-inside: avoid !important;
@@ -138,18 +111,12 @@ export const getPrintStyles = (): string => {
         break-after: avoid !important;
       }
 
-      .policy-section {
-        orphans: 2 !important;
-        widows: 2 !important;
-      }
-
       .page-header {
         page-break-inside: avoid;
         page-break-after: avoid;
         break-after: avoid;
       }
       
-      /* Policy anchor styling for PDF navigation */
       .policy-anchor {
         position: absolute;
         top: 0;
@@ -160,9 +127,8 @@ export const getPrintStyles = (): string => {
         display: block;
       }
       
-      /* Enhanced TOC Table Print Styles */
       .toc-page {
-        page-break-after: always; /* Force break after TOC to start policies on new page */
+        page-break-after: always;
         min-height: auto;
         max-height: none;
       }
@@ -178,22 +144,20 @@ export const getPrintStyles = (): string => {
       }
 
       .toc-table {
-        page-break-inside: auto; /* Allow table to break across pages */
+        page-break-inside: auto;
         border-collapse: collapse;
         width: 100%;
         table-layout: fixed;
       }
 
-      /* Critical: Make headers repeat on each page */
       .toc-table thead {
-        display: table-header-group; /* This makes headers repeat on each page */
+        display: table-header-group;
       }
 
       .toc-table tbody {
         display: table-row-group;
       }
 
-      /* Prevent individual rows from breaking */
       .toc-row {
         page-break-inside: avoid;
         break-inside: avoid;
@@ -211,7 +175,6 @@ export const getPrintStyles = (): string => {
         text-decoration: none !important;
       }
 
-      /* Remove excessive content spacing */
       .toc-content {
         margin-bottom: 0 !important;
         padding-bottom: 0 !important;
@@ -227,7 +190,6 @@ export const getPrintStyles = (): string => {
         padding-bottom: 0 !important;
       }
 
-      /* Optimize table spacing for maximum entries per page */
       .toc-table th {
         font-weight: bold;
         background-color: #f8f9fa;
@@ -242,7 +204,6 @@ export const getPrintStyles = (): string => {
         line-height: 1.3;
       }
 
-      /* Column widths for better space utilization */
       .toc-policy-number {
         width: 15%;
       }
@@ -256,7 +217,6 @@ export const getPrintStyles = (): string => {
         text-align: right;
       }
 
-      /* Improve readability with better typography controls */
       .section-content p {
         orphans: 2 !important;
         widows: 2 !important;

@@ -1,32 +1,20 @@
 
 export const getContentStyles = (): string => {
   return `
-    /* Smart Pagination Classes */
-    .policy-compact {
-      page-break-inside: avoid;
-      break-inside: avoid;
-      margin-bottom: 20px;
+    /* Simple Pagination - Remove unnecessary page breaks */
+    .policy-section {
+      margin-bottom: 25px;
+      page-break-inside: avoid; /* Keep short policies together */
+      orphans: 2;
+      widows: 2;
     }
     
-    .complex-policy {
-      orphans: 3;
-      widows: 3;
-      margin-bottom: 30px;
+    .policy-purpose {
+      /* Remove any page breaks after purpose - let content flow naturally */
     }
     
-    .section-group {
-      page-break-inside: avoid;
-      break-inside: avoid;
-    }
-    
-    .policy-group {
-      page-break-before: auto;
-      break-before: auto;
-    }
-    
-    .policy-group.new-group {
-      page-break-before: always;
-      break-before: always;
+    .major-section-header {
+      page-break-before: always; /* Only break before major sections */
     }
     
     /* TOC Table Styles */
@@ -177,12 +165,6 @@ export const getContentStyles = (): string => {
       margin-left: 10px;
     }
     
-    .policy-section {
-      margin-bottom: 25px;
-      orphans: 2;
-      widows: 2;
-    }
-    
     .section-title {
       font-size: 14pt;
       font-weight: bold;
@@ -243,28 +225,6 @@ export const getContentStyles = (): string => {
 
     .section-content h3 {
       font-size: 12pt;
-    }
-
-    /* Compact policy specific styles */
-    .policy-compact .policy-section {
-      margin-bottom: 20px;
-    }
-    
-    .policy-compact .section-content {
-      margin-bottom: 15px;
-    }
-
-    /* Multi-policy page divider */
-    .policy-separator {
-      height: 1px;
-      background-color: #ddd;
-      margin: 40px 0;
-      page-break-inside: avoid;
-      break-inside: avoid;
-    }
-
-    .policy-separator.no-break {
-      display: none;
     }
   `;
 };
