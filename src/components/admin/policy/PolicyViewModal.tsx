@@ -83,13 +83,13 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
 
     try {
       const printHtml = generatePolicyPrintTemplate(
-        policy.policy_name,
-        policy.policy_number,
-        policy.policy_type,
-        policy.policy_content || '',
-        policy.publisher?.name || policy.creator?.name || 'Unknown',
+        policy.name || 'Untitled Policy',
+        policy.policy_number || 'N/A',
+        policy.policy_type || 'N/A',
+        policy.policy_text || '',
+        policy.reviewer || 'Unknown',
         policy.created_at,
-        policy.status
+        policy.status || 'Unknown'
       );
 
       const printWindow = window.open('', '_blank');
