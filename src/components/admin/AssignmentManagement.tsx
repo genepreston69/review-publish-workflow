@@ -65,13 +65,15 @@ export const AssignmentManagement = () => {
         .from('user_roles')
         .select(`
           user_id,
-          profiles!user_roles_user_id_fkey(id, name, email)
+          profiles(id, name, email)
         `)
         .eq('role', 'edit');
 
       if (editorError) throw editorError;
 
-      const editorUsers = editorRoles.map(role => role.profiles).filter(Boolean);
+      const editorUsers = editorRoles
+        .filter(role => role.profiles)
+        .map(role => role.profiles as User);
       setEditors(editorUsers);
 
       // Fetch users with publisher role
@@ -79,13 +81,15 @@ export const AssignmentManagement = () => {
         .from('user_roles')
         .select(`
           user_id,
-          profiles!user_roles_user_id_fkey(id, name, email)
+          profiles(id, name, email)
         `)
         .eq('role', 'publish');
 
       if (publisherError) throw publisherError;
 
-      const publisherUsers = publisherRoles.map(role => role.profiles).filter(Boolean);
+      const publisherUsers = publisherRoles
+        .filter(role => role.profiles)
+        .map(role => role.profiles as User);
       setPublishers(publisherUsers);
 
     } catch (error) {

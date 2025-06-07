@@ -1,191 +1,209 @@
-
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { usePolicyNumberGeneration } from './usePolicyNumberGeneration';
-import { policyFormSchema, PolicyFormValues } from './PolicyFormSchema';
-import { Policy } from './types';
-import { PolicyFormValidation } from './PolicyFormValidation';
-import { PolicyFormHeader } from './PolicyFormHeader';
-import { PolicyFormContent } from './PolicyFormContent';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { Save, Send } from 'lucide-react';
 
 interface CreatePolicyFormProps {
-  onPolicyCreated: (policy: Policy) => void;
+  onPolicyCreated: () => void;
 }
 
 export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
   const { currentUser, userRole } = useAuth();
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const form = useForm<PolicyFormValues>({
-    resolver: zodResolver(policyFormSchema),
-    defaultValues: {
-      name: '',
-      policy_type: '',
-      purpose: '',
-      procedure: '',
-      policy_text: '',
-    },
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    policy_type: '',
+    purpose: '',
+    policy_text: '',
+    procedure: '',
+    reviewer: ''
   });
 
   // Check if user has edit access
-  const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
+  const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'admin';
 
-  // Watch policy type changes to generate policy number
-  const selectedPolicyType = form.watch('policy_type');
-  console.log('=== WATCHED POLICY TYPE ===', selectedPolicyType);
-  
-  const { generatedPolicyNumber, isLoading: isGeneratingNumber, error: numberGenerationError } = usePolicyNumberGeneration(selectedPolicyType);
+  if (!hasEditAccess) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Create New Policy</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            You need edit access or higher to create policies.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
-  console.log('=== FORM STATE DEBUG ===');
-  console.log('Selected policy type from form:', selectedPolicyType);
-  console.log('Generated policy number:', generatedPolicyNumber);
-  console.log('Is generating number:', isGeneratingNumber);
-  console.log('Number generation error:', numberGenerationError);
-
-  const onSubmit = async (data: PolicyFormValues) => {
-    console.log('=== FORM SUBMISSION STARTED ===');
-    console.log('Form data:', data);
-    console.log('Current user:', currentUser);
-    console.log('User role:', userRole);
-    console.log('Generated policy number:', generatedPolicyNumber);
-    console.log('Number generation error:', numberGenerationError);
-    console.log('Is generating number:', isGeneratingNumber);
-
-    if (!currentUser || !hasEditAccess) {
-      console.log('=== ACCESS DENIED ===');
-      toast({
-        variant: "destructive",
-        title: "Access Denied",
-        description: "You don't have permission to create policies.",
-      });
-      return;
-    }
-
-    if (numberGenerationError) {
-      console.log('=== POLICY NUMBER GENERATION ERROR ===', numberGenerationError);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: numberGenerationError,
-      });
-      return;
-    }
-
-    if (isGeneratingNumber) {
-      console.log('=== STILL GENERATING POLICY NUMBER ===');
-      toast({
-        variant: "destructive",
-        title: "Please Wait",
-        description: "Policy number is still being generated. Please wait a moment and try again.",
-      });
-      return;
-    }
-
-    if (!generatedPolicyNumber) {
-      console.log('=== NO POLICY NUMBER AVAILABLE ===');
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Policy number could not be generated. Please select a policy type and try again.",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
-      // Get creator profile to store creator_id
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', currentUser.id)
+      const { data, error } = await supabase
+        .from('Policies')
+        .insert({
+          ...formData,
+          creator_id: currentUser?.id,
+          status: 'draft',
+        })
+        .select()
         .single();
 
-      if (profileError) {
-        console.error('=== ERROR FETCHING PROFILE ===', profileError);
-        throw new Error('Could not fetch user profile');
-      }
-
-      // Set status based on user role:
-      // - edit users: create as draft
-      // - publish/super-admin users: create as under-review
-      const status = userRole === 'edit' ? 'draft' : 'under-review';
-
-      console.log('=== INSERTING POLICY ===');
-      const policyData = {
-        name: data.name,
-        policy_type: data.policy_type,
-        purpose: data.purpose,
-        procedure: data.procedure,
-        policy_text: data.policy_text,
-        policy_number: generatedPolicyNumber,
-        status,
-        creator_id: profileData.id,
-        reviewer: currentUser.email, // Keep for backward compatibility
-      };
-      console.log('Policy data to insert:', policyData);
-
-      const { data: insertedData, error } = await supabase
-        .from('Policies')
-        .insert(policyData)
-        .select();
-
       if (error) {
-        console.error('=== SUPABASE ERROR ===', error);
-        throw error;
+        console.error('Error creating policy:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to create policy.",
+        });
+        return;
       }
-
-      console.log('=== POLICY CREATED SUCCESSFULLY ===', insertedData);
-
-      const statusMessage = status === 'draft' 
-        ? `Policy created as draft with number ${generatedPolicyNumber}.`
-        : `Policy created and submitted for review with number ${generatedPolicyNumber}.`;
 
       toast({
         title: "Success",
-        description: statusMessage,
+        description: "Policy created successfully.",
       });
 
-      // Reset the form and notify parent
-      form.reset();
-      if (insertedData && insertedData[0]) {
-        onPolicyCreated(insertedData[0]);
-      }
+      // Reset form
+      setFormData({
+        name: '',
+        policy_type: '',
+        purpose: '',
+        policy_text: '',
+        procedure: '',
+        reviewer: ''
+      });
+
+      onPolicyCreated();
     } catch (error) {
-      console.error('=== ERROR CREATING POLICY ===', error);
+      console.error('Error creating policy:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create policy. Please try again.",
+        description: "An unexpected error occurred.",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  // Show access denied component if user doesn't have permission
-  if (!hasEditAccess) {
-    return <PolicyFormValidation hasEditAccess={hasEditAccess} />;
-  }
-
   return (
     <Card>
-      <PolicyFormHeader userRole={userRole} />
-      <PolicyFormContent 
-        onSubmit={onSubmit}
-        isSubmitting={isSubmitting}
-        generatedPolicyNumber={generatedPolicyNumber}
-        isGeneratingNumber={isGeneratingNumber}
-        numberGenerationError={numberGenerationError}
-        form={form}
-        isNewPolicy={true}
-      />
+      <CardHeader>
+        <CardTitle>Create New Policy</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Policy Name</Label>
+            <Input
+              id="name"
+              type="text"
+              placeholder="Enter policy name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="policy_type">Policy Type</Label>
+            <Select
+              value={formData.policy_type}
+              onValueChange={(value) => setFormData({ ...formData, policy_type: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a policy type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="HR">HR</SelectItem>
+                <SelectItem value="RP">RP</SelectItem>
+                <SelectItem value="S">S</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="purpose">Purpose</Label>
+            <Textarea
+              id="purpose"
+              placeholder="Enter the purpose of the policy"
+              value={formData.purpose}
+              onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="policy_text">Policy Text</Label>
+            <Textarea
+              id="policy_text"
+              placeholder="Enter the policy text"
+              value={formData.policy_text}
+              onChange={(e) => setFormData({ ...formData, policy_text: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="procedure">Procedure</Label>
+            <Textarea
+              id="procedure"
+              placeholder="Enter the procedure"
+              value={formData.procedure}
+              onChange={(e) => setFormData({ ...formData, procedure: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="reviewer">Reviewer Email</Label>
+            <Input
+              id="reviewer"
+              type="email"
+              placeholder="Enter reviewer email"
+              value={formData.reviewer}
+              onChange={(e) => setFormData({ ...formData, reviewer: e.target.value })}
+            />
+          </div>
+
+          <div className="flex justify-end space-x-2">
+            <Button type="button" variant="outline" onClick={() => {
+              setFormData({
+                name: '',
+                policy_type: '',
+                purpose: '',
+                policy_text: '',
+                procedure: '',
+                reviewer: ''
+              });
+            }}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Create Policy
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
     </Card>
   );
 }

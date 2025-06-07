@@ -52,15 +52,15 @@ export const useUserManagement = () => {
       const usersWithRoles: UserWithRole[] = profiles?.map(profile => {
         const userRoleRecords = userRoles?.filter(role => role.user_id === profile.id) || [];
         
-        // Priority order: super-admin > publish > edit > read-only
+        // Priority order: admin > publish > edit > readonly
         const rolePriority = {
-          'super-admin': 4,
+          'admin': 4,
           'publish': 3,
           'edit': 2,
-          'read-only': 1
+          'readonly': 1
         };
         
-        let highestRole: UserRole = 'read-only';
+        let highestRole: UserRole = 'readonly';
         let highestPriority = 0;
         
         userRoleRecords.forEach(roleRecord => {

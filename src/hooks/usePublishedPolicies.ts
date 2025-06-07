@@ -24,7 +24,7 @@ export const usePublishedPolicies = (userRole: UserRole | null) => {
   const { toast } = useToast();
 
   const fetchPublishedPolicies = async () => {
-    if (userRole !== 'read-only') return;
+    if (userRole !== 'readonly') return;
 
     try {
       console.log('=== FETCHING PUBLISHED POLICIES FOR READ-ONLY USER ===');
@@ -72,7 +72,7 @@ export const usePublishedPolicies = (userRole: UserRole | null) => {
   };
 
   useEffect(() => {
-    if (userRole === 'read-only') {
+    if (userRole === 'readonly') {
       fetchPublishedPolicies();
     }
   }, [userRole]);

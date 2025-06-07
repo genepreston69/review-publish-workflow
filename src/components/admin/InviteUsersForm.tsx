@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +21,7 @@ export const InviteUsersForm = ({ onInvitesSent }: InviteUsersFormProps) => {
   const [formData, setFormData] = useState({
     email: '',
     name: '',
-    role: 'read-only' as UserRole,
+    role: 'readonly' as UserRole,
     emails: '',
     message: 'You have been invited to join our organization. Please check your email for login instructions.'
   });
@@ -74,7 +73,7 @@ export const InviteUsersForm = ({ onInvitesSent }: InviteUsersFormProps) => {
       setFormData({
         email: '',
         name: '',
-        role: 'read-only',
+        role: 'readonly',
         emails: '',
         message: 'You have been invited to join our organization. Please check your email for login instructions.'
       });
@@ -138,7 +137,7 @@ export const InviteUsersForm = ({ onInvitesSent }: InviteUsersFormProps) => {
       setFormData({
         email: '',
         name: '',
-        role: 'read-only',
+        role: 'readonly',
         emails: '',
         message: 'You have been invited to join our organization. Please check your email for login instructions.'
       });
@@ -246,10 +245,10 @@ export const InviteUsersForm = ({ onInvitesSent }: InviteUsersFormProps) => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="read-only">Read Only</SelectItem>
+                <SelectItem value="readonly">Read Only</SelectItem>
                 <SelectItem value="edit">Editor</SelectItem>
                 <SelectItem value="publish">Publisher</SelectItem>
-                <SelectItem value="super-admin">Super Admin</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
           </div>

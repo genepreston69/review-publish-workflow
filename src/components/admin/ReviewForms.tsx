@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { FormList } from './form/FormList';
@@ -21,7 +20,7 @@ interface Form {
 export function ReviewForms() {
   const { userRole } = useAuth();
   // Optimize by filtering at database level
-  const { forms, isLoadingForms, updateFormStatus, deleteForm, isAdmin } = useForms({
+  const { forms, isLoadingForms, updateFormStatus, deleteForm, isSuperAdmin } = useForms({
     statusFilter: ['draft', 'under-review', 'under review']
   });
   const [editingFormId, setEditingFormId] = useState<string | null>(null);
@@ -109,7 +108,7 @@ export function ReviewForms() {
         onUpdateStatus={updateFormStatus}
         onEdit={handleEditForm}
         onView={handleViewForm}
-        onDelete={isAdmin ? deleteForm : undefined}
+        onDelete={isSuperAdmin ? deleteForm : undefined}
       />
 
       {viewingFormId && (

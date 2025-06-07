@@ -19,9 +19,9 @@ export const useContentManagement = (currentUser: any, userRole: UserRole | null
       let query = supabase.from('content').select('*');
       
       // Different access levels based on role
-      if (userRole === 'super-admin') {
-        // Super admin can see all content
-        console.log('=== SUPER ADMIN: FETCHING ALL CONTENT ===');
+      if (userRole === 'admin') {
+        // Admin can see all content
+        console.log('=== ADMIN: FETCHING ALL CONTENT ===');
       } else if (userRole === 'publish') {
         // Publishers can see all content
         console.log('=== PUBLISHER: FETCHING ALL CONTENT ===');

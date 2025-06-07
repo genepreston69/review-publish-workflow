@@ -20,7 +20,7 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
   const [formData, setFormData] = useState({
     email: '',
     name: '',
-    role: 'read-only' as UserRole,
+    role: 'readonly' as UserRole,
     password: ''
   });
   const { toast } = useToast();
@@ -63,8 +63,8 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         // Wait a moment for the profile to be created by the trigger
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Update the user role if it's not read-only (which is the default)
-        if (formData.role !== 'read-only') {
+        // Update the user role if it's not readonly (which is the default)
+        if (formData.role !== 'readonly') {
           console.log('Updating user role to:', formData.role);
           const { error: roleError } = await supabase
             .from('user_roles')
@@ -93,7 +93,7 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         setFormData({
           email: '',
           name: '',
-          role: 'read-only',
+          role: 'readonly',
           password: ''
         });
         setOpen(false);
@@ -184,10 +184,10 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="read-only">Read Only</SelectItem>
+                <SelectItem value="readonly">Read Only</SelectItem>
                 <SelectItem value="edit">Editor</SelectItem>
                 <SelectItem value="publish">Publisher</SelectItem>
-                <SelectItem value="super-admin">Super Admin</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { PolicyList } from './policy/PolicyList';
@@ -9,7 +8,7 @@ import { Policy } from './policy/types';
 
 export function DraftPolicies() {
   const { currentUser, userRole } = useAuth();
-  const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, archivePolicy, isAdmin, fetchPolicies } = usePolicies();
+  const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, archivePolicy, isSuperAdmin, fetchPolicies } = usePolicies();
   const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
 
@@ -20,7 +19,7 @@ export function DraftPolicies() {
     if (!isDraft) return false;
     
     // Admins can see all drafts
-    if (isAdmin) return true;
+    if (isSuperAdmin) return true;
     
     // Editors can only see their own drafts
     if (userRole === 'edit') {
@@ -38,8 +37,8 @@ export function DraftPolicies() {
   });
 
   const canEdit = userRole === 'edit' || userRole === 'publish' || userRole === 'admin';
-  const canDelete = isAdmin;
-  const canArchive = isAdmin;
+  const canDelete = isSuperAdmin;
+  const canArchive = isSuperAdmin;
 
   const handleEditPolicy = (policyId: string) => {
     console.log('Edit policy:', policyId);

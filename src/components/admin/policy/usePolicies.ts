@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { stripColorsFromPolicyFields } from '@/utils/colorUtils';
-import { notifyPolicyStatusChange, notifyPolicyComment } from '@/utils/notificationHelpers';
 import { Policy } from './types';
 
 export const usePolicies = () => {
@@ -12,21 +10,29 @@ export const usePolicies = () => {
   const { toast } = useToast();
   const { userRole, currentUser } = useAuth();
 
-  const isSuperAdmin = userRole === 'super-admin';
+  const isSuperAdmin = userRole === 'admin';
 
   const fetchPolicies = async () => {
     try {
       setIsLoadingPolicies(true);
       
-      const { data, error } = await supabase
-        .from('Policies')
-        .select(`
-          *,
-          creator:creator_id(id, name, email),
-          publisher:publisher_id(id, name, email)
-        `)
-        .is('archived_at', null) // Only show non-archived policies
-        .order('created_at', { ascending: false });
+      let query = supabase.from('Policies').select('*');
+      
+      // Super admins can see all policies, others see based on their role and involvement
+      if (userRole === 'admin') {
+        // Admin can see all policies
+      } else if (userRole === 'publish') {
+        // Publishers can see all policies for review, plus their own drafts
+        query = query.or(`status.neq.archived,creator_id.eq.${currentUser?.id}`);
+      } else if (userRole === 'edit') {
+        // Editors can see their own policies and published ones
+        query = query.or(`creator_id.eq.${currentUser?.id},status.eq.published`);
+      } else {
+        // Read-only can only see published
+        query = query.eq('status', 'published');
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching policies:', error);
@@ -35,18 +41,17 @@ export const usePolicies = () => {
           title: "Error",
           description: "Failed to load policies.",
         });
-        setPolicies([]); // Set empty array on error
-      } else {
-        setPolicies(data || []);
+        return;
       }
+
+      setPolicies(data || []);
     } catch (error) {
-      console.error('Error in fetchPolicies:', error);
+      console.error('Error fetching policies:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred while loading policies.",
+        description: "An unexpected error occurred.",
       });
-      setPolicies([]); // Set empty array on error
     } finally {
       setIsLoadingPolicies(false);
     }
@@ -363,8 +368,10 @@ export const usePolicies = () => {
   };
 
   useEffect(() => {
-    fetchPolicies();
-  }, []);
+    if (currentUser && userRole) {
+      fetchPolicies();
+    }
+  }, [currentUser, userRole]);
 
   return {
     policies,

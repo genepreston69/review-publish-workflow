@@ -1,165 +1,121 @@
 
-import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { PolicyManualGenerator } from './admin/policy/PolicyManualGenerator';
-import { FacilityPoliciesGrid } from './admin/policy/FacilityPoliciesGrid';
-import { FacilityPoliciesEmptyState } from './admin/policy/FacilityPoliciesEmptyState';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2 } from 'lucide-react';
-import { useAppNavigation } from '@/hooks/useAppNavigation';
-
-// New imports for refactored components
-import { useContentManagement } from '@/hooks/useContentManagement';
-import { useAllUserPolicies } from '@/hooks/useAllUserPolicies';
-import { useDashboardActions } from './dashboard/DashboardActions';
-import { DashboardHeader } from './dashboard/DashboardHeader';
-import { ContentGrid } from './dashboard/ContentGrid';
+import { usePublishedPolicies } from '@/hooks/usePublishedPolicies';
+import { ContentSidebar } from './ContentSidebar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileText, Users, Shield, BarChart3 } from 'lucide-react';
 
 export const Dashboard = () => {
-  const { currentUser, userRole } = useAuth();
-  const { activeSection } = useAppNavigation();
-  const canCreate = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
+  const { userRole } = useAuth();
+  const { hrPolicies, facilityPolicies, isLoadingPolicies } = usePublishedPolicies(userRole);
 
-  // Use custom hooks for data management
-  const { contents, isLoading, handlePublish } = useContentManagement(currentUser, userRole);
-  const { hrPolicies, facilityPolicies, isLoadingPolicies } = useAllUserPolicies();
-  
-  // Use action handlers
-  const {
-    handleCreateNew,
-    handleEdit,
-    handleView,
-    handlePolicyView,
-    handlePolicyUpdateStatus,
-    handlePolicyDelete,
-  } = useDashboardActions();
-
-  // Debug logging
-  console.log('=== DASHBOARD RENDER ===');
-  console.log('Active Section:', activeSection);
-  console.log('HR Policies count:', hrPolicies.length);
-  console.log('Facility Policies count:', facilityPolicies.length);
-
-  if (isLoading || isLoadingPolicies) {
-    return (
-      <div className="p-8">
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
-        </div>
-      </div>
-    );
+  // Show content management for all users except readonly
+  if (userRole && userRole !== 'readonly') {
+    return <ContentSidebar />;
   }
 
-  const draftContents = contents.filter(c => c.status === 'draft');
-  const reviewContents = contents.filter(c => c.status === 'under-review');
-  const publishedContents = contents.filter(c => c.status === 'published');
-
-  const renderContent = () => {
-    console.log('=== RENDER CONTENT ===');
-    console.log('Rendering for activeSection:', activeSection);
-    
-    switch (activeSection) {
-      case 'all':
-        return (
-          <ContentGrid
-            contents={contents}
-            onEdit={handleEdit}
-            onView={handleView}
-            onPublish={handlePublish}
-            emptyMessage={`No content found for your role (${userRole}). ${canCreate ? " Create your first piece of content to get started." : ""}`}
-          />
-        );
-
-      case 'drafts':
-        return (
-          <ContentGrid
-            contents={draftContents}
-            onEdit={handleEdit}
-            onView={handleView}
-            onPublish={handlePublish}
-            emptyMessage="No draft content found."
-          />
-        );
-
-      case 'review':
-        return (
-          <ContentGrid
-            contents={reviewContents}
-            onEdit={handleEdit}
-            onView={handleView}
-            onPublish={handlePublish}
-            emptyMessage="No content under review."
-          />
-        );
-
-      case 'published':
-        return (
-          <ContentGrid
-            contents={publishedContents}
-            onEdit={handleEdit}
-            onView={handleView}
-            onPublish={handlePublish}
-            emptyMessage="No published content found."
-          />
-        );
-
-      case 'hr-policies':
-        console.log('=== RENDERING HR POLICIES ===', hrPolicies.length);
-        return hrPolicies.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No HR policies found.</p>
-          </div>
-        ) : (
-          <FacilityPoliciesGrid
-            policies={hrPolicies}
-            isEditor={false}
-            canPublish={false}
-            isSuperAdmin={false}
-            onView={handlePolicyView}
-            onUpdateStatus={handlePolicyUpdateStatus}
-            onDelete={handlePolicyDelete}
-          />
-        );
-
-      case 'facility-policies':
-        console.log('=== RENDERING FACILITY POLICIES ===', facilityPolicies.length);
-        return facilityPolicies.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No facility policies found.</p>
-          </div>
-        ) : (
-          <FacilityPoliciesGrid
-            policies={facilityPolicies}
-            isEditor={false}
-            canPublish={false}
-            isSuperAdmin={false}
-            onView={handlePolicyView}
-            onUpdateStatus={handlePolicyUpdateStatus}
-            onDelete={handlePolicyDelete}
-          />
-        );
-
-      case 'policy-manuals':
-        return <PolicyManualGenerator />;
-
-      default:
-        return (
-          <div className="text-center py-12">
-            <p className="text-gray-500">Select a section from the sidebar to view content.</p>
-          </div>
-        );
-    }
-  };
+  // For readonly users, show a dashboard with policy stats
+  const canViewAdmin = userRole === 'publish' || userRole === 'admin';
 
   return (
-    <div className="p-6 space-y-6">
-      <DashboardHeader 
-        userRole={userRole}
-        canCreate={canCreate}
-        onCreateNew={handleCreateNew}
-      />
-      
-      <div className="mt-6">
-        {renderContent()}
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-600 mt-2">Welcome to your policy management dashboard</p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">HR Policies</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {isLoadingPolicies ? '...' : hrPolicies.length}
+            </div>
+            <p className="text-xs text-muted-foreground">Published policies</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Facility Policies</CardTitle>
+            <Shield className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {isLoadingPolicies ? '...' : facilityPolicies.length}
+            </div>
+            <p className="text-xs text-muted-foreground">Published policies</p>
+          </CardContent>
+        </Card>
+
+        {canViewAdmin && (
+          <>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">User Management</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">Active</div>
+                <p className="text-xs text-muted-foreground">System status</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Analytics</CardTitle>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">Available</div>
+                <p className="text-xs text-muted-foreground">Reporting tools</p>
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </div>
+
+      {/* Recent Activity or Policy Lists */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {hrPolicies.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent HR Policies</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {hrPolicies.slice(0, 5).map((policy) => (
+                  <div key={policy.id} className="flex items-center space-x-2">
+                    <FileText className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm">{policy.name}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {facilityPolicies.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Facility Policies</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {facilityPolicies.slice(0, 5).map((policy) => (
+                  <div key={policy.id} className="flex items-center space-x-2">
+                    <Shield className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm">{policy.name}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
