@@ -47,21 +47,7 @@ export function FacilityPolicies() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Facility Policies</h2>
-          <p className="text-muted-foreground">
-            View published facility policies and procedures
-          </p>
-          {facilityPolicies.length > 0 && (
-            <p className="text-sm text-gray-600 mt-1">
-              {facilityPolicies.length} published facility {facilityPolicies.length === 1 ? 'policy' : 'policies'}
-            </p>
-          )}
-        </div>
-      </div>
-
+    <div className="p-6">
       {facilityPolicies.length === 0 ? (
         <div className="text-center py-12">
           <h3 className="mt-4 text-lg font-medium">No published facility policies found</h3>
