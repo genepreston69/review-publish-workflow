@@ -28,6 +28,8 @@ export const getPrintStyles = (): string => {
         counter-reset: page 0;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+        orphans: 3;
+        widows: 3;
       }
       
       /* Cover page - no page number */
@@ -70,12 +72,51 @@ export const getPrintStyles = (): string => {
         display: none !important;
       }
       
+      /* Smart Pagination Print Controls */
+      .policy-compact {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        page-break-before: auto !important;
+        break-before: auto !important;
+      }
+      
+      .complex-policy {
+        orphans: 3 !important;
+        widows: 3 !important;
+        page-break-before: auto !important;
+        break-before: auto !important;
+      }
+      
+      .section-group {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      
+      .policy-group {
+        page-break-before: auto !important;
+        break-before: auto !important;
+      }
+      
+      .policy-group.new-group {
+        page-break-before: always !important;
+        break-before: always !important;
+      }
+      
+      .policy-separator {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        height: 1px;
+        background-color: #ddd !important;
+        margin: 20px 0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      
       .page-break {
         page-break-before: always;
       }
       
       .policy-page, .cover-page, .toc-page {
-        page-break-before: always;
         position: relative;
         min-height: auto; /* Let CSS @page handle spacing */
         padding-bottom: 0; /* Remove excessive padding */
@@ -88,12 +129,24 @@ export const getPrintStyles = (): string => {
         padding-bottom: 0;
       }
       
+      /* Policy metadata and title sections should stay together */
+      .policy-title-section,
+      .policy-metadata-box {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+
       .policy-section {
-        page-break-inside: avoid;
+        orphans: 2 !important;
+        widows: 2 !important;
       }
 
       .page-header {
         page-break-inside: avoid;
+        page-break-after: avoid;
+        break-after: avoid;
       }
       
       /* Policy anchor styling for PDF navigation */
@@ -107,7 +160,7 @@ export const getPrintStyles = (): string => {
         display: block;
       }
       
-      /* Enhanced TOC Table Print Styles for Natural Page Flow */
+      /* Enhanced TOC Table Print Styles */
       .toc-page {
         page-break-after: always; /* Force break after TOC to start policies on new page */
         min-height: auto;
@@ -151,15 +204,6 @@ export const getPrintStyles = (): string => {
         break-inside: avoid;
         padding: 8px 12px;
         border-bottom: 1px solid #e5e7eb;
-      }
-
-      /* Remove manual page break classes since we want natural flow */
-      .toc-page-break {
-        page-break-before: auto; /* Let CSS decide when to break */
-      }
-
-      .toc-final-page-break {
-        page-break-after: always; /* Only force break after final TOC */
       }
 
       .toc-link {
@@ -210,6 +254,29 @@ export const getPrintStyles = (): string => {
       .toc-page-number {
         width: 15%;
         text-align: right;
+      }
+
+      /* Improve readability with better typography controls */
+      .section-content p {
+        orphans: 2 !important;
+        widows: 2 !important;
+        margin-bottom: 8px !important;
+      }
+
+      .section-content ul, .section-content ol {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .section-content li {
+        orphans: 2 !important;
+        widows: 2 !important;
+      }
+
+      .section-title {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+        orphans: 3 !important;
       }
     }
   `;

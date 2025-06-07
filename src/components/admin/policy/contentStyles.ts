@@ -1,6 +1,34 @@
 
 export const getContentStyles = (): string => {
   return `
+    /* Smart Pagination Classes */
+    .policy-compact {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      margin-bottom: 20px;
+    }
+    
+    .complex-policy {
+      orphans: 3;
+      widows: 3;
+      margin-bottom: 30px;
+    }
+    
+    .section-group {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    
+    .policy-group {
+      page-break-before: auto;
+      break-before: auto;
+    }
+    
+    .policy-group.new-group {
+      page-break-before: always;
+      break-before: always;
+    }
+    
     /* TOC Table Styles */
     .toc-table {
       width: 100%;
@@ -93,6 +121,8 @@ export const getContentStyles = (): string => {
     /* Policy Content Styles */
     .policy-title-section {
       margin-bottom: 30px;
+      page-break-after: avoid;
+      break-after: avoid;
     }
     
     .policy-title {
@@ -117,6 +147,8 @@ export const getContentStyles = (): string => {
       border-left: 4px solid #1565c0;
       padding: 20px;
       margin: 0 0 30px 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
 
     .metadata-grid {
@@ -146,8 +178,9 @@ export const getContentStyles = (): string => {
     }
     
     .policy-section {
-      margin-bottom: 30px;
-      page-break-inside: avoid;
+      margin-bottom: 25px;
+      orphans: 2;
+      widows: 2;
     }
     
     .section-title {
@@ -159,26 +192,36 @@ export const getContentStyles = (): string => {
       letter-spacing: 1px;
       border-bottom: 1px solid #1565c0;
       padding-bottom: 6px;
+      page-break-after: avoid;
+      break-after: avoid;
     }
     
     .section-content {
       line-height: 1.5;
       text-align: justify;
       font-size: 12pt;
+      orphans: 3;
+      widows: 3;
     }
     
     .section-content p {
       margin-bottom: 12px;
+      orphans: 2;
+      widows: 2;
     }
     
     .section-content ul, .section-content ol {
       margin: 12px 0 12px 20px;
       padding: 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     
     .section-content li {
       margin-bottom: 6px;
       line-height: 1.4;
+      orphans: 2;
+      widows: 2;
     }
     
     .section-content h1, .section-content h2, .section-content h3 {
@@ -186,6 +229,8 @@ export const getContentStyles = (): string => {
       margin: 20px 0 12px 0;
       font-weight: bold;
       text-transform: uppercase;
+      page-break-after: avoid;
+      break-after: avoid;
     }
 
     .section-content h1 {
@@ -198,6 +243,28 @@ export const getContentStyles = (): string => {
 
     .section-content h3 {
       font-size: 12pt;
+    }
+
+    /* Compact policy specific styles */
+    .policy-compact .policy-section {
+      margin-bottom: 20px;
+    }
+    
+    .policy-compact .section-content {
+      margin-bottom: 15px;
+    }
+
+    /* Multi-policy page divider */
+    .policy-separator {
+      height: 1px;
+      background-color: #ddd;
+      margin: 40px 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .policy-separator.no-break {
+      display: none;
     }
   `;
 };
