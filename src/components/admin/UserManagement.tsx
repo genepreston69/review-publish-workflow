@@ -1,12 +1,68 @@
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { CreateUserForm } from './CreateUserForm';
+import { InviteUsersForm } from './InviteUsersForm';
 import { UserTable } from './UserTable';
+import { UserSearchAndFilter } from './UserSearchAndFilter';
 import { useUserManagement } from '@/hooks/useUserManagement';
-import { User, Loader2 } from 'lucide-react';
+import { User, Loader2, Upload } from 'lucide-react';
+import { UserRole } from '@/types/user';
 
 export const UserManagement = () => {
   const { users, isLoading, fetchUsers } = useUserManagement();
+  const [filteredUsers, setFilteredUsers] = useState(users);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  // Update filtered users when users data changes
+  React.useEffect(() => {
+    let filtered = users;
+
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(user => 
+        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply role filter
+    if (roleFilter !== 'all') {
+      filtered = filtered.filter(user => user.role === roleFilter);
+    }
+
+    // Apply status filter (for now, all users are considered 'active')
+    // This can be extended when we add status tracking to the database
+    if (statusFilter !== 'all') {
+      // For now, treat all existing users as active
+      if (statusFilter !== 'active') {
+        filtered = [];
+      }
+    }
+
+    setFilteredUsers(filtered);
+  }, [users, searchQuery, roleFilter, statusFilter]);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
+  const handleFilterRole = (role: UserRole | 'all') => {
+    setRoleFilter(role);
+  };
+
+  const handleFilterStatus = (status: string) => {
+    setStatusFilter(status);
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setRoleFilter('all');
+    setStatusFilter('all');
+  };
 
   if (isLoading) {
     return (
@@ -26,11 +82,29 @@ export const UserManagement = () => {
             <User className="w-5 h-5" />
             User Management
           </CardTitle>
-          <CreateUserForm onUserCreated={fetchUsers} />
+          <div className="flex gap-2">
+            <InviteUsersForm onInvitesSent={fetchUsers} />
+            <CreateUserForm onUserCreated={fetchUsers} />
+            <Button variant="outline">
+              <Upload className="w-4 h-4 mr-2" />
+              Bulk Import
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
-        <UserTable users={users} onUserUpdated={fetchUsers} />
+        <UserSearchAndFilter
+          onSearch={handleSearch}
+          onFilterRole={handleFilterRole}
+          onFilterStatus={handleFilterStatus}
+          onClearFilters={handleClearFilters}
+        />
+        
+        <div className="mb-4 text-sm text-gray-600">
+          Showing {filteredUsers.length} of {users.length} users
+        </div>
+        
+        <UserTable users={filteredUsers} onUserUpdated={fetchUsers} />
       </CardContent>
     </Card>
   );

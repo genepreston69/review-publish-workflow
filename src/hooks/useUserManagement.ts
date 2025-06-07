@@ -10,6 +10,7 @@ interface UserWithRole {
   email: string;
   created_at: string;
   role: UserRole;
+  status?: 'active' | 'pending' | 'inactive' | 'invited';
 }
 
 export const useUserManagement = () => {
@@ -21,6 +22,8 @@ export const useUserManagement = () => {
     try {
       setIsLoading(true);
       
+      console.log('=== FETCHING USERS FOR MANAGEMENT ===');
+      
       // Fetch profiles with their roles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -29,16 +32,27 @@ export const useUserManagement = () => {
           name,
           email,
           created_at
-        `);
+        `)
+        .order('created_at', { ascending: false });
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+      }
+
+      console.log('=== PROFILES FETCHED ===', profiles?.length);
 
       // Fetch user roles
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role');
 
-      if (rolesError) throw rolesError;
+      if (rolesError) {
+        console.error('Error fetching roles:', rolesError);
+        throw rolesError;
+      }
+
+      console.log('=== ROLES FETCHED ===', userRoles?.length);
 
       // Combine the data - get the highest priority role for each user
       const usersWithRoles: UserWithRole[] = profiles.map(profile => {
@@ -65,10 +79,12 @@ export const useUserManagement = () => {
 
         return {
           ...profile,
-          role: highestRole
+          role: highestRole,
+          status: 'active' as const // Default status for existing users
         };
       });
 
+      console.log('=== FINAL USERS WITH ROLES ===', usersWithRoles.length);
       setUsers(usersWithRoles);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -82,6 +98,79 @@ export const useUserManagement = () => {
     }
   };
 
+  // Bulk actions for user management
+  const bulkUpdateRoles = async (userIds: string[], newRole: UserRole) => {
+    try {
+      // Delete existing roles for these users
+      const { error: deleteError } = await supabase
+        .from('user_roles')
+        .delete()
+        .in('user_id', userIds);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new roles
+      const roleUpdates = userIds.map(userId => ({
+        user_id: userId,
+        role: newRole
+      }));
+
+      const { error: insertError } = await supabase
+        .from('user_roles')
+        .insert(roleUpdates);
+
+      if (insertError) throw insertError;
+
+      toast({
+        title: "Success",
+        description: `Updated roles for ${userIds.length} users.`,
+      });
+
+      fetchUsers();
+    } catch (error) {
+      console.error('Error updating roles:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update user roles.",
+      });
+    }
+  };
+
+  const bulkDeleteUsers = async (userIds: string[]) => {
+    try {
+      // Delete user roles first
+      const { error: rolesError } = await supabase
+        .from('user_roles')
+        .delete()
+        .in('user_id', userIds);
+
+      if (rolesError) throw rolesError;
+
+      // Delete profiles
+      const { error: profilesError } = await supabase
+        .from('profiles')
+        .delete()
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      toast({
+        title: "Success",
+        description: `Deleted ${userIds.length} users.`,
+      });
+
+      fetchUsers();
+    } catch (error) {
+      console.error('Error deleting users:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete users.",
+      });
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -89,6 +178,8 @@ export const useUserManagement = () => {
   return {
     users,
     isLoading,
-    fetchUsers
+    fetchUsers,
+    bulkUpdateRoles,
+    bulkDeleteUsers
   };
 };
