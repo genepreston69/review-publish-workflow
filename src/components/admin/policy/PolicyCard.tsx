@@ -33,7 +33,7 @@ export function PolicyCard({
 
   const canEdit = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
   const canDelete = userRole === 'super-admin';
-  const canArchive = userRole === 'super-admin';
+  const canArchive = userRole === 'super-admin' || userRole === 'publish';
   const isSuperAdmin = userRole === 'super-admin';
   const isCreator = policy.creator_id === currentUser?.id;
 
