@@ -8,7 +8,7 @@ export function CreatePolicy() {
   const { fetchPolicies } = usePolicies();
 
   // Check if user has edit access
-  const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
+  const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'admin';
 
   if (!hasEditAccess) {
     return (

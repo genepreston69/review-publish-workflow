@@ -31,16 +31,16 @@ const Admin = () => {
     );
   }
 
-  // Allow editors, publishers, and super-admins to access this page
-  const hasAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
+  // Allow editors, publishers, and admins to access this page
+  const hasAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'admin';
   if (!hasAccess) {
     return <Navigate to="/" replace />;
   }
 
-  const isSuperAdmin = userRole === 'super-admin';
+  const isAdmin = userRole === 'admin';
 
   const getPageTitle = () => {
-    if (userRole === 'super-admin') return 'Super Admin Dashboard';
+    if (userRole === 'admin') return 'Admin Dashboard';
     if (userRole === 'publish') return 'Publisher Dashboard';
     if (userRole === 'edit') return 'Editor Dashboard';
     return 'Dashboard';
@@ -92,7 +92,7 @@ const Admin = () => {
         <AppSidebar />
         <div className="flex-1 flex flex-col">
           <div className="sticky top-0 z-10">
-            <AdminHeader isSuperAdmin={isSuperAdmin} pageTitle={getPageTitle()} />
+            <AdminHeader isSuperAdmin={isAdmin} pageTitle={getPageTitle()} />
           </div>
           
           <div className="flex-1 overflow-auto p-6">

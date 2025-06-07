@@ -38,7 +38,7 @@ export const Header = () => {
                 <RoleBadge role={userRole} />
               </div>
               <div className="flex items-center gap-2">
-                {userRole === 'super-admin' && (
+                {userRole === 'admin' && (
                   <Link to="/admin">
                     <Button variant="outline" size="sm">
                       <Shield className="w-4 h-4 mr-1" />

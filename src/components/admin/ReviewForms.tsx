@@ -21,13 +21,13 @@ interface Form {
 export function ReviewForms() {
   const { userRole } = useAuth();
   // Optimize by filtering at database level
-  const { forms, isLoadingForms, updateFormStatus, deleteForm, isSuperAdmin } = useForms({
+  const { forms, isLoadingForms, updateFormStatus, deleteForm, isAdmin } = useForms({
     statusFilter: ['draft', 'under-review', 'under review']
   });
   const [editingFormId, setEditingFormId] = useState<string | null>(null);
   const [viewingFormId, setViewingFormId] = useState<string | null>(null);
 
-  const canPublish = userRole === 'publish' || userRole === 'super-admin';
+  const canPublish = userRole === 'publish' || userRole === 'admin';
 
   const handleEditForm = useCallback((formId: string) => {
     console.log('Edit form:', formId);
@@ -109,7 +109,7 @@ export function ReviewForms() {
         onUpdateStatus={updateFormStatus}
         onEdit={handleEditForm}
         onView={handleViewForm}
-        onDelete={isSuperAdmin ? deleteForm : undefined}
+        onDelete={isAdmin ? deleteForm : undefined}
       />
 
       {viewingFormId && (

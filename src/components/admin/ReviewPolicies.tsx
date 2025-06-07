@@ -9,7 +9,7 @@ import { Policy } from './policy/types';
 
 export function ReviewPolicies() {
   const { currentUser, userRole } = useAuth();
-  const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, archivePolicy, isSuperAdmin, fetchPolicies } = usePolicies();
+  const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, archivePolicy, isAdmin, fetchPolicies } = usePolicies();
   const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
 
@@ -25,8 +25,8 @@ export function ReviewPolicies() {
     
     if (!needsReview) return false;
     
-    // Super-admins can see all policies needing review
-    if (isSuperAdmin) {
+    // Admins can see all policies needing review
+    if (isAdmin) {
       return true;
     }
     
@@ -45,8 +45,8 @@ export function ReviewPolicies() {
     return false;
   });
 
-  const canPublish = userRole === 'publish' || userRole === 'super-admin';
-  const canArchive = isSuperAdmin;
+  const canPublish = userRole === 'publish' || userRole === 'admin';
+  const canArchive = isAdmin;
 
   const handleEditPolicy = (policyId: string) => {
     setEditingPolicyId(policyId);
@@ -130,7 +130,7 @@ export function ReviewPolicies() {
             <h2 className="text-2xl font-bold tracking-tight">Review Policies</h2>
             <p className="text-muted-foreground">
               Review and approve policies for publication. This includes draft policies ready for review and policies awaiting changes.
-              {!isSuperAdmin && " (You cannot review policies you created due to maker/checker controls)"}
+              {!isAdmin && " (You cannot review policies you created due to maker/checker controls)"}
             </p>
             {reviewPolicies.length > 0 && (
               <div className="text-sm text-gray-600 mt-1">
@@ -161,7 +161,7 @@ export function ReviewPolicies() {
         onUpdateStatus={handleUpdateStatus}
         onEdit={handleEditPolicy}
         onView={handleViewPolicy}
-        onDelete={isSuperAdmin ? deletePolicy : undefined}
+        onDelete={isAdmin ? deletePolicy : undefined}
         onArchive={canArchive ? handleArchivePolicy : undefined}
       />
 

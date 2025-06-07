@@ -9,7 +9,7 @@ import { Policy } from './policy/types';
 
 export function DraftPolicies() {
   const { currentUser, userRole } = useAuth();
-  const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, archivePolicy, isSuperAdmin } = usePolicies();
+  const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, archivePolicy, isAdmin, fetchPolicies } = usePolicies();
   const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
 
@@ -19,8 +19,8 @@ export function DraftPolicies() {
     
     if (!isDraft) return false;
     
-    // Super-admins can see all drafts
-    if (isSuperAdmin) return true;
+    // Admins can see all drafts
+    if (isAdmin) return true;
     
     // Editors can only see their own drafts
     if (userRole === 'edit') {
@@ -37,9 +37,9 @@ export function DraftPolicies() {
     return false;
   });
 
-  const canEdit = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
-  const canDelete = isSuperAdmin;
-  const canArchive = isSuperAdmin;
+  const canEdit = userRole === 'edit' || userRole === 'publish' || userRole === 'admin';
+  const canDelete = isAdmin;
+  const canArchive = isAdmin;
 
   const handleEditPolicy = (policyId: string) => {
     console.log('Edit policy:', policyId);
@@ -113,7 +113,7 @@ export function DraftPolicies() {
         <p className="text-muted-foreground">
           {userRole === 'edit' && "Manage your draft policies. Submit them for review when ready."}
           {userRole === 'publish' && "View drafts you've created or have been assigned to review."}
-          {isSuperAdmin && "Manage all draft policies in the system."}
+          {isAdmin && "Manage all draft policies in the system."}
         </p>
         {draftPolicies.length > 0 && (
           <div className="text-sm text-gray-600 mt-1">
@@ -130,7 +130,7 @@ export function DraftPolicies() {
         policies={draftPolicies}
         isLoading={isLoadingPolicies}
         isEditor={userRole === 'edit'}
-        canPublish={userRole === 'publish' || userRole === 'super-admin'}
+        canPublish={userRole === 'publish' || userRole === 'admin'}
         editingPolicyId={editingPolicyId}
         onUpdateStatus={updatePolicyStatus}
         onEdit={handleEditPolicy}
