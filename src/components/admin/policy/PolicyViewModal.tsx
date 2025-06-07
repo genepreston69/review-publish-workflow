@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { usePolicyDuplication } from '@/hooks/usePolicyDuplication';
 import { PolicyViewLoading } from './PolicyViewLoading';
@@ -12,7 +12,9 @@ import { PolicyViewMetadata } from './PolicyViewMetadata';
 import { PolicyViewContent } from './PolicyViewContent';
 import { PolicyViewActions } from './PolicyViewActions';
 import { PolicyVersionHistory } from './PolicyVersionHistory';
+import { generatePolicyPrintTemplate } from './policyPrintUtils';
 import { Policy } from './types';
+import { Printer } from 'lucide-react';
 
 interface PolicyViewModalProps {
   policyId: string;
@@ -75,6 +77,52 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
       loadPolicy();
     }
   }, [viewingVersionId, toast, onClose]);
+
+  const handlePrintPolicy = () => {
+    if (!policy) return;
+
+    try {
+      const printHtml = generatePolicyPrintTemplate(
+        policy.policy_name,
+        policy.policy_number,
+        policy.policy_type,
+        policy.policy_content || '',
+        policy.publisher?.name || policy.creator?.name || 'Unknown',
+        policy.created_at,
+        policy.status
+      );
+
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(printHtml);
+        printWindow.document.close();
+        
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        };
+
+        toast({
+          title: "Success",
+          description: "Policy print dialog opened.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Unable to open print window. Please check your browser's popup settings.",
+        });
+      }
+    } catch (error) {
+      console.error('Error printing policy:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to print policy.",
+      });
+    }
+  };
 
   const handleReturnToDraft = async () => {
     if (!policy || !onUpdateStatus) return;
@@ -141,7 +189,18 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden [&>button]:hidden">
-        <PolicyViewHeader policy={policy} onClose={onClose} />
+        <div className="flex items-center justify-between mb-4">
+          <PolicyViewHeader policy={policy} onClose={onClose} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrintPolicy}
+            className="flex items-center gap-2"
+          >
+            <Printer className="h-4 w-4" />
+            Print Policy
+          </Button>
+        </div>
         
         <Tabs defaultValue="content" className="flex-1 overflow-hidden">
           <TabsList className="grid w-full grid-cols-2">
