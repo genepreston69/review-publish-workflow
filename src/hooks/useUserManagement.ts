@@ -162,11 +162,11 @@ export const useUserManagement = () => {
 
       if (rolesError) throw rolesError;
 
-      // Delete profiles
+      // Delete profiles (using 'id' column, not 'user_id')
       const { error: profilesError } = await supabase
         .from('profiles')
         .delete()
-        .in('user_id', userIds);
+        .in('id', userIds);
 
       if (profilesError) throw profilesError;
 
