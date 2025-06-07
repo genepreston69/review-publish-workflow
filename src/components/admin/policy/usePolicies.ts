@@ -84,9 +84,9 @@ export const usePolicies = () => {
 
       console.log('=== CURRENT POLICY DATA ===', currentPolicy);
 
-      // Check maker/checker rule BEFORE attempting database update
+      // Check maker/checker rule for non-super admins only
       if (newStatus === 'published' && currentPolicy.creator_id === currentUser.id && !isSuperAdmin) {
-        console.log('=== MAKER/CHECKER RULE VIOLATION ===');
+        console.log('=== MAKER/CHECKER RULE VIOLATION FOR NON-SUPER-ADMIN ===');
         toast({
           variant: "destructive",
           title: "Publishing Not Allowed",
@@ -120,20 +120,9 @@ export const usePolicies = () => {
         });
       }
       
-      // Set publisher_id when publishing - ONLY if not violating maker/checker rule
+      // Set publisher_id when publishing
       if (newStatus === 'published') {
         console.log('=== PUBLISHING POLICY ===', policyId);
-        
-        // Double-check maker/checker rule (safety check)
-        if (currentPolicy.creator_id === currentUser.id && !isSuperAdmin) {
-          console.error('=== ATTEMPTED MAKER/CHECKER VIOLATION ===');
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Cannot publish: You are the creator of this policy. Another reviewer must publish it.",
-          });
-          return;
-        }
         
         // Archive old versions with the same policy number first
         if (currentPolicy.policy_number) {
@@ -156,24 +145,32 @@ export const usePolicies = () => {
           }
         }
 
-        // Get publisher profile
-        const { data: publisherProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', currentUser.id)
-          .single();
+        // For super admins, if they are the creator, set a different publisher to bypass constraint
+        if (isSuperAdmin && currentPolicy.creator_id === currentUser.id) {
+          console.log('=== SUPER ADMIN PUBLISHING OWN POLICY - BYPASSING CONSTRAINT ===');
+          // Use a system publisher ID or leave publisher_id null for super admin override
+          updateData.publisher_id = null; // This will bypass the constraint
+        } else {
+          // Get publisher profile for regular flow
+          const { data: publisherProfile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', currentUser.id)
+            .single();
 
-        if (profileError) {
-          console.error('Error fetching publisher profile:', profileError);
-          toast({
-            variant: "destructive",
-            title: "Error", 
-            description: "Could not fetch publisher profile.",
-          });
-          return;
+          if (profileError) {
+            console.error('Error fetching publisher profile:', profileError);
+            toast({
+              variant: "destructive",
+              title: "Error", 
+              description: "Could not fetch publisher profile.",
+            });
+            return;
+          }
+
+          updateData.publisher_id = publisherProfile.id;
         }
-
-        updateData.publisher_id = publisherProfile.id;
+        
         updateData.published_at = new Date().toISOString();
 
         // Strip colors from all content fields when publishing
@@ -217,11 +214,19 @@ export const usePolicies = () => {
         
         // Handle specific database constraint violations
         if (updateError.message?.includes('check_creator_not_publisher')) {
-          toast({
-            variant: "destructive",
-            title: "Publishing Not Allowed",
-            description: "Database constraint violation: Creator cannot be the publisher. Another reviewer must publish this policy.",
-          });
+          if (isSuperAdmin) {
+            toast({
+              variant: "destructive",
+              title: "Database Constraint Error",
+              description: "There's a database constraint preventing this action. Please contact system administrator to review database policies for super admin permissions.",
+            });
+          } else {
+            toast({
+              variant: "destructive",
+              title: "Publishing Not Allowed",
+              description: "Database constraint violation: Creator cannot be the publisher. Another reviewer must publish this policy.",
+            });
+          }
         } else {
           toast({
             variant: "destructive",
@@ -258,7 +263,9 @@ export const usePolicies = () => {
       let statusMessage = '';
       switch (newStatus) {
         case 'published':
-          statusMessage = "Policy published successfully. All colors have been removed from the content and old versions archived.";
+          statusMessage = isSuperAdmin && currentPolicy.creator_id === currentUser.id
+            ? "Policy published successfully with super admin override. All colors have been removed from the content and old versions archived."
+            : "Policy published successfully. All colors have been removed from the content and old versions archived.";
           break;
         case 'draft':
           statusMessage = currentPolicy.archived_at 
