@@ -137,7 +137,7 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
           Add New User
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[400px]">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Create New User</DialogTitle>
         </DialogHeader>
