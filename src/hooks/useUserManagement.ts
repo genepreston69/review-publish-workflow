@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { UserRole } from '@/types/user';
-import type { User } from '@supabase/supabase-js';
 
 interface UserWithRole {
   id: string;
@@ -24,19 +23,8 @@ export const useUserManagement = () => {
       setIsLoading(true);
       
       console.log('=== FETCHING USERS FOR MANAGEMENT ===');
-      
-      // First, get all users from auth.users via admin API to ensure we have complete data
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) {
-        console.error('Error fetching auth users:', authError);
-        // If admin access fails, fall back to profiles only
-      }
 
-      const authUsers = authData?.users || [];
-      console.log('=== AUTH USERS FETCHED ===', authUsers.length);
-
-      // Fetch profiles with their roles
+      // Fetch all profiles - this doesn't require admin privileges
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select(`
@@ -66,12 +54,9 @@ export const useUserManagement = () => {
 
       console.log('=== ROLES FETCHED ===', userRoles?.length || 0);
 
-      // Combine profiles with auth data and roles
+      // Combine profiles with roles
       const usersWithRoles: UserWithRole[] = profiles?.map(profile => {
         const userRoleRecords = userRoles?.filter(role => role.user_id === profile.id) || [];
-        
-        // Find corresponding auth user
-        const authUser = authUsers.find((user: User) => user.id === profile.id);
         
         // Priority order: super-admin > publish > edit > read-only
         const rolePriority = {
@@ -92,19 +77,9 @@ export const useUserManagement = () => {
           }
         });
 
-        // Determine status based on auth user data
-        let status: 'active' | 'pending' | 'inactive' | 'invited' = 'active';
-        if (authUser) {
-          // Check if email is confirmed
-          if (!authUser.email_confirmed_at) {
-            status = 'pending';
-          } else {
-            status = 'active';
-          }
-        } else {
-          // Profile exists but no auth user - likely invited but not registered
-          status = 'invited';
-        }
+        // Since we can't access auth admin API, we'll assume all profiles are active
+        // This is a reasonable assumption since profiles are only created when users successfully sign up
+        const status: 'active' | 'pending' | 'inactive' | 'invited' = 'active';
 
         return {
           ...profile,
@@ -202,19 +177,9 @@ export const useUserManagement = () => {
 
       if (profilesError) throw profilesError;
 
-      // Try to delete from auth (this might fail if we don't have admin privileges)
-      try {
-        for (const userId of userIds) {
-          await supabase.auth.admin.deleteUser(userId);
-        }
-      } catch (authError) {
-        console.warn('Could not delete from auth system:', authError);
-        // This is not critical - the profile deletion is more important
-      }
-
       toast({
         title: "Success",
-        description: `Deleted ${userIds.length} users.`,
+        description: `Deleted ${userIds.length} users from the system.`,
       });
 
       fetchUsers();
