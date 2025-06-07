@@ -24,6 +24,16 @@ export const useUserManagement = () => {
       
       console.log('=== FETCHING USERS FOR MANAGEMENT ===');
       
+      // First, get all users from auth.users via admin API to ensure we have complete data
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        console.error('Error fetching auth users:', authError);
+        // If admin access fails, fall back to profiles only
+      }
+
+      console.log('=== AUTH USERS FETCHED ===', authUsers?.users?.length || 0);
+
       // Fetch profiles with their roles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -40,7 +50,7 @@ export const useUserManagement = () => {
         throw profilesError;
       }
 
-      console.log('=== PROFILES FETCHED ===', profiles?.length);
+      console.log('=== PROFILES FETCHED ===', profiles?.length || 0);
 
       // Fetch user roles
       const { data: userRoles, error: rolesError } = await supabase
@@ -52,11 +62,14 @@ export const useUserManagement = () => {
         throw rolesError;
       }
 
-      console.log('=== ROLES FETCHED ===', userRoles?.length);
+      console.log('=== ROLES FETCHED ===', userRoles?.length || 0);
 
-      // Combine the data - get the highest priority role for each user
-      const usersWithRoles: UserWithRole[] = profiles.map(profile => {
-        const userRoleRecords = userRoles.filter(role => role.user_id === profile.id);
+      // Combine profiles with auth data and roles
+      const usersWithRoles: UserWithRole[] = profiles?.map(profile => {
+        const userRoleRecords = userRoles?.filter(role => role.user_id === profile.id) || [];
+        
+        // Find corresponding auth user
+        const authUser = authUsers?.users?.find(user => user.id === profile.id);
         
         // Priority order: super-admin > publish > edit > read-only
         const rolePriority = {
@@ -77,12 +90,28 @@ export const useUserManagement = () => {
           }
         });
 
+        // Determine status based on auth user data
+        let status: 'active' | 'pending' | 'inactive' | 'invited' = 'active';
+        if (authUser) {
+          // Check if email is confirmed
+          if (!authUser.email_confirmed_at) {
+            status = 'pending';
+          } else if (authUser.banned_until) {
+            status = 'inactive';
+          } else {
+            status = 'active';
+          }
+        } else {
+          // Profile exists but no auth user - likely invited but not registered
+          status = 'invited';
+        }
+
         return {
           ...profile,
           role: highestRole,
-          status: 'active' as const // Default status for existing users
+          status
         };
-      });
+      }) || [];
 
       console.log('=== FINAL USERS WITH ROLES ===', usersWithRoles.length);
       setUsers(usersWithRoles);
@@ -91,7 +120,7 @@ export const useUserManagement = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to load users.",
+        description: "Failed to load users. Please check your permissions.",
       });
     } finally {
       setIsLoading(false);
@@ -139,6 +168,24 @@ export const useUserManagement = () => {
 
   const bulkDeleteUsers = async (userIds: string[]) => {
     try {
+      // First, check if any users have created policies
+      const { data: policiesCheck, error: policiesError } = await supabase
+        .from('Policies')
+        .select('id, creator_id')
+        .in('creator_id', userIds);
+
+      if (policiesError) throw policiesError;
+
+      if (policiesCheck && policiesCheck.length > 0) {
+        const usersWithPolicies = [...new Set(policiesCheck.map(p => p.creator_id))];
+        toast({
+          variant: "destructive",
+          title: "Cannot Delete Users",
+          description: `${usersWithPolicies.length} user(s) have created policies and cannot be deleted. Please reassign or delete their policies first.`,
+        });
+        return;
+      }
+
       // Delete user roles first
       const { error: rolesError } = await supabase
         .from('user_roles')
@@ -155,6 +202,16 @@ export const useUserManagement = () => {
 
       if (profilesError) throw profilesError;
 
+      // Try to delete from auth (this might fail if we don't have admin privileges)
+      try {
+        for (const userId of userIds) {
+          await supabase.auth.admin.deleteUser(userId);
+        }
+      } catch (authError) {
+        console.warn('Could not delete from auth system:', authError);
+        // This is not critical - the profile deletion is more important
+      }
+
       toast({
         title: "Success",
         description: `Deleted ${userIds.length} users.`,
@@ -166,7 +223,7 @@ export const useUserManagement = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to delete users.",
+        description: "Failed to delete users. They may have associated content that needs to be removed first.",
       });
     }
   };

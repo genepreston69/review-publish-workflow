@@ -18,6 +18,7 @@ interface UserWithRole {
   email: string;
   created_at: string;
   role: UserRole;
+  status?: 'active' | 'pending' | 'inactive' | 'invited';
 }
 
 interface UserTableProps {
@@ -69,13 +70,6 @@ export const UserTable = ({ users, onUserUpdated }: UserTableProps) => {
     }
   };
 
-  // Determine user status based on available data
-  const getUserStatus = (user: UserWithRole): 'active' | 'pending' | 'inactive' | 'invited' => {
-    // For now, all users are considered active
-    // This can be enhanced when we add proper status tracking
-    return 'active';
-  };
-
   return (
     <div className="rounded-md border">
       <Table>
@@ -119,7 +113,7 @@ export const UserTable = ({ users, onUserUpdated }: UserTableProps) => {
                 <RoleBadge role={user.role} />
               </TableCell>
               <TableCell>
-                <UserStatusBadge status={getUserStatus(user)} />
+                <UserStatusBadge status={user.status || 'active'} />
               </TableCell>
               <TableCell>
                 {new Date(user.created_at).toLocaleDateString()}
