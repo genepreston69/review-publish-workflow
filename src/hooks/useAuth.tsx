@@ -40,28 +40,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .order('role', { ascending: false })
-        .limit(1);
+        .single();
 
       if (error) {
         console.error('=== ERROR FETCHING USER ROLE ===', error);
-        // If there's a database error, default to read-only
-        return 'read-only';
+        // If there's a database error, default to readonly
+        return 'readonly';
       }
 
-      console.log('=== USER ROLES DATA ===', data);
+      console.log('=== USER ROLE DATA ===', data);
 
-      if (data && data.length > 0) {
-        const role = data[0].role as UserRole;
+      if (data && data.role) {
+        const role = data.role as UserRole;
         console.log('=== FOUND ROLE ===', role);
         return role;
       }
 
-      console.log('=== NO ROLE FOUND, DEFAULTING TO READ-ONLY ===');
-      return 'read-only';
+      console.log('=== NO ROLE FOUND, DEFAULTING TO READONLY ===');
+      return 'readonly';
     } catch (error) {
       console.error('=== ERROR IN FETCH USER ROLE ===', error);
-      return 'read-only';
+      return 'readonly';
     }
   };
 
@@ -88,14 +87,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (session?.user) {
           console.log('=== USER FOUND, FETCHING ROLE ===');
           try {
-            // Remove timeout and just fetch the role directly
             const role = await fetchUserRole(session.user.id);
             console.log('=== ROLE FETCHED ===', role);
             setUserRole(role);
           } catch (error) {
             console.error('=== ROLE FETCH FAILED ===', error);
-            // Always set a fallback role so the app doesn't stay in loading state
-            setUserRole('read-only');
+            setUserRole('readonly');
           } finally {
             setIsLoading(false);
           }
@@ -122,13 +119,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (session?.user) {
           try {
-            // Remove timeout for initial role fetch as well
             const role = await fetchUserRole(session.user.id);
             console.log('=== INITIAL ROLE FETCHED ===', role);
             setUserRole(role);
           } catch (error) {
             console.error('=== INITIAL ROLE FETCH FAILED ===', error);
-            setUserRole('read-only');
+            setUserRole('readonly');
           }
         }
       } catch (error) {
@@ -149,23 +145,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signOut = async () => {
     console.log('=== SIGNING OUT ===');
     try {
-      // Clear local state first to provide immediate feedback
       setSession(null);
       setCurrentUser(null);
       setUserRole(null);
       
-      // Then sign out from Supabase
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Error signing out:', error);
-        // Even if there's an error, we want to clear the local state
-        // This handles cases where the session might already be expired
       } else {
         console.log('=== SIGN OUT SUCCESSFUL ===');
       }
     } catch (error) {
       console.error('=== UNEXPECTED SIGN OUT ERROR ===', error);
-      // Clear local state even on unexpected errors
       setSession(null);
       setCurrentUser(null);
       setUserRole(null);

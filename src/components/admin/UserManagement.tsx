@@ -2,8 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CreateUserForm } from './CreateUserForm';
-import { InviteUsersForm } from './InviteUsersForm';
+import { InviteOnlyUserForm } from './InviteOnlyUserForm';
 import { UserTable } from './UserTable';
 import { UserSearchAndFilter } from './UserSearchAndFilter';
 import { useUserManagement } from '@/hooks/useUserManagement';
@@ -34,10 +33,8 @@ export const UserManagement = () => {
       filtered = filtered.filter(user => user.role === roleFilter);
     }
 
-    // Apply status filter (for now, all users are considered 'active')
-    // This can be extended when we add status tracking to the database
+    // Apply status filter
     if (statusFilter !== 'all') {
-      // For now, treat all existing users as active
       if (statusFilter !== 'active') {
         filtered = [];
       }
@@ -80,14 +77,13 @@ export const UserManagement = () => {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <User className="w-5 h-5" />
-            User Management
+            User Management (Invite-Only)
           </CardTitle>
           <div className="flex gap-2">
-            <InviteUsersForm onInvitesSent={fetchUsers} />
-            <CreateUserForm onUserCreated={fetchUsers} />
-            <Button variant="outline">
+            <InviteOnlyUserForm onInviteSent={fetchUsers} />
+            <Button variant="outline" disabled>
               <Upload className="w-4 h-4 mr-2" />
-              Bulk Import
+              Bulk Import (Coming Soon)
             </Button>
           </div>
         </div>
