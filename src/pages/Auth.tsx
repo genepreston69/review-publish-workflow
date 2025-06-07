@@ -161,25 +161,25 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Card className="shadow-xl border-0 bg-white/95 backdrop-blur">
-          <CardHeader className="text-center pb-8">
-            <div className="mx-auto mb-4">
-              <div className="text-2xl font-bold text-slate-800 mb-2">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-sm">
+        <Card className="shadow-xl border-0 bg-white/95 backdrop-blur max-w-sm mx-auto">
+          <CardHeader className="text-center pb-6 px-6">
+            <div className="mx-auto mb-3">
+              <div className="text-xl font-bold text-slate-800 mb-1">
                 RECOVERY<span className="text-blue-600">POINT</span>
               </div>
-              <div className="text-sm text-slate-600 font-medium">WEST VIRGINIA</div>
+              <div className="text-xs text-slate-600 font-medium">WEST VIRGINIA</div>
             </div>
-            <CardTitle className="text-xl text-slate-700">Content Management System</CardTitle>
-            <CardDescription className="text-slate-500">
+            <CardTitle className="text-lg text-slate-700">Content Management System</CardTitle>
+            <CardDescription className="text-sm text-slate-500">
               Access your policy and form management dashboard
             </CardDescription>
           </CardHeader>
           
-          <CardContent>
+          <CardContent className="px-6 pb-6">
             <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
                 <TabsTrigger value="signin" className="text-sm">Sign In</TabsTrigger>
                 <TabsTrigger value="signup" className="text-sm">Sign Up</TabsTrigger>
               </TabsList>
@@ -196,7 +196,7 @@ const Auth = () => {
                       placeholder="Enter your email"
                       value={signInEmail}
                       onChange={(e) => setSignInEmail(e.target.value)}
-                      className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                      className="h-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
                       required
                       autoComplete="email"
                     />
@@ -212,7 +212,7 @@ const Auth = () => {
                       placeholder="Enter your password"
                       value={signInPassword}
                       onChange={(e) => setSignInPassword(e.target.value)}
-                      className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                      className="h-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
                       required
                       autoComplete="current-password"
                     />
@@ -231,7 +231,7 @@ const Auth = () => {
                   <Button 
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                    className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
                   >
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign In
