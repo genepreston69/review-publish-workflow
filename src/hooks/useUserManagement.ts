@@ -20,8 +20,9 @@ export const useUserManagement = () => {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
+      console.log('=== FETCHING USERS WITH NEW STRUCTURE ===');
       
-      // Fetch profiles with their roles
+      // Fetch profiles with their roles using the new structure
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select(`
@@ -31,14 +32,24 @@ export const useUserManagement = () => {
           created_at
         `);
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('=== PROFILES ERROR ===', profilesError);
+        throw profilesError;
+      }
 
-      // Fetch user roles
+      console.log('=== PROFILES FETCHED ===', profiles);
+
+      // Fetch user roles using the new structure
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role');
 
-      if (rolesError) throw rolesError;
+      if (rolesError) {
+        console.error('=== ROLES ERROR ===', rolesError);
+        throw rolesError;
+      }
+
+      console.log('=== USER ROLES FETCHED ===', userRoles);
 
       // Combine the data - get the highest priority role for each user
       const usersWithRoles: UserWithRole[] = profiles.map(profile => {
@@ -69,14 +80,21 @@ export const useUserManagement = () => {
         };
       });
 
+      console.log('=== FINAL USERS WITH ROLES ===', usersWithRoles);
       setUsers(usersWithRoles);
+
+      toast({
+        title: "Success",
+        description: `Loaded ${usersWithRoles.length} users successfully.`,
+      });
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('=== ERROR FETCHING USERS ===', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to load users.",
+        description: "Failed to load users. Please check your permissions.",
       });
+      setUsers([]); // Set empty array on error
     } finally {
       setIsLoading(false);
     }

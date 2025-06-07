@@ -40,7 +40,7 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
     setIsLoading(true);
 
     try {
-      console.log('Creating user with signup method:', formData.email);
+      console.log('=== CREATING USER ===', formData.email);
       
       // Create the user using regular signup
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -64,17 +64,23 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         // Wait a moment for the profile to be created by the trigger
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Update the user role if it's not read-only (which is the default)
+        // The trigger will create a default 'read-only' role, so we only need to update if different
         if (formData.role !== 'read-only') {
           console.log('Updating user role to:', formData.role);
+          
+          // Delete the default role first
+          await supabase
+            .from('user_roles')
+            .delete()
+            .eq('user_id', authData.user.id);
+          
+          // Insert the new role
           const { error: roleError } = await supabase
             .from('user_roles')
-            .update({ role: formData.role })
-            .eq('user_id', authData.user.id);
+            .insert({ user_id: authData.user.id, role: formData.role });
 
           if (roleError) {
             console.error('Role update error:', roleError);
-            // Don't throw here, as the user was created successfully
             toast({
               variant: "destructive",
               title: "Warning",
