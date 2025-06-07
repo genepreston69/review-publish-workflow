@@ -4,22 +4,27 @@ export const getContentStyles = (): string => {
     /* Simple Pagination - Remove unnecessary page breaks */
     .policy-section {
       margin-bottom: 25px;
-      page-break-inside: avoid; /* Keep short policies together */
+      /* No page breaks - let content flow naturally */
       orphans: 2;
       widows: 2;
     }
     
     .policy-purpose {
-      /* Remove any page breaks after purpose - let content flow naturally */
+      /* No page breaks after purpose - let content flow naturally */
     }
     
     .major-section-header {
-      page-break-before: always; /* Only break before major sections */
+      /* No automatic page breaks - let content flow */
     }
     
-    /* Add page break before each policy header */
+    /* Page break after TOC */
+    .toc-page {
+      page-break-after: always;
+    }
+    
+    /* Page break after each policy */
     .policy-page {
-      page-break-before: always; /* Each policy starts on a new page */
+      page-break-after: always; /* Each policy ends with a page break */
     }
     
     /* TOC Table Styles */

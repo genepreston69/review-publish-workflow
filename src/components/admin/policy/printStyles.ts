@@ -1,7 +1,7 @@
 
 export const getPrintStyles = (): string => {
   return `
-    /* Print-optimized styles with proper page breaks */
+    /* Print-optimized styles with minimal page breaks */
     @media print {
       @page {
         margin: 0.75in 0.75in 1.25in 0.75in;
@@ -32,6 +32,9 @@ export const getPrintStyles = (): string => {
       /* Cover page - no page number */
       .cover-page {
         page: cover;
+        page-break-after: always;
+        min-height: 100vh;
+        padding-bottom: 0;
       }
       
       @page cover {
@@ -68,40 +71,42 @@ export const getPrintStyles = (): string => {
         display: none !important;
       }
       
-      /* Page breaks for policies */
+      /* Page break after TOC */
+      .toc-page {
+        page-break-after: always !important;
+        min-height: auto;
+        max-height: none;
+      }
+      
+      /* Page break after each policy */
       .policy-page {
-        page-break-before: always !important; /* Each policy starts on new page */
-        break-before: always !important;
+        page-break-after: always !important;
+        break-after: always !important;
         position: relative;
         min-height: auto;
         padding-bottom: 0;
       }
       
-      /* Keep policy sections together but allow natural flow */
+      /* Let policy sections flow naturally within a policy */
       .policy-section {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
         orphans: 2 !important;
         widows: 2 !important;
+        page-break-after: auto !important;
+        break-after: auto !important;
       }
       
-      /* Remove forced page breaks after PURPOSE */
+      /* No page breaks after PURPOSE - let content flow */
       .policy-purpose {
         page-break-after: auto !important;
         break-after: auto !important;
       }
       
-      /* Only break before major section headers */
+      /* No automatic page breaks for major section headers */
       .major-section-header {
-        page-break-before: always !important;
-        break-before: always !important;
-      }
-      
-      .cover-page {
-        page-break-before: avoid;
-        page-break-after: always;
-        min-height: 100vh;
-        padding-bottom: 0;
+        page-break-before: auto !important;
+        break-before: auto !important;
       }
       
       .policy-title-section,
@@ -126,12 +131,6 @@ export const getPrintStyles = (): string => {
         height: 0;
         width: 0;
         display: block;
-      }
-      
-      .toc-page {
-        page-break-after: always;
-        min-height: auto;
-        max-height: none;
       }
 
       .toc-main-title {
