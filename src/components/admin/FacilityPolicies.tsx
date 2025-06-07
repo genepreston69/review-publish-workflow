@@ -10,8 +10,8 @@ export function FacilityPolicies() {
   const { userRole } = useAuth();
   const { facilityPolicies, isLoadingPolicies, refetchPolicies } = useAllUserPolicies();
 
-  const canPublish = userRole === 'publish' || userRole === 'admin';
-  const isAdmin = userRole === 'admin';
+  const canPublish = userRole === 'publish' || userRole === 'super-admin';
+  const isSuperAdmin = userRole === 'super-admin';
   const isEditor = userRole === 'edit';
 
   const handleViewPolicy = (policyId: string) => {
@@ -58,7 +58,7 @@ export function FacilityPolicies() {
           policies={facilityPolicies}
           isEditor={isEditor}
           canPublish={canPublish}
-          isSuperAdmin={isAdmin}
+          isSuperAdmin={isSuperAdmin}
           onView={handleViewPolicy}
           onUpdateStatus={handleUpdateStatus}
           onDelete={handleDeletePolicy}

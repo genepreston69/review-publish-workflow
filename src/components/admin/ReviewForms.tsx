@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { FormList } from './form/FormList';
@@ -26,7 +27,7 @@ export function ReviewForms() {
   const [editingFormId, setEditingFormId] = useState<string | null>(null);
   const [viewingFormId, setViewingFormId] = useState<string | null>(null);
 
-  const canPublish = userRole === 'publish' || userRole === 'admin';
+  const canPublish = userRole === 'publish' || userRole === 'super-admin';
 
   const handleEditForm = useCallback((formId: string) => {
     console.log('Edit form:', formId);

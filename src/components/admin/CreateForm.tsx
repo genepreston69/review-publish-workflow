@@ -7,7 +7,7 @@ export function CreateForm() {
   const { userRole } = useAuth();
   const { isLoadingForms } = useForms();
 
-  const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'admin';
+  const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
   if (!hasEditAccess) {
     return (

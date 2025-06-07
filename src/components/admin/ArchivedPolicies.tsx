@@ -17,7 +17,7 @@ export function ArchivedPolicies() {
     queryFn: fetchArchivedPolicies,
   });
 
-  const isAdmin = userRole === 'admin';
+  const isSuperAdmin = userRole === 'super-admin';
 
   const handleViewPolicy = (policyId: string) => {
     console.log('View archived policy:', policyId);
@@ -33,13 +33,13 @@ export function ArchivedPolicies() {
     await updatePolicyStatus(policyId, 'draft');
   };
 
-  if (!isAdmin) {
+  if (!isSuperAdmin) {
     return (
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Archived Policies</h2>
           <p className="text-muted-foreground">
-            You need admin access to view archived policies.
+            You need super-admin access to view archived policies.
           </p>
         </div>
       </div>

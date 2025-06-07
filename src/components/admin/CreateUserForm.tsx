@@ -20,7 +20,7 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
   const [formData, setFormData] = useState({
     email: '',
     name: '',
-    role: 'readonly' as UserRole,
+    role: 'read-only' as UserRole,
     password: ''
   });
   const { toast } = useToast();
@@ -40,20 +40,21 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
     setIsLoading(true);
 
     try {
-      console.log('Creating user with admin API:', formData.email);
+      console.log('Creating user with signup method:', formData.email);
       
-      // Use admin API to create the user
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // Create the user using regular signup
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        email_confirm: true, // Skip email confirmation for admin-created users
-        user_metadata: {
-          name: formData.name
+        options: {
+          data: {
+            name: formData.name
+          }
         }
       });
 
       if (authError) {
-        console.error('Auth admin createUser error:', authError);
+        console.error('Auth signup error:', authError);
         throw authError;
       }
 
@@ -63,8 +64,8 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         // Wait a moment for the profile to be created by the trigger
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Update the user role if it's not readonly (which is the default)
-        if (formData.role !== 'readonly') {
+        // Update the user role if it's not read-only (which is the default)
+        if (formData.role !== 'read-only') {
           console.log('Updating user role to:', formData.role);
           const { error: roleError } = await supabase
             .from('user_roles')
@@ -93,7 +94,7 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         setFormData({
           email: '',
           name: '',
-          role: 'readonly',
+          role: 'read-only',
           password: ''
         });
         setOpen(false);
@@ -104,14 +105,12 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
       
       let errorMessage = "Failed to create user. Please try again.";
       
-      if (error.message?.includes('User already registered') || error.message?.includes('already been registered')) {
+      if (error.message?.includes('User already registered')) {
         errorMessage = "A user with this email address already exists.";
       } else if (error.message?.includes('Password')) {
         errorMessage = "Password must be at least 6 characters long.";
       } else if (error.message?.includes('Email')) {
         errorMessage = "Please provide a valid email address.";
-      } else if (error.message?.includes('not_admin') || error.message?.includes('admin')) {
-        errorMessage = "You don't have permission to create users. Please contact a super admin.";
       }
       
       toast({
@@ -184,10 +183,10 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="readonly">Read Only</SelectItem>
+                <SelectItem value="read-only">Read Only</SelectItem>
                 <SelectItem value="edit">Editor</SelectItem>
                 <SelectItem value="publish">Publisher</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="super-admin">Super Admin</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -1,4 +1,3 @@
-
 import {
   Sidebar,
   SidebarContent,
@@ -23,10 +22,10 @@ export function AppSidebar() {
   const { activeSection, navigateToSection } = useAppNavigation();
 
   const isEditor = userRole === 'edit';
-  const canPublish = userRole === 'publish' || userRole === 'admin';
-  const isAdmin = userRole === 'admin';
-  const isReadOnly = userRole === 'readonly';
-  const hasAdminAccess = !isReadOnly; // editors, publishers, and admins
+  const canPublish = userRole === 'publish' || userRole === 'super-admin';
+  const isSuperAdmin = userRole === 'super-admin';
+  const isReadOnly = userRole === 'read-only';
+  const hasAdminAccess = !isReadOnly; // editors, publishers, and super-admins
 
   // Policy items - available to all users
   const policyItems = [
@@ -55,7 +54,7 @@ export function AppSidebar() {
       title: "Review Policies",
       icon: FileCheck,
     }] : []),
-    ...(isAdmin ? [{
+    ...(isSuperAdmin ? [{
       id: "archived-policies",
       title: "Archived Policies",
       icon: Archive,
@@ -95,8 +94,8 @@ export function AppSidebar() {
     },
   ] : [];
 
-  // Admin items (admin only)
-  const adminItems = isAdmin ? [
+  // Admin items (super-admin only)
+  const adminItems = isSuperAdmin ? [
     {
       id: "users",
       title: "User Management",
@@ -174,8 +173,8 @@ export function AppSidebar() {
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <Settings className="w-4 h-4" />
           <span>
-            {isAdmin && "Admin"}
-            {canPublish && !isAdmin && "Publisher"}
+            {isSuperAdmin && "Super Admin"}
+            {canPublish && !isSuperAdmin && "Publisher"}
             {isEditor && "Editor"}
             {isReadOnly && "Read Only"}
           </span>

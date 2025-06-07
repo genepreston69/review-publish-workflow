@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,15 +35,15 @@ export function PolicyViewActions({
   const [showCommentSection, setShowCommentSection] = useState(false);
   const [actionType, setActionType] = useState<'request-changes' | 'publish' | null>(null);
   
-  const canPublish = userRole === 'publish' || userRole === 'admin';
+  const canPublish = userRole === 'publish' || userRole === 'super-admin';
   const isEditor = userRole === 'edit';
-  const isAdmin = userRole === 'admin';
+  const isSuperAdmin = userRole === 'super-admin';
   const { duplicatePolicyForUpdate, archiveByPolicyNumber, isLoading: isDuplicating } = usePolicyDuplication();
 
   // Check if current user is the creator (maker/checker enforcement)
   const isCreator = currentUser?.id === policy.creator_id;
-  // Admins can approve/publish any policy, regular publishers can't approve their own
-  const canApproveOrPublish = isAdmin || (canPublish && !isCreator);
+  // Super admins can approve/publish any policy, regular publishers can't approve their own
+  const canApproveOrPublish = isSuperAdmin || (canPublish && !isCreator);
 
   const handleUpdatePolicy = async () => {
     const newPolicyId = await duplicatePolicyForUpdate(policy.id);
@@ -256,7 +257,7 @@ export function PolicyViewActions({
         )}
 
         {/* Update Policy Button - Show for published policies for users with edit/publish permissions or super admins */}
-        {policy.status === 'published' && (isAdmin || isEditor || canPublish) && (
+        {policy.status === 'published' && (isSuperAdmin || isEditor || canPublish) && (
           <Button 
             variant="outline" 
             onClick={handleUpdatePolicy}

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { PolicyList } from './policy/PolicyList';
@@ -24,7 +25,7 @@ export function ReviewPolicies() {
     
     if (!needsReview) return false;
     
-    // Admins can see all policies needing review
+    // Super-admins can see all policies needing review
     if (isSuperAdmin) {
       return true;
     }
@@ -44,7 +45,7 @@ export function ReviewPolicies() {
     return false;
   });
 
-  const canPublish = userRole === 'publish' || userRole === 'admin';
+  const canPublish = userRole === 'publish' || userRole === 'super-admin';
   const canArchive = isSuperAdmin;
 
   const handleEditPolicy = (policyId: string) => {

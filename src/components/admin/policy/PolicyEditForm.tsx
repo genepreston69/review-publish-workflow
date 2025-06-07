@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/hooks/useAuth';
+import { Card } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, X, Loader2 } from 'lucide-react';
+import { PolicyFormValues, policyFormSchema } from './PolicyFormSchema';
 import { Policy } from './types';
+import { PolicyEditFormHeader } from './PolicyEditFormHeader';
+import { PolicyEditFormContent } from './PolicyEditFormContent';
+import { PolicyEditFormLoading } from './PolicyEditFormLoading';
+import { PolicyEditFormNotFound } from './PolicyEditFormNotFound';
+import { PolicyEditFormAccessDenied } from './PolicyEditFormAccessDenied';
 
 interface PolicyEditFormProps {
   policyId: string;
@@ -20,254 +22,184 @@ interface PolicyEditFormProps {
 export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEditFormProps) {
   const { currentUser, userRole } = useAuth();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingPolicy, setIsLoadingPolicy] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [policy, setPolicy] = useState<Policy | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    policy_type: '',
-    purpose: '',
-    policy_text: '',
-    procedure: '',
-    reviewer: ''
+
+  const form = useForm<PolicyFormValues>({
+    resolver: zodResolver(policyFormSchema),
+    defaultValues: {
+      name: '',
+      policy_type: '',
+      purpose: '',
+      procedure: '',
+      policy_text: '',
+    },
   });
 
   // Check if user has edit access
-  const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'admin';
+  const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
+  // Load existing policy data
   useEffect(() => {
     const loadPolicy = async () => {
-      setIsLoadingPolicy(true);
       try {
+        setIsLoading(true);
+        console.log('=== LOADING POLICY FOR EDIT ===', policyId);
+
         const { data, error } = await supabase
           .from('Policies')
-          .select('*')
+          .select(`
+            *,
+            creator:creator_id(id, name, email),
+            publisher:publisher_id(id, name, email)
+          `)
           .eq('id', policyId)
           .single();
 
         if (error) {
-          console.error('Error fetching policy:', error);
+          console.error('Error loading policy:', error);
           toast({
             variant: "destructive",
             title: "Error",
-            description: "Failed to load policy.",
+            description: "Failed to load policy for editing.",
           });
+          onCancel();
           return;
         }
 
-        if (data) {
-          setPolicy(data);
-          setFormData({
-            name: data.name || '',
-            policy_type: data.policy_type || '',
-            purpose: data.purpose || '',
-            policy_text: data.policy_text || '',
-            procedure: data.procedure || '',
-            reviewer: data.reviewer || ''
-          });
-        }
+        console.log('=== POLICY LOADED FOR EDIT ===', data);
+        setPolicy(data);
+
+        // Reset form with policy data
+        const initialData: PolicyFormValues = {
+          name: data.name || '',
+          policy_type: data.policy_type || '',
+          purpose: data.purpose || '',
+          procedure: data.procedure || '',
+          policy_text: data.policy_text || '',
+        };
+        form.reset(initialData);
       } catch (error) {
-        console.error('Error fetching policy:', error);
+        console.error('Error loading policy:', error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "An unexpected error occurred.",
+          description: "Failed to load policy for editing.",
         });
+        onCancel();
       } finally {
-        setIsLoadingPolicy(false);
+        setIsLoading(false);
       }
     };
 
-    loadPolicy();
-  }, [policyId, toast]);
+    if (policyId) {
+      loadPolicy();
+    }
+  }, [policyId, toast, onCancel, form]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const onSubmit = async (data: PolicyFormValues) => {
+    console.log('=== UPDATING POLICY ===');
+    console.log('Form data:', data);
+    console.log('Policy ID:', policyId);
 
-  const handleSelectChange = (value: string, name: string) => {
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
+    if (!currentUser || !hasEditAccess || !policy) {
+      console.log('=== ACCESS DENIED OR NO POLICY ===');
+      toast({
+        variant: "destructive",
+        title: "Access Denied",
+        description: "You don't have permission to edit policies.",
+      });
+      return;
+    }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
+      console.log('=== UPDATING POLICY IN DATABASE ===');
+      const updateData = {
+        name: data.name,
+        policy_type: data.policy_type,
+        purpose: data.purpose,
+        procedure: data.procedure,
+        policy_text: data.policy_text,
+        updated_at: new Date().toISOString(),
+        // Keep existing policy_number and other fields
+      };
+
+      const { data: updatedData, error } = await supabase
         .from('Policies')
-        .update({
-          ...formData,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', policyId);
+        .update(updateData)
+        .eq('id', policyId)
+        .select(`
+          *,
+          creator:creator_id(id, name, email),
+          publisher:publisher_id(id, name, email)
+        `);
 
       if (error) {
-        console.error('Error updating policy:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to update policy.",
-        });
-        return;
+        console.error('=== SUPABASE UPDATE ERROR ===', error);
+        throw error;
       }
+
+      console.log('=== POLICY UPDATED SUCCESSFULLY ===', updatedData);
 
       toast({
         title: "Success",
         description: "Policy updated successfully.",
       });
 
-      // Refresh the policy list
-      const updatedPolicy = { ...policy, ...formData } as Policy;
-      onPolicyUpdated(updatedPolicy);
+      // Notify parent component
+      if (updatedData && updatedData[0]) {
+        onPolicyUpdated(updatedData[0]);
+      }
     } catch (error) {
-      console.error('Error updating policy:', error);
+      console.error('=== ERROR UPDATING POLICY ===', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred.",
+        description: error instanceof Error ? error.message : "Failed to update policy. Please try again.",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   if (!hasEditAccess) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Edit Policy</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            You need edit access or higher to edit policies.
-          </p>
-        </CardContent>
-      </Card>
-    );
+    return <PolicyEditFormAccessDenied onCancel={onCancel} />;
   }
 
-  if (isLoadingPolicy || !policy) {
-    return (
-      <Card>
-        <CardContent className="flex justify-center items-center h-32">
-          <Loader2 className="h-6 w-6 animate-spin" />
-        </CardContent>
-      </Card>
-    );
+  if (isLoading) {
+    return <PolicyEditFormLoading />;
   }
+
+  if (!policy) {
+    return <PolicyEditFormNotFound onCancel={onCancel} />;
+  }
+
+  const initialData: PolicyFormValues = {
+    name: policy.name || '',
+    policy_type: policy.policy_type || '',
+    purpose: policy.purpose || '',
+    procedure: policy.procedure || '',
+    policy_text: policy.policy_text || '',
+  };
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Edit Policy</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Policy Name</Label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              value={formData.name}
-              onChange={handleInputChange}
-              placeholder="Enter policy name"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="policy_type">Policy Type</Label>
-            <Select
-              value={formData.policy_type}
-              onValueChange={(value) => handleSelectChange(value, 'policy_type')}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select policy type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="HR">HR</SelectItem>
-                <SelectItem value="RP">RP</SelectItem>
-                <SelectItem value="S">S</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="purpose">Purpose</Label>
-            <Textarea
-              id="purpose"
-              name="purpose"
-              value={formData.purpose}
-              onChange={handleInputChange}
-              placeholder="Enter policy purpose"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="policy_text">Policy Text</Label>
-            <Textarea
-              id="policy_text"
-              name="policy_text"
-              value={formData.policy_text}
-              onChange={handleInputChange}
-              placeholder="Enter policy text"
-              className="min-h-[150px]"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="procedure">Procedure</Label>
-            <Textarea
-              id="procedure"
-              name="procedure"
-              value={formData.procedure}
-              onChange={handleInputChange}
-              placeholder="Enter procedure"
-              className="min-h-[150px]"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="reviewer">Reviewer</Label>
-            <Input
-              id="reviewer"
-              name="reviewer"
-              type="email"
-              value={formData.reviewer}
-              onChange={handleInputChange}
-              placeholder="Enter reviewer email"
-            />
-          </div>
-
-          <div className="flex justify-between">
-            <Button variant="ghost" onClick={onCancel}>
-              <X className="w-4 h-4 mr-2" />
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Update Policy
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
+      <PolicyEditFormHeader 
+        policyNumber={policy.policy_number} 
+        onCancel={onCancel} 
+      />
+      <PolicyEditFormContent 
+        initialData={initialData}
+        onSubmit={onSubmit}
+        isSubmitting={isSubmitting}
+        onCancel={onCancel}
+        form={form}
+        policyId={policyId}
+        showChangeTracking={true}
+      />
     </Card>
   );
 }

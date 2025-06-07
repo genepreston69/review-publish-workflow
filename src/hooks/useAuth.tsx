@@ -40,27 +40,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .single();
+        .order('role', { ascending: false })
+        .limit(1);
 
       if (error) {
         console.error('=== ERROR FETCHING USER ROLE ===', error);
-        // If there's a database error, default to readonly
-        return 'readonly';
+        // If there's a database error, default to read-only
+        return 'read-only';
       }
 
-      console.log('=== USER ROLE DATA ===', data);
+      console.log('=== USER ROLES DATA ===', data);
 
-      if (data && data.role) {
-        const role = data.role as UserRole;
+      if (data && data.length > 0) {
+        const role = data[0].role as UserRole;
         console.log('=== FOUND ROLE ===', role);
         return role;
       }
 
-      console.log('=== NO ROLE FOUND, DEFAULTING TO READONLY ===');
-      return 'readonly';
+      console.log('=== NO ROLE FOUND, DEFAULTING TO READ-ONLY ===');
+      return 'read-only';
     } catch (error) {
       console.error('=== ERROR IN FETCH USER ROLE ===', error);
-      return 'readonly';
+      return 'read-only';
     }
   };
 
@@ -87,12 +88,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (session?.user) {
           console.log('=== USER FOUND, FETCHING ROLE ===');
           try {
-            const role = await fetchUserRole(session.user.id);
+            // Reduced timeout and better error handling
+            const rolePromise = fetchUserRole(session.user.id);
+            const timeoutPromise = new Promise<UserRole>((_, reject) => {
+              setTimeout(() => reject(new Error('Role fetch timeout')), 10000); // Increased to 10 seconds
+            });
+
+            const role = await Promise.race([rolePromise, timeoutPromise]);
             console.log('=== ROLE FETCHED ===', role);
             setUserRole(role);
           } catch (error) {
             console.error('=== ROLE FETCH FAILED ===', error);
-            setUserRole('readonly');
+            // Always set a fallback role so the app doesn't stay in loading state
+            setUserRole('read-only');
           } finally {
             setIsLoading(false);
           }
@@ -119,12 +127,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (session?.user) {
           try {
-            const role = await fetchUserRole(session.user.id);
+            // Use timeout for initial role fetch as well
+            const rolePromise = fetchUserRole(session.user.id);
+            const timeoutPromise = new Promise<UserRole>((_, reject) => {
+              setTimeout(() => reject(new Error('Initial role fetch timeout')), 10000);
+            });
+
+            const role = await Promise.race([rolePromise, timeoutPromise]);
             console.log('=== INITIAL ROLE FETCHED ===', role);
             setUserRole(role);
           } catch (error) {
             console.error('=== INITIAL ROLE FETCH FAILED ===', error);
-            setUserRole('readonly');
+            setUserRole('read-only');
           }
         }
       } catch (error) {
@@ -145,18 +159,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signOut = async () => {
     console.log('=== SIGNING OUT ===');
     try {
+      // Clear local state first to provide immediate feedback
       setSession(null);
       setCurrentUser(null);
       setUserRole(null);
       
+      // Then sign out from Supabase
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Error signing out:', error);
+        // Even if there's an error, we want to clear the local state
+        // This handles cases where the session might already be expired
       } else {
         console.log('=== SIGN OUT SUCCESSFUL ===');
       }
     } catch (error) {
       console.error('=== UNEXPECTED SIGN OUT ERROR ===', error);
+      // Clear local state even on unexpected errors
       setSession(null);
       setCurrentUser(null);
       setUserRole(null);

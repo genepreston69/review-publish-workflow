@@ -17,11 +17,11 @@ export function useAdminLogic() {
   }, [tabFromUrl]);
 
   const isEditor = userRole === 'edit';
-  const canPublish = userRole === 'publish' || userRole === 'admin';
-  const isAdmin = userRole === 'admin';
+  const canPublish = userRole === 'publish' || userRole === 'super-admin';
+  const isSuperAdmin = userRole === 'super-admin';
 
   const getPageTitle = () => {
-    if (userRole === 'admin') return 'Admin Dashboard';
+    if (userRole === 'super-admin') return 'Super Admin Dashboard';
     if (userRole === 'publish') return 'Publisher Dashboard';
     if (userRole === 'edit') return 'Editor Dashboard';
     return 'Dashboard';
@@ -36,7 +36,7 @@ export function useAdminLogic() {
     setActiveTab,
     isEditor,
     canPublish,
-    isSuperAdmin: isAdmin,
+    isSuperAdmin,
     getPageTitle,
     handleTabChange
   };

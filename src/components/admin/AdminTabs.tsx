@@ -7,8 +7,8 @@ export function AdminTabs() {
   const { userRole } = useAuth();
 
   const isEditor = userRole === 'edit';
-  const canPublish = userRole === 'publish' || userRole === 'admin';
-  const isAdmin = userRole === 'admin';
+  const canPublish = userRole === 'publish' || userRole === 'super-admin';
+  const isSuperAdmin = userRole === 'super-admin';
 
   const policyTabs = [
     {
@@ -84,7 +84,7 @@ export function AdminTabs() {
     },
   ];
 
-  const allTabs = [...policyTabs, ...formTabs, ...(isAdmin ? adminTabs : [])];
+  const allTabs = [...policyTabs, ...formTabs, ...(isSuperAdmin ? adminTabs : [])];
 
   return (
     <div className="mb-6">

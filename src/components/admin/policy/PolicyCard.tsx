@@ -1,111 +1,87 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Eye, Edit, Archive, Trash2, RotateCcw, CheckCircle, Clock, XCircle } from 'lucide-react';
-import { Policy } from './types';
+
 import { useAuth } from '@/hooks/useAuth';
+import { Policy } from './types';
+import { PolicyCardListView } from './PolicyCardListView';
+import { PolicyCardGridView } from './PolicyCardGridView';
 
 interface PolicyCardProps {
   policy: Policy;
-  isEditor: boolean;
   canPublish: boolean;
-  isAdmin: boolean;
-  onView: (policyId: string) => void;
+  isEditing: boolean;
+  onUpdateStatus: (policyId: string, newStatus: string) => void;
   onEdit?: (policyId: string) => void;
-  onUpdateStatus?: (policyId: string, newStatus: string) => void;
+  onView?: (policyId: string) => void;
   onDelete?: (policyId: string) => void;
   onArchive?: (policyId: string) => void;
+  compact?: boolean;
+  listView?: boolean;
 }
 
-export function PolicyCard({ 
-  policy, 
-  isEditor, 
-  canPublish, 
-  isAdmin,
-  onView, 
-  onEdit, 
-  onUpdateStatus, 
-  onDelete, 
-  onArchive 
+export function PolicyCard({
+  policy,
+  canPublish,
+  isEditing,
+  onUpdateStatus,
+  onEdit,
+  onView,
+  onDelete,
+  onArchive,
+  compact = false,
+  listView = false,
 }: PolicyCardProps) {
   const { currentUser, userRole } = useAuth();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'draft':
-        return 'bg-gray-100 text-gray-700';
-      case 'under-review':
-      case 'under review':
-        return 'bg-blue-100 text-blue-700';
-      case 'awaiting-changes':
-      case 'awaiting changes':
-        return 'bg-orange-100 text-orange-700';
-      case 'published':
-        return 'bg-green-100 text-green-700';
-      case 'archived':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
-  };
+  const canEdit = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
+  const canDelete = userRole === 'super-admin';
+  const canArchive = userRole === 'super-admin';
+  const isSuperAdmin = userRole === 'super-admin';
+  const isCreator = policy.creator_id === currentUser?.id;
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'draft':
-        return Clock;
-      case 'under-review':
-      case 'under review':
-        return RotateCcw;
-      case 'awaiting-changes':
-      case 'awaiting changes':
-        return XCircle;
-      case 'published':
-        return CheckCircle;
-      case 'archived':
-        return Archive;
-      default:
-        return Eye;
-    }
-  };
+  const canPublishPolicy = (isSuperAdmin || canPublish) && 
+    (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'awaiting-changes') &&
+    (isSuperAdmin || !isCreator);
 
-  const canEdit = isAdmin || (isEditor && policy.creator_id === currentUser?.id);
-  const canDelete = isAdmin;
-  const canArchive = isAdmin;
+  const showEdit = onEdit && canEdit && (
+    isSuperAdmin || 
+    (policy.status === 'draft' || policy.status === 'awaiting-changes') ||
+    canPublish
+  );
+
+  const showSubmit = policy.status === 'draft' && (isSuperAdmin || canEdit || isCreator);
+
+  if (listView) {
+    return (
+      <PolicyCardListView
+        policy={policy}
+        showEdit={showEdit}
+        showSubmit={showSubmit}
+        canPublishPolicy={canPublishPolicy}
+        canArchive={canArchive}
+        canDelete={canDelete}
+        onUpdateStatus={onUpdateStatus}
+        onEdit={onEdit}
+        onView={onView}
+        onDelete={onDelete}
+        onArchive={onArchive}
+      />
+    );
+  }
 
   return (
-    <Card className="relative">
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <CardTitle className="text-xl font-semibold">{policy.name}</CardTitle>
-            <p className="text-sm text-gray-500">
-              Policy Number: {policy.policy_number || 'N/A'}
-            </p>
-            <div className="flex items-center gap-2 mt-2">
-              <Badge className={getStatusColor(policy.status || 'draft')}>
-                {policy.status}
-              </Badge>
-              <span className="text-sm text-gray-500">
-                Created: {new Date(policy.created_at).toLocaleDateString()}
-              </span>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onView(policy.id)}
-            >
-              <Eye className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-gray-700">
-          {policy.purpose?.substring(0, 100)}...
-        </p>
-      </CardContent>
-    </Card>
+    <PolicyCardGridView
+      policy={policy}
+      compact={compact}
+      canPublish={canPublish}
+      showEdit={showEdit}
+      showSubmit={showSubmit}
+      canPublishPolicy={canPublishPolicy}
+      canArchive={canArchive}
+      canDelete={canDelete}
+      onUpdateStatus={onUpdateStatus}
+      onEdit={onEdit}
+      onView={onView}
+      onDelete={onDelete}
+      onArchive={onArchive}
+    />
   );
 }
