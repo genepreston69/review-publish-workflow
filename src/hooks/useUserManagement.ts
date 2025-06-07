@@ -24,6 +24,17 @@ export const useUserManagement = () => {
       
       console.log('=== FETCHING USERS FOR MANAGEMENT ===');
 
+      // First, let's see what's in the auth.users table (if we can access it)
+      try {
+        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+        console.log('=== AUTH USERS CHECK ===', authUsers?.users?.length || 0, authError?.message);
+        if (authUsers?.users) {
+          console.log('Auth users:', authUsers.users.map(u => ({ id: u.id, email: u.email })));
+        }
+      } catch (authAccessError) {
+        console.log('=== NO AUTH ADMIN ACCESS ===', authAccessError);
+      }
+
       // Fetch all profiles - this doesn't require admin privileges
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -35,6 +46,8 @@ export const useUserManagement = () => {
         `)
         .order('created_at', { ascending: false });
 
+      console.log('=== PROFILES RAW DATA ===', profiles);
+      
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError);
         throw profilesError;
@@ -47,12 +60,21 @@ export const useUserManagement = () => {
         .from('user_roles')
         .select('user_id, role');
 
+      console.log('=== ROLES RAW DATA ===', userRoles);
+
       if (rolesError) {
         console.error('Error fetching roles:', rolesError);
         throw rolesError;
       }
 
       console.log('=== ROLES FETCHED ===', userRoles?.length || 0);
+
+      // Check if there are profiles without roles
+      const profileIds = profiles?.map(p => p.id) || [];
+      const roleUserIds = userRoles?.map(r => r.user_id) || [];
+      const profilesWithoutRoles = profileIds.filter(id => !roleUserIds.includes(id));
+      
+      console.log('=== PROFILES WITHOUT ROLES ===', profilesWithoutRoles);
 
       // Combine profiles with roles
       const usersWithRoles: UserWithRole[] = profiles?.map(profile => {
@@ -77,6 +99,11 @@ export const useUserManagement = () => {
           }
         });
 
+        // If no role found, assign default read-only
+        if (userRoleRecords.length === 0) {
+          console.log(`=== USER WITHOUT ROLE FOUND ===`, profile.id, profile.email);
+        }
+
         // Since we can't access auth admin API, we'll assume all profiles are active
         // This is a reasonable assumption since profiles are only created when users successfully sign up
         const status: 'active' | 'pending' | 'inactive' | 'invited' = 'active';
@@ -89,6 +116,7 @@ export const useUserManagement = () => {
       }) || [];
 
       console.log('=== FINAL USERS WITH ROLES ===', usersWithRoles.length);
+      console.log('=== FINAL USER DATA ===', usersWithRoles);
       setUsers(usersWithRoles);
     } catch (error) {
       console.error('Error fetching users:', error);
