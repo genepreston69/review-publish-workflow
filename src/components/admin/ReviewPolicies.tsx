@@ -45,8 +45,9 @@ export function ReviewPolicies() {
     return false;
   });
 
+  // Super admins can publish any policy, publishers follow maker/checker rules
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
-  const canArchive = isSuperAdmin;
+  const canArchive = isSuperAdmin || userRole === 'publish';
 
   const handleEditPolicy = (policyId: string) => {
     setEditingPolicyId(policyId);

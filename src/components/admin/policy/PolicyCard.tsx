@@ -37,17 +37,24 @@ export function PolicyCard({
   const isSuperAdmin = userRole === 'super-admin';
   const isCreator = policy.creator_id === currentUser?.id;
 
-  const canPublishPolicy = (isSuperAdmin || canPublish) && 
+  // Super admins can publish any policy regardless of status or creator
+  const canPublishPolicy = isSuperAdmin || (
+    (canPublish || userRole === 'publish') && 
     (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'awaiting-changes') &&
-    (isSuperAdmin || !isCreator);
-
-  const showEdit = onEdit && canEdit && (
-    isSuperAdmin || 
-    (policy.status === 'draft' || policy.status === 'awaiting-changes') ||
-    canPublish
+    !isCreator
   );
 
-  const showSubmit = policy.status === 'draft' && (isSuperAdmin || canEdit || isCreator);
+  // Super admins can edit any policy, others follow existing rules
+  const showEdit = onEdit && (
+    isSuperAdmin || 
+    (canEdit && (
+      (policy.status === 'draft' || policy.status === 'awaiting-changes') ||
+      canPublish
+    ))
+  );
+
+  // Super admins can submit any draft policy, others follow existing rules
+  const showSubmit = (policy.status === 'draft') && (isSuperAdmin || canEdit || isCreator);
 
   if (listView) {
     return (

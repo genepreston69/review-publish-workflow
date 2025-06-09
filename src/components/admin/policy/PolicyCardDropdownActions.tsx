@@ -54,6 +54,9 @@ export function PolicyCardDropdownActions({
 }: PolicyCardDropdownActionsProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
+  const { userRole } = useAuth();
+
+  const isSuperAdmin = userRole === 'super-admin';
 
   const handleUpdateStatus = async (newStatus: string) => {
     setIsUpdating(true);
