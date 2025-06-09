@@ -17,8 +17,6 @@ interface EditorToolbarProps {
   content: string;
   onContentChange: (content: string) => void;
   showTrackingToggle?: boolean;
-  onAISuggestion?: (changeId: string, operation: string, originalText: string, suggestedText: string) => void;
-  context?: string;
 }
 
 export function EditorToolbar({
