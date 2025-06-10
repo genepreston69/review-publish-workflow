@@ -91,45 +91,23 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
       // Wait a moment for any triggers to complete
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Always explicitly set the role (this will either insert or update)
+      // Update the profile with the role - the profile should already exist from the trigger
       console.log('Setting user role to:', formData.role);
       
       const { error: roleError } = await supabase
-        .from('user_roles')
-        .upsert({
-          user_id: userId,
-          role: formData.role
-        }, {
-          onConflict: 'user_id'
-        });
+        .from('profiles')
+        .update({
+          role: formData.role,
+          name: formData.name || formData.email
+        })
+        .eq('id', userId);
 
       if (roleError) {
-        console.error('Role upsert error:', roleError);
+        console.error('Profile update error:', roleError);
         throw new Error(`Failed to set user role: ${roleError.message}`);
       }
 
-      console.log('Role successfully set in user_roles table');
-
-      // Update the profile with the name if provided
-      if (formData.name) {
-        console.log('Updating profile name to:', formData.name);
-        
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: userId,
-            name: formData.name,
-            email: formData.email
-          }, {
-            onConflict: 'id'
-          });
-
-        if (profileError) {
-          console.error('Profile update error:', profileError);
-          // Don't throw here, name update is not critical
-        }
-      }
-
+      console.log('Role successfully set in profiles table');
       console.log('=== USER CREATION SUCCESS ===');
 
       let successMessage = `User ${formData.email} created successfully with ${formData.role} role.`;

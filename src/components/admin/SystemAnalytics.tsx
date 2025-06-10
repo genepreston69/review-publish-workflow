@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { BarChart3, Users, FileText, Eye, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { UserRole } from '@/types/user';
 
 interface Analytics {
   totalUsers: number;
@@ -15,6 +16,7 @@ interface Analytics {
     'read-only': number;
     'edit': number;
     'publish': number;
+    'super-admin': number;
   };
   contentThisMonth: number;
   publishedThisMonth: number;
@@ -43,9 +45,9 @@ export const SystemAnalytics = () => {
 
       if (contentError) throw contentError;
 
-      // Get users by role
+      // Get users by role from profiles table
       const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
+        .from('profiles')
         .select('role');
 
       if (roleError) throw roleError;
@@ -57,9 +59,10 @@ export const SystemAnalytics = () => {
       const reviewContent = contentData.filter(c => c.status === 'under-review').length;
 
       const usersByRole = roleData.reduce((acc, user) => {
-        acc[user.role as keyof typeof acc] = (acc[user.role as keyof typeof acc] || 0) + 1;
+        const role = user.role as UserRole;
+        acc[role] = (acc[role] || 0) + 1;
         return acc;
-      }, { 'read-only': 0, 'edit': 0, 'publish': 0 });
+      }, { 'read-only': 0, 'edit': 0, 'publish': 0, 'super-admin': 0 });
 
       // Calculate this month's statistics
       const thisMonth = new Date();
@@ -175,6 +178,10 @@ export const SystemAnalytics = () => {
               <div className="flex justify-between items-center">
                 <span>Publishers</span>
                 <span className="font-bold">{analytics.usersByRole['publish']}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Super Admins</span>
+                <span className="font-bold">{analytics.usersByRole['super-admin']}</span>
               </div>
             </div>
           </CardContent>

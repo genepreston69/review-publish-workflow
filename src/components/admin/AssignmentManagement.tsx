@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Link, Plus, Trash2, Loader2 } from 'lucide-react';
+import { UserRole } from '@/types/user';
 
 interface User {
   id: string;
@@ -77,42 +79,22 @@ export const AssignmentManagement = () => {
 
       setAssignments(formattedAssignments);
 
-      // Fetch all user roles
-      const { data: userRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
+      // Fetch users with editor and publisher roles from profiles table
+      const { data: editorProfiles, error: editorError } = await supabase
+        .from('profiles')
+        .select('id, name, email')
+        .eq('role', 'edit');
 
-      if (rolesError) throw rolesError;
+      if (editorError) throw editorError;
+      setEditors(editorProfiles || []);
 
-      // Get user IDs for editors and publishers
-      const editorUserIds = userRoles.filter(role => role.role === 'edit').map(role => role.user_id);
-      const publisherUserIds = userRoles.filter(role => role.role === 'publish').map(role => role.user_id);
+      const { data: publisherProfiles, error: publisherError } = await supabase
+        .from('profiles')
+        .select('id, name, email')
+        .eq('role', 'publish');
 
-      // Fetch editor profiles
-      if (editorUserIds.length > 0) {
-        const { data: editorProfiles, error: editorError } = await supabase
-          .from('profiles')
-          .select('id, name, email')
-          .in('id', editorUserIds);
-
-        if (editorError) throw editorError;
-        setEditors(editorProfiles || []);
-      } else {
-        setEditors([]);
-      }
-
-      // Fetch publisher profiles
-      if (publisherUserIds.length > 0) {
-        const { data: publisherProfiles, error: publisherError } = await supabase
-          .from('profiles')
-          .select('id, name, email')
-          .in('id', publisherUserIds);
-
-        if (publisherError) throw publisherError;
-        setPublishers(publisherProfiles || []);
-      } else {
-        setPublishers([]);
-      }
+      if (publisherError) throw publisherError;
+      setPublishers(publisherProfiles || []);
 
     } catch (error) {
       console.error('Error fetching data:', error);
