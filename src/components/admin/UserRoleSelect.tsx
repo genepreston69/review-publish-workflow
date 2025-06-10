@@ -26,25 +26,14 @@ export const UserRoleSelect = ({ userId, currentRole, onRoleUpdated }: UserRoleS
       console.log('Target user ID:', userId);
       console.log('New role:', newRole);
       
-      // First, delete ALL existing roles for this user to ensure clean state
-      const { error: deleteError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', userId);
 
-      if (deleteError) {
-        console.error('Error deleting existing roles:', deleteError);
-        throw deleteError;
-      }
-
-      // Then insert the new role
-      const { error: insertError } = await supabase
-        .from('user_roles')
-        .insert({ user_id: userId, role: newRole });
-
-      if (insertError) {
-        console.error('Error inserting new role:', insertError);
-        throw insertError;
+      if (error) {
+        console.error('Error updating role:', error);
+        throw error;
       }
 
       console.log('=== ROLE UPDATE SUCCESS ===');

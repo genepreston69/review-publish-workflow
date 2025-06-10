@@ -20,65 +20,32 @@ export const useUserManagement = () => {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      console.log('=== FETCHING USERS WITH NEW STRUCTURE ===');
+      console.log('=== FETCHING USERS FROM PROFILES TABLE ===');
       
-      // Fetch profiles with their roles using the new structure
-      const { data: profiles, error: profilesError } = await supabase
+      const { data: profiles, error } = await supabase
         .from('profiles')
         .select(`
           id,
           name,
           email,
-          created_at
+          created_at,
+          role
         `);
 
-      if (profilesError) {
-        console.error('=== PROFILES ERROR ===', profilesError);
-        throw profilesError;
+      if (error) {
+        console.error('=== PROFILES ERROR ===', error);
+        throw error;
       }
 
       console.log('=== PROFILES FETCHED ===', profiles);
 
-      // Fetch user roles using the new structure
-      const { data: userRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-
-      if (rolesError) {
-        console.error('=== ROLES ERROR ===', rolesError);
-        throw rolesError;
-      }
-
-      console.log('=== USER ROLES FETCHED ===', userRoles);
-
-      // Combine the data - get the highest priority role for each user
-      const usersWithRoles: UserWithRole[] = profiles.map(profile => {
-        const userRoleRecords = userRoles.filter(role => role.user_id === profile.id);
-        
-        // Priority order: super-admin > publish > edit > read-only
-        const rolePriority = {
-          'super-admin': 4,
-          'publish': 3,
-          'edit': 2,
-          'read-only': 1
-        };
-        
-        let highestRole: UserRole = 'read-only';
-        let highestPriority = 0;
-        
-        userRoleRecords.forEach(roleRecord => {
-          const priority = rolePriority[roleRecord.role as UserRole] || 0;
-          if (priority > highestPriority) {
-            highestPriority = priority;
-            highestRole = roleRecord.role as UserRole;
-          }
-        });
-
-        return {
-          ...profile,
-          role: highestRole
-        };
-      });
+      const usersWithRoles: UserWithRole[] = profiles.map(profile => ({
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        created_at: profile.created_at,
+        role: profile.role as UserRole
+      }));
 
       console.log('=== FINAL USERS WITH ROLES ===', usersWithRoles);
       setUsers(usersWithRoles);
@@ -94,7 +61,7 @@ export const useUserManagement = () => {
         title: "Error",
         description: "Failed to load users. Please check your permissions.",
       });
-      setUsers([]); // Set empty array on error
+      setUsers([]);
     } finally {
       setIsLoading(false);
     }
