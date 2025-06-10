@@ -60,33 +60,42 @@ export const AssignmentManagement = () => {
 
       setAssignments(formattedAssignments);
 
-      // Fetch users with editor role
-      const { data: editorRoles, error: editorError } = await supabase
+      // Fetch all user roles first
+      const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
-        .select(`
-          user_id,
-          profiles!user_roles_user_id_fkey(id, name, email)
-        `)
-        .eq('role', 'edit');
+        .select('user_id, role');
 
-      if (editorError) throw editorError;
+      if (rolesError) throw rolesError;
 
-      const editorUsers = editorRoles.map(role => role.profiles).filter(Boolean);
-      setEditors(editorUsers);
+      // Get user IDs for editors and publishers
+      const editorUserIds = userRoles.filter(role => role.role === 'edit').map(role => role.user_id);
+      const publisherUserIds = userRoles.filter(role => role.role === 'publish').map(role => role.user_id);
 
-      // Fetch users with publisher role
-      const { data: publisherRoles, error: publisherError } = await supabase
-        .from('user_roles')
-        .select(`
-          user_id,
-          profiles!user_roles_user_id_fkey(id, name, email)
-        `)
-        .eq('role', 'publish');
+      // Fetch editor profiles
+      if (editorUserIds.length > 0) {
+        const { data: editorProfiles, error: editorError } = await supabase
+          .from('profiles')
+          .select('id, name, email')
+          .in('id', editorUserIds);
 
-      if (publisherError) throw publisherError;
+        if (editorError) throw editorError;
+        setEditors(editorProfiles || []);
+      } else {
+        setEditors([]);
+      }
 
-      const publisherUsers = publisherRoles.map(role => role.profiles).filter(Boolean);
-      setPublishers(publisherUsers);
+      // Fetch publisher profiles
+      if (publisherUserIds.length > 0) {
+        const { data: publisherProfiles, error: publisherError } = await supabase
+          .from('profiles')
+          .select('id, name, email')
+          .in('id', publisherUserIds);
+
+        if (publisherError) throw publisherError;
+        setPublishers(publisherProfiles || []);
+      } else {
+        setPublishers([]);
+      }
 
     } catch (error) {
       console.error('Error fetching data:', error);
