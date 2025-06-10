@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -30,37 +29,12 @@ export const usePolicies = () => {
 
       if (error) {
         console.error('Error fetching policies:', error);
-        
-        // If it's an RLS error, try a simpler approach
-        if (error.code === 'PGRST116' || error.message.includes('permission denied')) {
-          console.log('=== RLS ERROR, TRYING PUBLIC POLICIES ONLY ===');
-          const { data: publicData, error: publicError } = await supabase
-            .from('Policies')
-            .select('*')
-            .eq('status', 'published')
-            .is('archived_at', null)
-            .order('created_at', { ascending: false });
-          
-          if (publicError) {
-            console.error('Error fetching public policies:', publicError);
-            toast({
-              variant: "destructive",
-              title: "Error",
-              description: "Failed to load policies. Please check your permissions.",
-            });
-            setPolicies([]);
-          } else {
-            console.log('=== PUBLIC POLICIES LOADED ===', publicData?.length);
-            setPolicies(publicData || []);
-          }
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to load policies.",
-          });
-          setPolicies([]);
-        }
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load policies. Please check your permissions.",
+        });
+        setPolicies([]);
       } else {
         console.log('=== POLICIES LOADED SUCCESSFULLY ===', data?.length);
         setPolicies(data || []);

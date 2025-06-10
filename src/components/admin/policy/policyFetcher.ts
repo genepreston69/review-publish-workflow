@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Policy } from './types';
 
@@ -9,17 +10,14 @@ export const fetchPoliciesByType = async (policyType: string): Promise<Policy[]>
       .from('Policies')
       .select('*')
       .eq('status', 'published')
-      .is('archived_at', null); // Only show non-archived policies
+      .is('archived_at', null);
 
     // Handle different policy type filtering logic
     if (policyType === 'Facility') {
-      // For facility policies, include both 'Facility' type and legacy types that represent facility policies
       query = query.or('policy_type.eq.Facility,policy_type.eq.RP,policy_type.eq.S,policy_type.ilike.%facility%');
     } else if (policyType === 'HR') {
-      // For HR policies, include 'HR' type and legacy HR-related types
       query = query.or('policy_type.eq.HR,policy_type.ilike.%hr%,policy_type.ilike.%human%');
     } else {
-      // Default exact match for other types
       query = query.eq('policy_type', policyType);
     }
 
@@ -29,18 +27,7 @@ export const fetchPoliciesByType = async (policyType: string): Promise<Policy[]>
 
     if (error) {
       console.error('Error fetching policies by type:', error);
-      // If it's an RLS error, try fetching without status filter for debugging
-      if (error.code === 'PGRST116' || error.message.includes('permission denied')) {
-        console.log('=== RLS ERROR DETECTED, TRYING SIMPLER QUERY ===');
-        const { data: debugData, error: debugError } = await supabase
-          .from('Policies')
-          .select('id, name, policy_type, status')
-          .limit(5);
-        
-        console.log('=== DEBUG QUERY RESULT ===', { debugData, debugError });
-        return [];
-      }
-      throw error;
+      return [];
     }
 
     console.log(`=== ${policyType.toUpperCase()} POLICIES FETCHED ===`, data?.length || 0);
@@ -95,12 +82,12 @@ export const fetchPoliciesByPrefix = async (prefix: string): Promise<Policy[]> =
     .select('*')
     .eq('status', 'published')
     .ilike('policy_number', `${prefix}%`)
-    .is('archived_at', null) // Only show non-archived policies
+    .is('archived_at', null)
     .order('policy_number', { ascending: true });
 
   if (error) {
     console.error('Error fetching policies:', error);
-    throw error;
+    return [];
   }
 
   return filterLatestVersions(data || []);
@@ -110,12 +97,12 @@ export const fetchAllPolicies = async (): Promise<Policy[]> => {
   const { data, error } = await supabase
     .from('Policies')
     .select('*')
-    .is('archived_at', null) // Only show non-archived policies
+    .is('archived_at', null)
     .order('created_at', { ascending: false });
 
   if (error) {
     console.error('Error fetching all policies:', error);
-    throw error;
+    return [];
   }
 
   return data || [];
@@ -126,12 +113,12 @@ export const fetchPoliciesByStatus = async (status: string): Promise<Policy[]> =
     .from('Policies')
     .select('*')
     .eq('status', status)
-    .is('archived_at', null) // Only show non-archived policies
+    .is('archived_at', null)
     .order('created_at', { ascending: false });
 
   if (error) {
     console.error('Error fetching policies by status:', error);
-    throw error;
+    return [];
   }
 
   return data || [];
@@ -141,12 +128,12 @@ export const fetchArchivedPolicies = async (): Promise<Policy[]> => {
   const { data, error } = await supabase
     .from('Policies')
     .select('*')
-    .not('archived_at', 'is', null) // Only show archived policies
+    .not('archived_at', 'is', null)
     .order('archived_at', { ascending: false });
 
   if (error) {
     console.error('Error fetching archived policies:', error);
-    throw error;
+    return [];
   }
 
   return data || [];

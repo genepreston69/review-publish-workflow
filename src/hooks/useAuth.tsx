@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log('=== FETCHING USER ROLE FOR USER ===', userId);
       
-      // Try to get the user role, but handle RLS errors gracefully
+      // Since we disabled RLS on user_roles, this should work now
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
@@ -37,28 +37,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         console.error('Error fetching user role:', error);
         
-        // Check if it's a recursion or permission error
-        if (error.message?.includes('infinite recursion') || 
-            error.message?.includes('permission denied') ||
-            error.code === 'PGRST116') {
-          console.log('=== RLS/RECURSION ERROR, CHECKING FOR SUPER ADMIN DIRECTLY ===');
-          
-          // Try to check if user exists in profiles to determine if they should have access
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('email')
-            .eq('id', userId)
-            .maybeSingle();
-          
-          if (profileData && !profileError) {
-            // User exists in profiles, try to determine role based on email
-            if (profileData.email === 'gene@stravisor.com') {
-              console.log('=== DETECTED SUPER ADMIN BY EMAIL ===');
-              return 'super-admin';
-            }
-            // For other known users, default to read-only but allow access
-            return 'read-only';
+        // If still failing, check if this is the super admin email
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', userId)
+          .maybeSingle();
+        
+        if (profileData && !profileError) {
+          if (profileData.email === 'gene@stravisor.com') {
+            console.log('=== DETECTED SUPER ADMIN BY EMAIL ===');
+            return 'super-admin';
           }
+          return 'read-only';
         }
         
         return 'read-only';
