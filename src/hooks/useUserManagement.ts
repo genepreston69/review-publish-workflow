@@ -20,95 +20,94 @@ export const useUserManagement = () => {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      console.log('=== FETCHING USERS WITH ROLE DEBUGGING ===');
-      
-      // Fetch all profiles first
+      console.log('Fetching users...');
+
+      // First fetch all profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          name,
-          email,
-          created_at
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (profilesError) {
-        console.error('=== PROFILES ERROR ===', profilesError);
+        console.error('Error fetching profiles:', profilesError);
         throw profilesError;
       }
 
-      console.log('=== PROFILES FETCHED ===', profiles?.length, 'profiles found');
-      console.log('=== PROFILES DATA ===', profiles);
+      console.log(`Found ${profiles?.length || 0} profiles`);
 
-      // Fetch all user roles
-      const { data: userRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-
-      if (rolesError) {
-        console.error('=== ROLES ERROR ===', rolesError);
-        throw rolesError;
-      }
-
-      console.log('=== USER ROLES FETCHED ===', userRoles?.length, 'role records found');
-      console.log('=== USER ROLES DATA ===', userRoles);
-
-      if (!profiles || !userRoles) {
-        console.log('=== NO DATA RETURNED ===');
+      if (!profiles || profiles.length === 0) {
         setUsers([]);
         return;
       }
 
-      // Combine the data - get the highest priority role for each user
-      const usersWithRoles: UserWithRole[] = profiles.map(profile => {
-        const userRoleRecords = userRoles.filter(role => role.user_id === profile.id);
-        
-        console.log(`=== ROLES FOR USER ${profile.email} (${profile.id}) ===`, userRoleRecords);
-        
-        // Priority order: super-admin > publish > edit > read-only
-        const rolePriority = {
-          'super-admin': 4,
-          'publish': 3,
-          'edit': 2,
-          'read-only': 1
-        };
-        
-        let highestRole: UserRole = 'read-only';
-        let highestPriority = 0;
-        
-        userRoleRecords.forEach(roleRecord => {
-          const priority = rolePriority[roleRecord.role as UserRole] || 0;
-          console.log(`=== CHECKING ROLE ${roleRecord.role} with priority ${priority} ===`);
-          if (priority > highestPriority) {
-            highestPriority = priority;
-            highestRole = roleRecord.role as UserRole;
-          }
-        });
+      // Then fetch all user roles separately
+      const { data: allRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
 
-        console.log(`=== FINAL ROLE FOR ${profile.email}: ${highestRole} ===`);
+      if (rolesError) {
+        console.error('Error fetching roles:', rolesError);
+        // Continue without roles rather than failing completely
+      }
+
+      console.log(`Found ${allRoles?.length || 0} role records`);
+
+      // Create a map of user_id to roles for efficient lookup
+      const userRolesMap = new Map<string, UserRole[]>();
+      if (allRoles) {
+        allRoles.forEach(roleRecord => {
+          const userId = roleRecord.user_id;
+          const role = roleRecord.role as UserRole;
+          if (!userRolesMap.has(userId)) {
+            userRolesMap.set(userId, []);
+          }
+          userRolesMap.get(userId)!.push(role);
+        });
+      }
+
+      // Map profiles to users with their roles
+      const usersWithRoles: UserWithRole[] = profiles.map(profile => {
+        const userRoles = userRolesMap.get(profile.id) || [];
+        
+        // If user has multiple roles, pick the highest priority one
+        let finalRole: UserRole = 'read-only';
+        if (userRoles.length > 0) {
+          const roleHierarchy: Record<UserRole, number> = {
+            'super-admin': 4,
+            'publish': 3,
+            'edit': 2,
+            'read-only': 1
+          };
+          
+          finalRole = userRoles.reduce((highest, current) => {
+            return roleHierarchy[current] > roleHierarchy[highest] ? current : highest;
+          }, 'read-only' as UserRole);
+        }
+
+        console.log(`User ${profile.email} has roles: ${userRoles.join(', ')}, using: ${finalRole}`);
 
         return {
-          ...profile,
-          role: highestRole
+          id: profile.id,
+          email: profile.email || '',
+          role: finalRole,
+          name: profile.name || '',
+          created_at: profile.created_at
         };
       });
 
-      console.log('=== FINAL USERS WITH ROLES ===', usersWithRoles);
       setUsers(usersWithRoles);
-
+      
       toast({
         title: "Success",
         description: `Loaded ${usersWithRoles.length} users successfully.`,
       });
     } catch (error) {
-      console.error('=== ERROR FETCHING USERS ===', error);
+      console.error('Error in fetchUsers:', error);
       toast({
-        variant: "destructive",
         title: "Error",
-        description: "Failed to load users. Please check your permissions and console for details.",
+        description: "Failed to fetch users. Please try again.",
+        variant: "destructive",
       });
-      setUsers([]);
     } finally {
       setIsLoading(false);
     }
@@ -118,9 +117,91 @@ export const useUserManagement = () => {
     fetchUsers();
   }, []);
 
+  const updateUserRole = async (userId: string, newRole: UserRole) => {
+    try {
+      // First, delete existing roles for this user
+      const { error: deleteError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (deleteError) throw deleteError;
+
+      // Then insert the new role
+      const { error: insertError } = await supabase
+        .from('user_roles')
+        .insert({ user_id: userId, role: newRole });
+
+      if (insertError) throw insertError;
+
+      toast({
+        title: "Success",
+        description: "User role updated successfully",
+      });
+
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update user role. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    try {
+      const { error } = await supabase.rpc('delete_user', { user_id: userId });
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete user. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateUserName = async (userId: string, newName: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ name: newName })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "User name updated successfully",
+      });
+
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error updating user name:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update user name. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     users,
     isLoading,
+    updateUserRole,
+    deleteUser,
+    updateUserName,
     fetchUsers
   };
 };
