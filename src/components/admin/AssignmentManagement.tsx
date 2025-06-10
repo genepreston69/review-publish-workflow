@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -38,29 +37,47 @@ export const AssignmentManagement = () => {
     try {
       setIsLoading(true);
 
-      // Fetch assignments with user names
+      // First, fetch all assignments
       const { data: assignmentData, error: assignmentError } = await supabase
         .from('assignment_relations')
-        .select(`
-          *,
-          editor:profiles!assignment_relations_edit_user_id_fkey(name),
-          publisher:profiles!assignment_relations_publish_user_id_fkey(name)
-        `);
+        .select('*');
 
       if (assignmentError) throw assignmentError;
 
+      // Get unique user IDs from assignments
+      const userIds = new Set<string>();
+      assignmentData.forEach(assignment => {
+        userIds.add(assignment.edit_user_id);
+        userIds.add(assignment.publish_user_id);
+      });
+
+      // Fetch profiles for these users
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, name, email')
+        .in('id', Array.from(userIds));
+
+      if (profileError) throw profileError;
+
+      // Create a map of user ID to profile
+      const profileMap = new Map();
+      profileData.forEach(profile => {
+        profileMap.set(profile.id, profile);
+      });
+
+      // Format assignments with user names
       const formattedAssignments = assignmentData.map(assignment => ({
         id: assignment.id,
         edit_user_id: assignment.edit_user_id,
         publish_user_id: assignment.publish_user_id,
         created_at: assignment.created_at,
-        editor_name: assignment.editor?.name || 'Unknown',
-        publisher_name: assignment.publisher?.name || 'Unknown'
+        editor_name: profileMap.get(assignment.edit_user_id)?.name || 'Unknown',
+        publisher_name: profileMap.get(assignment.publish_user_id)?.name || 'Unknown'
       }));
 
       setAssignments(formattedAssignments);
 
-      // Fetch all user roles first
+      // Fetch all user roles
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role');
