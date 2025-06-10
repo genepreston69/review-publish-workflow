@@ -3,7 +3,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { RoleBadge } from '@/components/RoleBadge';
 import { UserRoleSelect } from './UserRoleSelect';
 import { UserDeleteButton } from './UserDeleteButton';
+import { EditUserNameForm } from './EditUserNameForm';
+import { PasswordChangeForm } from './PasswordChangeForm';
 import { UserRole } from '@/types/user';
+import { useAuth } from '@/hooks/useAuth';
 
 interface UserWithRole {
   id: string;
@@ -19,6 +22,8 @@ interface UserTableProps {
 }
 
 export const UserTable = ({ users, onUserUpdated }: UserTableProps) => {
+  const { currentUser } = useAuth();
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -33,8 +38,14 @@ export const UserTable = ({ users, onUserUpdated }: UserTableProps) => {
         </TableHeader>
         <TableBody>
           {users.map((user) => (
-            <TableRow key={user.id}>
-              <TableCell className="font-medium">{user.name}</TableCell>
+            <TableRow key={user.id} className="group">
+              <TableCell>
+                <EditUserNameForm
+                  userId={user.id}
+                  currentName={user.name}
+                  onNameUpdated={onUserUpdated}
+                />
+              </TableCell>
               <TableCell>{user.email}</TableCell>
               <TableCell>
                 <RoleBadge role={user.role} />
@@ -48,6 +59,12 @@ export const UserTable = ({ users, onUserUpdated }: UserTableProps) => {
                     userId={user.id}
                     currentRole={user.role}
                     onRoleUpdated={onUserUpdated}
+                  />
+                  
+                  <PasswordChangeForm
+                    userId={user.id}
+                    userEmail={user.email}
+                    isCurrentUser={user.id === currentUser?.id}
                   />
                   
                   <UserDeleteButton

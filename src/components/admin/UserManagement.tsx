@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CreateUserForm } from './CreateUserForm';
+import { InviteUserForm } from './InviteUserForm';
 import { UserTable } from './UserTable';
 import { useUserManagement } from '@/hooks/useUserManagement';
 import { User, Loader2 } from 'lucide-react';
@@ -26,7 +27,10 @@ export const UserManagement = () => {
             <User className="w-5 h-5" />
             User Management
           </CardTitle>
-          <CreateUserForm onUserCreated={fetchUsers} />
+          <div className="flex gap-2">
+            <InviteUserForm onUserInvited={fetchUsers} />
+            <CreateUserForm onUserCreated={fetchUsers} />
+          </div>
         </div>
       </CardHeader>
       <CardContent>
