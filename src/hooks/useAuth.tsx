@@ -27,12 +27,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log('=== FETCHING USER ROLE FOR USER ===', userId);
       
-      // Since we disabled RLS on user_roles, this should work now
-      const { data, error } = await supabase
+      // Create a timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout')), 10000); // 10 second timeout
+      });
+
+      // Race between the query and timeout
+      const queryPromise = supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .maybeSingle();
+
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
 
       if (error) {
         console.error('Error fetching user role:', error);
@@ -59,6 +66,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return data?.role as UserRole || 'read-only';
     } catch (error) {
       console.error('Error in fetchUserRole:', error);
+      
+      // On timeout or error, check if this is the super admin email as fallback
+      try {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', userId)
+          .maybeSingle();
+        
+        if (profileData?.email === 'gene@stravisor.com') {
+          console.log('=== FALLBACK: DETECTED SUPER ADMIN BY EMAIL ===');
+          return 'super-admin';
+        }
+      } catch (fallbackError) {
+        console.error('Fallback role check failed:', fallbackError);
+      }
+      
       return 'read-only';
     }
   };
@@ -77,11 +101,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Get initial session
     const getInitialSession = async () => {
       try {
+        console.log('=== GETTING INITIAL SESSION ===');
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('=== INITIAL SESSION ===', session ? 'Found' : 'None');
+        
         setCurrentUser(session?.user ?? null);
         
         if (session?.user) {
+          console.log('=== FETCHING ROLE FOR INITIAL SESSION ===');
           const role = await fetchUserRole(session.user.id);
+          console.log('=== INITIAL ROLE SET ===', role);
           setUserRole(role);
         }
       } catch (error) {
@@ -97,13 +126,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
+      console.log('=== AUTH STATE CHANGED ===', event, session?.user?.email);
       
       setCurrentUser(session?.user ?? null);
       
       if (session?.user) {
-        const role = await fetchUserRole(session.user.id);
-        setUserRole(role);
+        console.log('=== FETCHING ROLE FOR AUTH CHANGE ===');
+        try {
+          const role = await fetchUserRole(session.user.id);
+          console.log('=== AUTH CHANGE ROLE SET ===', role);
+          setUserRole(role);
+        } catch (error) {
+          console.error('Error fetching role on auth change:', error);
+          setUserRole('read-only');
+        }
       } else {
         setUserRole(null);
       }
