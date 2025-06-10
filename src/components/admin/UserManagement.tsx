@@ -5,9 +5,15 @@ import { InviteUserForm } from './InviteUserForm';
 import { UserTable } from './UserTable';
 import { useUserManagement } from '@/hooks/useUserManagement';
 import { User, Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
 
 export const UserManagement = () => {
   const { users, isLoading, refetch } = useUserManagement();
+
+  // Refresh users when component mounts or when coming back to this tab
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   if (isLoading) {
     return (
@@ -19,6 +25,11 @@ export const UserManagement = () => {
     );
   }
 
+  const handleUserCreatedOrInvited = () => {
+    console.log('User created/invited, refreshing list...');
+    refetch();
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -28,8 +39,8 @@ export const UserManagement = () => {
             User Management
           </CardTitle>
           <div className="flex gap-2">
-            <InviteUserForm onUserInvited={refetch} />
-            <CreateUserForm onUserCreated={refetch} />
+            <InviteUserForm onUserInvited={handleUserCreatedOrInvited} />
+            <CreateUserForm onUserCreated={handleUserCreatedOrInvited} />
           </div>
         </div>
       </CardHeader>
