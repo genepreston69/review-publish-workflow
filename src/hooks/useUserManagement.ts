@@ -12,42 +12,32 @@ export function useUserManagement() {
   const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log('=== FETCHING USERS ===');
+      console.log('=== FETCHING USERS (NON-ADMIN) ===');
 
-      // First, get all auth users via the admin API
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) {
-        console.error('Error fetching auth users:', authError);
-        throw authError;
-      }
-
-      console.log(`Found ${authUsers.users?.length || 0} auth users`);
-
-      if (!authUsers.users || authUsers.users.length === 0) {
-        console.log('No auth users found');
-        setUsers([]);
-        return;
-      }
-
-      // Get user IDs from auth users
-      const userIds = authUsers.users.map(user => user.id);
-
-      // Fetch profiles for these users
+      // Since we can't use admin API, fetch users through profiles and user_roles
+      // First, get all profiles (which are created for all users)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
-        .in('id', userIds)
         .order('created_at', { ascending: false });
 
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError);
-        // Don't throw here - we can still show users even without profiles
+        throw profilesError;
       }
 
       console.log(`Found ${profiles?.length || 0} profiles`);
 
-      // Fetch all user roles
+      if (!profiles || profiles.length === 0) {
+        console.log('No profiles found');
+        setUsers([]);
+        return;
+      }
+
+      // Get user IDs from profiles
+      const userIds = profiles.map(profile => profile.id);
+
+      // Fetch user roles for these users
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role')
@@ -60,14 +50,7 @@ export function useUserManagement() {
 
       console.log(`Found ${userRoles?.length || 0} role records`);
 
-      // Create maps for efficient lookup
-      const profilesMap = new Map();
-      if (profiles) {
-        profiles.forEach(profile => {
-          profilesMap.set(profile.id, profile);
-        });
-      }
-
+      // Create a map for efficient role lookup
       const userRolesMap = new Map<string, UserRole>();
       if (userRoles) {
         userRoles.forEach(roleRecord => {
@@ -75,22 +58,20 @@ export function useUserManagement() {
         });
       }
 
-      // Map auth users to our User type
-      const usersWithRoles: User[] = authUsers.users.map(authUser => {
-        const profile = profilesMap.get(authUser.id);
-        const userRole = userRolesMap.get(authUser.id) || 'read-only';
+      // Map profiles to users with their roles
+      const usersWithRoles: User[] = profiles.map(profile => {
+        const userRole = userRolesMap.get(profile.id) || 'read-only';
         
-        console.log(`User ${authUser.email}:`, {
-          hasProfile: !!profile,
-          profileName: profile?.name,
+        console.log(`User ${profile.email}:`, {
+          profileName: profile.name,
           role: userRole
         });
 
         return {
-          id: authUser.id,
-          email: authUser.email || '',
+          id: profile.id,
+          email: profile.email || '',
           role: userRole,
-          name: profile?.name || authUser.email || 'Unknown User'
+          name: profile.name || profile.email || 'Unknown User'
         };
       });
 
@@ -153,14 +134,31 @@ export function useUserManagement() {
     try {
       console.log('Deleting user:', userId);
 
-      // Delete from auth (this will cascade to profiles and user_roles due to foreign keys)
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      // Since we can't use admin API, we can only delete the profile and role
+      // The auth user will remain but won't be able to access the app
+      const { error: rolesError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
 
-      if (authError) throw authError;
+      if (rolesError) {
+        console.error('Error deleting user roles:', rolesError);
+        throw rolesError;
+      }
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (profileError) {
+        console.error('Error deleting profile:', profileError);
+        throw profileError;
+      }
 
       toast({
         title: "Success",
-        description: "User deleted successfully",
+        description: "User access removed successfully",
       });
 
       await fetchUsers();
@@ -168,7 +166,7 @@ export function useUserManagement() {
       console.error('Error deleting user:', error);
       toast({
         title: "Error",
-        description: "Failed to delete user. Please try again.",
+        description: "Failed to remove user access. Please try again.",
         variant: "destructive",
       });
     }
