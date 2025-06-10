@@ -12,30 +12,46 @@ export function useUserManagement() {
   const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log('Fetching users...');
+      console.log('=== FETCHING USERS ===');
 
-      // Fetch all profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-        throw profilesError;
+      // First, get all auth users via the admin API
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        console.error('Error fetching auth users:', authError);
+        throw authError;
       }
 
-      console.log(`Found ${profiles?.length || 0} profiles`);
+      console.log(`Found ${authUsers.users?.length || 0} auth users`);
 
-      if (!profiles || profiles.length === 0) {
+      if (!authUsers.users || authUsers.users.length === 0) {
+        console.log('No auth users found');
         setUsers([]);
         return;
       }
 
+      // Get user IDs from auth users
+      const userIds = authUsers.users.map(user => user.id);
+
+      // Fetch profiles for these users
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', userIds)
+        .order('created_at', { ascending: false });
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        // Don't throw here - we can still show users even without profiles
+      }
+
+      console.log(`Found ${profiles?.length || 0} profiles`);
+
       // Fetch all user roles
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
-        .select('user_id, role');
+        .select('user_id, role')
+        .in('user_id', userIds);
 
       if (rolesError) {
         console.error('Error fetching roles:', rolesError);
@@ -44,7 +60,14 @@ export function useUserManagement() {
 
       console.log(`Found ${userRoles?.length || 0} role records`);
 
-      // Create a map of user_id to role for efficient lookup
+      // Create maps for efficient lookup
+      const profilesMap = new Map();
+      if (profiles) {
+        profiles.forEach(profile => {
+          profilesMap.set(profile.id, profile);
+        });
+      }
+
       const userRolesMap = new Map<string, UserRole>();
       if (userRoles) {
         userRoles.forEach(roleRecord => {
@@ -52,18 +75,29 @@ export function useUserManagement() {
         });
       }
 
-      // Map profiles to users with their roles
-      const usersWithRoles: User[] = profiles.map(profile => {
-        const userRole = userRolesMap.get(profile.id) || 'read-only';
+      // Map auth users to our User type
+      const usersWithRoles: User[] = authUsers.users.map(authUser => {
+        const profile = profilesMap.get(authUser.id);
+        const userRole = userRolesMap.get(authUser.id) || 'read-only';
         
-        console.log(`User ${profile.email} has role: ${userRole}`);
+        console.log(`User ${authUser.email}:`, {
+          hasProfile: !!profile,
+          profileName: profile?.name,
+          role: userRole
+        });
 
         return {
-          id: profile.id,
-          email: profile.email || '',
+          id: authUser.id,
+          email: authUser.email || '',
           role: userRole,
-          name: profile.name || ''
+          name: profile?.name || authUser.email || 'Unknown User'
         };
+      });
+
+      console.log(`=== FINAL USER LIST ===`);
+      console.log(`Total users: ${usersWithRoles.length}`);
+      usersWithRoles.forEach(user => {
+        console.log(`- ${user.email} (${user.name}) - ${user.role}`);
       });
 
       setUsers(usersWithRoles);
@@ -119,21 +153,10 @@ export function useUserManagement() {
     try {
       console.log('Deleting user:', userId);
 
-      // Delete user roles first
-      const { error: rolesError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
+      // Delete from auth (this will cascade to profiles and user_roles due to foreign keys)
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
 
-      if (rolesError) throw rolesError;
-
-      // Delete user profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
-
-      if (profileError) throw profileError;
+      if (authError) throw authError;
 
       toast({
         title: "Success",
