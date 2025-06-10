@@ -45,53 +45,84 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
       console.log('Name:', formData.name);
       console.log('Role:', formData.role);
 
-      // Create user in auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        user_metadata: {
-          name: formData.name || formData.email
-        },
-        email_confirm: true // Auto-confirm for admin created users
-      });
-
-      if (authError) {
-        console.error('Auth creation error:', authError);
-        throw authError;
+      // Try to create user with admin API first
+      let authData;
+      let useAdminAPI = true;
+      
+      try {
+        const { data, error: adminError } = await supabase.auth.admin.createUser({
+          email: formData.email,
+          password: formData.password,
+          user_metadata: {
+            name: formData.name || formData.email
+          },
+          email_confirm: true
+        });
+        
+        if (adminError) throw adminError;
+        authData = data;
+        console.log('User created with admin API:', authData.user?.id);
+      } catch (adminError) {
+        console.log('Admin API failed, falling back to regular signup:', adminError);
+        useAdminAPI = false;
+        
+        // Fall back to regular signup
+        const { data, error: signupError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              name: formData.name || formData.email
+            }
+          }
+        });
+        
+        if (signupError) throw signupError;
+        authData = data;
+        console.log('User created with regular signup:', authData.user?.id);
       }
 
-      console.log('User created in auth:', authData.user?.id);
+      if (!authData.user) {
+        throw new Error('User creation failed - no user returned');
+      }
 
-      // Wait a moment for the trigger to complete
+      const userId = authData.user.id;
+
+      // Wait a moment for any triggers to complete
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Update the role if it's not read-only (since trigger sets read-only by default)
-      if (formData.role !== 'read-only') {
-        console.log('Updating role to:', formData.role);
-        
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .upsert({
-            user_id: authData.user!.id,
-            role: formData.role
-          }, {
-            onConflict: 'user_id'
-          });
+      // Always explicitly set the role (this will either insert or update)
+      console.log('Setting user role to:', formData.role);
+      
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .upsert({
+          user_id: userId,
+          role: formData.role
+        }, {
+          onConflict: 'user_id'
+        });
 
-        if (roleError) {
-          console.error('Role update error:', roleError);
-          throw roleError;
-        }
+      if (roleError) {
+        console.error('Role upsert error:', roleError);
+        throw new Error(`Failed to set user role: ${roleError.message}`);
       }
 
-      // Update the name in profile if provided
+      console.log('Role successfully set in user_roles table');
+
+      // Update the profile with the name if provided
       if (formData.name) {
         console.log('Updating profile name to:', formData.name);
         
         const { error: profileError } = await supabase
           .from('profiles')
-          .update({ name: formData.name })
-          .eq('id', authData.user!.id);
+          .upsert({
+            id: userId,
+            name: formData.name,
+            email: formData.email
+          }, {
+            onConflict: 'id'
+          });
 
         if (profileError) {
           console.error('Profile update error:', profileError);
@@ -101,9 +132,14 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
 
       console.log('=== USER CREATION SUCCESS ===');
 
+      let successMessage = `User ${formData.email} created successfully with ${formData.role} role.`;
+      if (!useAdminAPI) {
+        successMessage += ' The user will need to confirm their email before they can log in.';
+      }
+
       toast({
         title: "Success",
-        description: `User ${formData.email} created successfully.`,
+        description: successMessage,
       });
 
       // Reset form and close dialog
@@ -115,17 +151,20 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
       });
       setOpen(false);
       onUserCreated();
+      
     } catch (error: any) {
       console.error('=== USER CREATION FAILED ===', error);
       
       let errorMessage = "Failed to create user. Please try again.";
       
-      if (error.message?.includes('already exists')) {
+      if (error.message?.includes('already exists') || error.message?.includes('already registered')) {
         errorMessage = "A user with this email already exists.";
       } else if (error.message?.includes('invalid email')) {
         errorMessage = "Please provide a valid email address.";
       } else if (error.message?.includes('weak password')) {
         errorMessage = "Password is too weak. Please use a stronger password.";
+      } else if (error.message?.includes('role')) {
+        errorMessage = `Failed to assign role: ${error.message}`;
       }
       
       toast({
