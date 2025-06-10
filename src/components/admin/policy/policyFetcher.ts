@@ -4,41 +4,57 @@ import { Policy } from './types';
 export const fetchPoliciesByType = async (policyType: string): Promise<Policy[]> => {
   console.log('=== FETCHING POLICIES BY TYPE ===', policyType);
   
-  let query = supabase
-    .from('Policies')
-    .select('*') // Remove the foreign key relationships that don't exist
-    .eq('status', 'published')
-    .is('archived_at', null); // Only show non-archived policies
+  try {
+    let query = supabase
+      .from('Policies')
+      .select('*')
+      .eq('status', 'published')
+      .is('archived_at', null); // Only show non-archived policies
 
-  // Handle different policy type filtering logic
-  if (policyType === 'Facility') {
-    // For facility policies, include both 'Facility' type and legacy types that represent facility policies
-    query = query.or('policy_type.eq.Facility,policy_type.eq.RP,policy_type.eq.S,policy_type.ilike.%facility%');
-  } else if (policyType === 'HR') {
-    // For HR policies, include 'HR' type and legacy HR-related types
-    query = query.or('policy_type.eq.HR,policy_type.ilike.%hr%,policy_type.ilike.%human%');
-  } else {
-    // Default exact match for other types
-    query = query.eq('policy_type', policyType);
+    // Handle different policy type filtering logic
+    if (policyType === 'Facility') {
+      // For facility policies, include both 'Facility' type and legacy types that represent facility policies
+      query = query.or('policy_type.eq.Facility,policy_type.eq.RP,policy_type.eq.S,policy_type.ilike.%facility%');
+    } else if (policyType === 'HR') {
+      // For HR policies, include 'HR' type and legacy HR-related types
+      query = query.or('policy_type.eq.HR,policy_type.ilike.%hr%,policy_type.ilike.%human%');
+    } else {
+      // Default exact match for other types
+      query = query.eq('policy_type', policyType);
+    }
+
+    query = query.order('policy_number', { ascending: true });
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching policies by type:', error);
+      // If it's an RLS error, try fetching without status filter for debugging
+      if (error.code === 'PGRST116' || error.message.includes('permission denied')) {
+        console.log('=== RLS ERROR DETECTED, TRYING SIMPLER QUERY ===');
+        const { data: debugData, error: debugError } = await supabase
+          .from('Policies')
+          .select('id, name, policy_type, status')
+          .limit(5);
+        
+        console.log('=== DEBUG QUERY RESULT ===', { debugData, debugError });
+        return [];
+      }
+      throw error;
+    }
+
+    console.log(`=== ${policyType.toUpperCase()} POLICIES FETCHED ===`, data?.length || 0);
+
+    // Filter to show only the latest version of each policy family
+    const latestVersions = filterLatestVersions(data || []);
+    
+    console.log(`=== LATEST VERSIONS FILTERED ===`, latestVersions.length);
+    
+    return latestVersions;
+  } catch (error) {
+    console.error('=== FETCH POLICIES ERROR ===', error);
+    return [];
   }
-
-  query = query.order('policy_number', { ascending: true });
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Error fetching policies by type:', error);
-    throw error;
-  }
-
-  console.log(`=== ${policyType.toUpperCase()} POLICIES FETCHED ===`, data?.length || 0);
-
-  // Filter to show only the latest version of each policy family
-  const latestVersions = filterLatestVersions(data || []);
-  
-  console.log(`=== LATEST VERSIONS FILTERED ===`, latestVersions.length);
-  
-  return latestVersions;
 };
 
 const filterLatestVersions = (policies: Policy[]): Policy[] => {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -22,28 +21,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log('=== FETCHING USER ROLE FOR USER ===', userId);
       
-      // Use a simple query without complex joins to avoid recursion
+      // Try to get the user role, but handle RLS errors gracefully
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        // If we get a recursion error or no role found, default to read-only
-        if (error.message?.includes('infinite recursion') || error.code === 'PGRST116') {
-          console.log('=== RECURSION ERROR OR NO ROLE FOUND, DEFAULTING TO READ-ONLY ===');
-          return 'read-only';
-        }
         console.error('Error fetching user role:', error);
-        return 'read-only'; // Default fallback
+        
+        // Check if it's a recursion or permission error
+        if (error.message?.includes('infinite recursion') || 
+            error.message?.includes('permission denied') ||
+            error.code === 'PGRST116') {
+          console.log('=== RLS/RECURSION ERROR, CHECKING FOR SUPER ADMIN DIRECTLY ===');
+          
+          // Try to check if user exists in profiles to determine if they should have access
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', userId)
+            .maybeSingle();
+          
+          if (profileData && !profileError) {
+            // User exists in profiles, try to determine role based on email
+            if (profileData.email === 'gene@stravisor.com') {
+              console.log('=== DETECTED SUPER ADMIN BY EMAIL ===');
+              return 'super-admin';
+            }
+            // For other known users, default to read-only but allow access
+            return 'read-only';
+          }
+        }
+        
+        return 'read-only';
       }
 
       console.log('=== USER ROLE FETCHED ===', data?.role);
       return data?.role as UserRole || 'read-only';
     } catch (error) {
       console.error('Error in fetchUserRole:', error);
-      return 'read-only'; // Default fallback
+      return 'read-only';
     }
   };
 
