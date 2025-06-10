@@ -5,19 +5,11 @@ import { UserRoleSelect } from './UserRoleSelect';
 import { UserDeleteButton } from './UserDeleteButton';
 import { EditUserNameForm } from './EditUserNameForm';
 import { PasswordChangeForm } from './PasswordChangeForm';
-import { UserRole } from '@/types/user';
+import { User } from '@/types/user';
 import { useAuth } from '@/hooks/useAuth';
 
-interface UserWithRole {
-  id: string;
-  name: string;
-  email: string;
-  created_at: string;
-  role: UserRole;
-}
-
 interface UserTableProps {
-  users: UserWithRole[];
+  users: User[];
   onUserUpdated: () => void;
 }
 
@@ -32,7 +24,6 @@ export const UserTable = ({ users, onUserUpdated }: UserTableProps) => {
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Current Role</TableHead>
-            <TableHead>Joined</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -49,9 +40,6 @@ export const UserTable = ({ users, onUserUpdated }: UserTableProps) => {
               <TableCell>{user.email}</TableCell>
               <TableCell>
                 <RoleBadge role={user.role} />
-              </TableCell>
-              <TableCell>
-                {new Date(user.created_at).toLocaleDateString()}
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
@@ -79,7 +67,7 @@ export const UserTable = ({ users, onUserUpdated }: UserTableProps) => {
           ))}
           {users.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+              <TableCell colSpan={4} className="text-center text-gray-500 py-8">
                 No users found
               </TableCell>
             </TableRow>

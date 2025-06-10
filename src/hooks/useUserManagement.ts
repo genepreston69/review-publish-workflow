@@ -82,8 +82,7 @@ export function useUserManagement() {
           id: profile.id,
           email: profile.email || '',
           role: finalRole,
-          name: profile.name || '',
-          createdAt: profile.created_at
+          name: profile.name || ''
         };
       });
 

@@ -7,7 +7,7 @@ import { useUserManagement } from '@/hooks/useUserManagement';
 import { User, Loader2 } from 'lucide-react';
 
 export const UserManagement = () => {
-  const { users, isLoading, fetchUsers } = useUserManagement();
+  const { users, isLoading, refetch } = useUserManagement();
 
   if (isLoading) {
     return (
@@ -28,13 +28,13 @@ export const UserManagement = () => {
             User Management
           </CardTitle>
           <div className="flex gap-2">
-            <InviteUserForm onUserInvited={fetchUsers} />
-            <CreateUserForm onUserCreated={fetchUsers} />
+            <InviteUserForm onUserInvited={refetch} />
+            <CreateUserForm onUserCreated={refetch} />
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <UserTable users={users} onUserUpdated={fetchUsers} />
+        <UserTable users={users} onUserUpdated={refetch} />
       </CardContent>
     </Card>
   );
