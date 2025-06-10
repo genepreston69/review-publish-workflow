@@ -1,5 +1,5 @@
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { PolicyList } from './policy/PolicyList';
 import { PolicyEditForm } from './policy/PolicyEditForm';
@@ -13,41 +13,37 @@ export function ReviewPolicies() {
   const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
 
-  // Memoize the filtered policies to prevent unnecessary recalculations
-  const reviewPolicies = useMemo(() => {
-    if (!policies || policies.length === 0) return [];
+  // All possible status variations that need review
+  const reviewStatuses = ['draft', 'under-review', 'under review', 'awaiting-changes', 'awaiting changes'];
 
-    // All possible status variations that need review
-    const reviewStatuses = ['draft', 'under-review', 'under review', 'awaiting-changes', 'awaiting changes'];
-
-    return policies.filter(policy => {
-      // Check if policy needs review (case-insensitive and flexible matching)
-      const needsReview = policy.status && reviewStatuses.some(status => 
-        policy.status?.toLowerCase().trim() === status.toLowerCase()
-      );
-      
-      if (!needsReview) return false;
-      
-      // Super-admins can see all policies needing review
-      if (isSuperAdmin) {
-        return true;
+  // Filter to show policies that need review with proper access control
+  const reviewPolicies = policies.filter(policy => {
+    // Check if policy needs review (case-insensitive and flexible matching)
+    const needsReview = policy.status && reviewStatuses.some(status => 
+      policy.status?.toLowerCase().trim() === status.toLowerCase()
+    );
+    
+    if (!needsReview) return false;
+    
+    // Super-admins can see all policies needing review
+    if (isSuperAdmin) {
+      return true;
+    }
+    
+    // Publishers can see policies assigned to them or that they can review
+    if (userRole === 'publish') {
+      // Don't show policies they created (maker/checker rule)
+      if (policy.creator_id === currentUser?.id) {
+        return false;
       }
       
-      // Publishers can see policies assigned to them or that they can review
-      if (userRole === 'publish') {
-        // Don't show policies they created (maker/checker rule)
-        if (policy.creator_id === currentUser?.id) {
-          return false;
-        }
-        
-        // Show if assigned as reviewer or if no specific reviewer assigned
-        const canReview = policy.reviewer === currentUser?.email || !policy.reviewer;
-        return canReview;
-      }
-      
-      return false;
-    });
-  }, [policies, isSuperAdmin, userRole, currentUser?.id, currentUser?.email]);
+      // Show if assigned as reviewer or if no specific reviewer assigned
+      const canReview = policy.reviewer === currentUser?.email || !policy.reviewer;
+      return canReview;
+    }
+    
+    return false;
+  });
 
   // Super admins can publish any policy, publishers follow maker/checker rules
   const canPublish = userRole === 'publish' || userRole === 'super-admin';

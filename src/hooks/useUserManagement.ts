@@ -1,151 +1,112 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User, UserRole } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
+import { UserRole } from '@/types/user';
 
-export function useUserManagement() {
-  const [users, setUsers] = useState<User[]>([]);
+interface UserWithRole {
+  id: string;
+  name: string;
+  email: string;
+  created_at: string;
+  role: UserRole;
+}
+
+export const useUserManagement = () => {
+  const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      console.log('=== FETCHING USERS FROM PROFILES ===');
-
-      // Fetch all profiles with roles
-      const { data: profiles, error } = await supabase
+      console.log('=== FETCHING USERS WITH NEW STRUCTURE ===');
+      
+      // Fetch profiles with their roles using the new structure
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select(`
+          id,
+          name,
+          email,
+          created_at
+        `);
 
-      if (error) {
-        console.error('Error fetching profiles:', error);
-        throw error;
+      if (profilesError) {
+        console.error('=== PROFILES ERROR ===', profilesError);
+        throw profilesError;
       }
 
-      console.log(`Found ${profiles?.length || 0} user profiles`);
+      console.log('=== PROFILES FETCHED ===', profiles);
 
-      const usersWithRoles: User[] = (profiles || []).map(profile => ({
-        id: profile.id,
-        email: profile.email,
-        role: profile.role as UserRole,
-        name: profile.name || profile.email
-      }));
+      // Fetch user roles using the new structure
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
 
-      console.log(`=== FINAL USER LIST ===`);
-      console.log(`Total users: ${usersWithRoles.length}`);
-      usersWithRoles.forEach(user => {
-        console.log(`- ${user.email} (${user.name}) - ${user.role}`);
+      if (rolesError) {
+        console.error('=== ROLES ERROR ===', rolesError);
+        throw rolesError;
+      }
+
+      console.log('=== USER ROLES FETCHED ===', userRoles);
+
+      // Combine the data - get the highest priority role for each user
+      const usersWithRoles: UserWithRole[] = profiles.map(profile => {
+        const userRoleRecords = userRoles.filter(role => role.user_id === profile.id);
+        
+        // Priority order: super-admin > publish > edit > read-only
+        const rolePriority = {
+          'super-admin': 4,
+          'publish': 3,
+          'edit': 2,
+          'read-only': 1
+        };
+        
+        let highestRole: UserRole = 'read-only';
+        let highestPriority = 0;
+        
+        userRoleRecords.forEach(roleRecord => {
+          const priority = rolePriority[roleRecord.role as UserRole] || 0;
+          if (priority > highestPriority) {
+            highestPriority = priority;
+            highestRole = roleRecord.role as UserRole;
+          }
+        });
+
+        return {
+          ...profile,
+          role: highestRole
+        };
       });
 
+      console.log('=== FINAL USERS WITH ROLES ===', usersWithRoles);
       setUsers(usersWithRoles);
-    } catch (error) {
-      console.error('Error in fetchUsers:', error);
+
       toast({
-        title: "Error",
-        description: "Failed to fetch users. Please try again.",
-        variant: "destructive",
+        title: "Success",
+        description: `Loaded ${usersWithRoles.length} users successfully.`,
       });
+    } catch (error) {
+      console.error('=== ERROR FETCHING USERS ===', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load users. Please check your permissions.",
+      });
+      setUsers([]); // Set empty array on error
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  };
 
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
-
-  const updateUserRole = async (userId: string, newRole: UserRole) => {
-    try {
-      console.log('Updating user role:', { userId, newRole });
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', userId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "User role updated successfully",
-      });
-
-      await fetchUsers();
-    } catch (error) {
-      console.error('Error updating user role:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update user role. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const deleteUser = async (userId: string) => {
-    try {
-      console.log('Deleting user:', userId);
-
-      // Delete the profile (this will also remove access)
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
-
-      if (profileError) {
-        console.error('Error deleting profile:', profileError);
-        throw profileError;
-      }
-
-      toast({
-        title: "Success",
-        description: "User access removed successfully",
-      });
-
-      await fetchUsers();
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      toast({
-        title: "Error",
-        description: "Failed to remove user access. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const updateUserName = async (userId: string, newName: string) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ name: newName })
-        .eq('id', userId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "User name updated successfully",
-      });
-
-      await fetchUsers();
-    } catch (error) {
-      console.error('Error updating user name:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update user name. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  }, []);
 
   return {
     users,
     isLoading,
-    updateUserRole,
-    deleteUser,
-    updateUserName,
-    refetch: fetchUsers
+    fetchUsers
   };
-}
+};

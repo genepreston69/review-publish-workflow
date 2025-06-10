@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -17,29 +16,27 @@ export const usePolicies = () => {
 
   const fetchPolicies = async () => {
     try {
-      console.log('=== FETCH POLICIES START ===');
       setIsLoadingPolicies(true);
       
-      // Simplified query without complex joins to prevent timeout
       const { data, error } = await supabase
         .from('Policies')
-        .select('*')
-        .is('archived_at', null)
-        .order('created_at', { ascending: false })
-        .limit(100); // Add limit to prevent massive queries
-
-      console.log('=== POLICIES QUERY RESULT ===', { data: data?.length, error });
+        .select(`
+          *,
+          creator:creator_id(id, name, email),
+          publisher:publisher_id(id, name, email)
+        `)
+        .is('archived_at', null) // Only show non-archived policies
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching policies:', error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load policies. Please try again.",
+          description: "Failed to load policies.",
         });
-        setPolicies([]);
+        setPolicies([]); // Set empty array on error
       } else {
-        console.log('=== POLICIES LOADED SUCCESSFULLY ===', data?.length);
         setPolicies(data || []);
       }
     } catch (error) {
@@ -49,7 +46,7 @@ export const usePolicies = () => {
         title: "Error",
         description: "An unexpected error occurred while loading policies.",
       });
-      setPolicies([]);
+      setPolicies([]); // Set empty array on error
     } finally {
       setIsLoadingPolicies(false);
     }
@@ -373,12 +370,7 @@ export const usePolicies = () => {
   };
 
   useEffect(() => {
-    // Add a small delay to prevent immediate loading issues
-    const timer = setTimeout(() => {
-      fetchPolicies();
-    }, 100);
-
-    return () => clearTimeout(timer);
+    fetchPolicies();
   }, []);
 
   return {
