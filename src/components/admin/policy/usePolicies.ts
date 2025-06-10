@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -19,11 +20,13 @@ export const usePolicies = () => {
       console.log('=== FETCH POLICIES START ===');
       setIsLoadingPolicies(true);
       
+      // Simplified query without complex joins to prevent timeout
       const { data, error } = await supabase
         .from('Policies')
         .select('*')
         .is('archived_at', null)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100); // Add limit to prevent massive queries
 
       console.log('=== POLICIES QUERY RESULT ===', { data: data?.length, error });
 
@@ -32,7 +35,7 @@ export const usePolicies = () => {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load policies. Please check your permissions.",
+          description: "Failed to load policies. Please try again.",
         });
         setPolicies([]);
       } else {
@@ -370,7 +373,12 @@ export const usePolicies = () => {
   };
 
   useEffect(() => {
-    fetchPolicies();
+    // Add a small delay to prevent immediate loading issues
+    const timer = setTimeout(() => {
+      fetchPolicies();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return {
