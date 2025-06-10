@@ -46,33 +46,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Fetching role for user:', userId);
       
-      // Simple direct query without timeout
+      // Simple direct query to user_roles table
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .single();
 
       if (error) {
         console.error('Error fetching user role:', error);
         setUserRole('read-only');
-      } else if (data && data.length > 0) {
-        // If user has multiple roles, pick the highest priority one
-        const roles = data.map(r => r.role as UserRole);
-        const roleHierarchy: Record<UserRole, number> = {
-          'super-admin': 4,
-          'publish': 3,
-          'edit': 2,
-          'read-only': 1
-        };
-        
-        const highestRole = roles.reduce((highest, current) => {
-          return roleHierarchy[current] > roleHierarchy[highest] ? current : highest;
-        }, 'read-only' as UserRole);
-        
-        console.log('User roles found:', roles, 'Using highest:', highestRole);
-        setUserRole(highestRole);
+      } else if (data?.role) {
+        console.log('User role found:', data.role);
+        setUserRole(data.role as UserRole);
       } else {
-        console.log('No roles found for user, defaulting to read-only');
+        console.log('No role found for user, defaulting to read-only');
         setUserRole('read-only');
       }
     } catch (err) {

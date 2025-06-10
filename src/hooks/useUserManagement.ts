@@ -14,7 +14,7 @@ export function useUserManagement() {
       setIsLoading(true);
       console.log('Fetching users...');
 
-      // First fetch all profiles
+      // Fetch all profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
@@ -32,8 +32,8 @@ export function useUserManagement() {
         return;
       }
 
-      // Then fetch all user roles separately
-      const { data: allRoles, error: rolesError } = await supabase
+      // Fetch all user roles
+      const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role');
 
@@ -42,46 +42,26 @@ export function useUserManagement() {
         // Continue without roles rather than failing completely
       }
 
-      console.log(`Found ${allRoles?.length || 0} role records`);
+      console.log(`Found ${userRoles?.length || 0} role records`);
 
-      // Create a map of user_id to roles for efficient lookup
-      const userRolesMap = new Map<string, UserRole[]>();
-      if (allRoles) {
-        allRoles.forEach(roleRecord => {
-          const userId = roleRecord.user_id;
-          const role = roleRecord.role as UserRole;
-          if (!userRolesMap.has(userId)) {
-            userRolesMap.set(userId, []);
-          }
-          userRolesMap.get(userId)!.push(role);
+      // Create a map of user_id to role for efficient lookup
+      const userRolesMap = new Map<string, UserRole>();
+      if (userRoles) {
+        userRoles.forEach(roleRecord => {
+          userRolesMap.set(roleRecord.user_id, roleRecord.role as UserRole);
         });
       }
 
       // Map profiles to users with their roles
       const usersWithRoles: User[] = profiles.map(profile => {
-        const userRoles = userRolesMap.get(profile.id) || [];
+        const userRole = userRolesMap.get(profile.id) || 'read-only';
         
-        // If user has multiple roles, pick the highest priority one
-        let finalRole: UserRole = 'read-only';
-        if (userRoles.length > 0) {
-          const roleHierarchy: Record<UserRole, number> = {
-            'super-admin': 4,
-            'publish': 3,
-            'edit': 2,
-            'read-only': 1
-          };
-          
-          finalRole = userRoles.reduce((highest, current) => {
-            return roleHierarchy[current] > roleHierarchy[highest] ? current : highest;
-          }, 'read-only' as UserRole);
-        }
-
-        console.log(`User ${profile.email} has roles: ${userRoles.join(', ')}, using: ${finalRole}`);
+        console.log(`User ${profile.email} has role: ${userRole}`);
 
         return {
           id: profile.id,
           email: profile.email || '',
-          role: finalRole,
+          role: userRole,
           name: profile.name || ''
         };
       });
@@ -105,20 +85,19 @@ export function useUserManagement() {
 
   const updateUserRole = async (userId: string, newRole: UserRole) => {
     try {
-      // First, delete existing roles for this user
-      const { error: deleteError } = await supabase
+      console.log('Updating user role:', { userId, newRole });
+
+      // Use upsert to handle both insert and update cases
+      const { error } = await supabase
         .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
+        .upsert({ 
+          user_id: userId, 
+          role: newRole 
+        }, {
+          onConflict: 'user_id'
+        });
 
-      if (deleteError) throw deleteError;
-
-      // Then insert the new role
-      const { error: insertError } = await supabase
-        .from('user_roles')
-        .insert({ user_id: userId, role: newRole });
-
-      if (insertError) throw insertError;
+      if (error) throw error;
 
       toast({
         title: "Success",
@@ -138,6 +117,8 @@ export function useUserManagement() {
 
   const deleteUser = async (userId: string) => {
     try {
+      console.log('Deleting user:', userId);
+
       // Delete user roles first
       const { error: rolesError } = await supabase
         .from('user_roles')
