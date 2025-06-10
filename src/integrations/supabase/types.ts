@@ -279,6 +279,7 @@ export type Database = {
           email: string
           id: string
           name: string
+          role: Database["public"]["Enums"]["app_role"]
           updated_at: string | null
         }
         Insert: {
@@ -287,6 +288,7 @@ export type Database = {
           email: string
           id: string
           name: string
+          role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string | null
         }
         Update: {
@@ -295,28 +297,8 @@ export type Database = {
           email?: string
           id?: string
           name?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      user_roles: {
-        Row: {
-          created_at: string | null
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
           role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -339,7 +321,7 @@ export type Database = {
       }
       get_user_role: {
         Args: Record<PropertyKey, never> | { user_id: string }
-        Returns: string
+        Returns: Database["public"]["Enums"]["app_role"]
       }
       has_role: {
         Args: {

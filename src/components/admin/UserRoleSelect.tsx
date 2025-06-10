@@ -26,15 +26,11 @@ export const UserRoleSelect = ({ userId, currentRole, onRoleUpdated }: UserRoleS
       console.log('Target user ID:', userId);
       console.log('New role:', newRole);
       
-      // Use upsert to handle both insert and update cases
+      // Update the role in the profiles table
       const { error } = await supabase
-        .from('user_roles')
-        .upsert({ 
-          user_id: userId, 
-          role: newRole 
-        }, {
-          onConflict: 'user_id'
-        });
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', userId);
 
       if (error) {
         console.error('Error updating role:', error);

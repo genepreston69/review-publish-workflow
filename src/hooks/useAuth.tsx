@@ -25,26 +25,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchUserRole = async (userId: string): Promise<UserRole | null> => {
     try {
-      console.log('=== FETCHING USER ROLE FOR USER ===', userId);
+      console.log('=== FETCHING USER ROLE FROM PROFILES ===', userId);
       
-      // Create a timeout promise
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout')), 10000); // 10 second timeout
-      });
-
-      // Race between the query and timeout
-      const queryPromise = supabase
-        .from('user_roles')
+      const { data, error } = await supabase
+        .from('profiles')
         .select('role')
-        .eq('user_id', userId)
+        .eq('id', userId)
         .maybeSingle();
 
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
-
       if (error) {
-        console.error('Error fetching user role:', error);
+        console.error('Error fetching user role from profiles:', error);
         
-        // If still failing, check if this is the super admin email
+        // Fallback for super admin email
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('email')
@@ -62,12 +54,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return 'read-only';
       }
 
-      console.log('=== USER ROLE FETCHED ===', data?.role);
+      console.log('=== USER ROLE FETCHED FROM PROFILES ===', data?.role);
       return data?.role as UserRole || 'read-only';
     } catch (error) {
       console.error('Error in fetchUserRole:', error);
       
-      // On timeout or error, check if this is the super admin email as fallback
+      // Fallback for super admin email
       try {
         const { data: profileData } = await supabase
           .from('profiles')
