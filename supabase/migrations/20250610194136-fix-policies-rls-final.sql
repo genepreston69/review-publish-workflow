@@ -1,4 +1,5 @@
 
+
 -- Fix infinite recursion in user_roles and improve policy access
 
 -- First, drop any existing problematic policies on user_roles
@@ -46,3 +47,4 @@ CREATE POLICY "Allow authenticated users to delete policies"
 
 -- Ensure RLS is enabled on Policies table
 ALTER TABLE public."Policies" ENABLE ROW LEVEL SECURITY;
+
