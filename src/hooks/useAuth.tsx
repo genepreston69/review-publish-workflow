@@ -39,20 +39,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', userId)
-        .order('role', { ascending: false })
-        .limit(1);
+        .eq('user_id', userId);
 
       if (error) {
         console.error('=== ERROR FETCHING USER ROLE ===', error);
-        // If there's a database error, default to read-only
         return 'read-only';
       }
 
       console.log('=== USER ROLES DATA ===', data);
 
       if (data && data.length > 0) {
-        const role = data[0].role as UserRole;
+        // Get the highest priority role if multiple exist
+        const rolePriority = {
+          'super-admin': 4,
+          'publish': 3,
+          'edit': 2,
+          'read-only': 1
+        };
+        
+        const highestRole = data.reduce((highest, current) => {
+          const currentPriority = rolePriority[current.role as UserRole] || 0;
+          const highestPriority = rolePriority[highest.role as UserRole] || 0;
+          return currentPriority > highestPriority ? current : highest;
+        });
+        
+        const role = highestRole.role as UserRole;
         console.log('=== FOUND ROLE ===', role);
         return role;
       }
@@ -88,18 +99,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (session?.user) {
           console.log('=== USER FOUND, FETCHING ROLE ===');
           try {
-            // Reduced timeout and better error handling
-            const rolePromise = fetchUserRole(session.user.id);
-            const timeoutPromise = new Promise<UserRole>((_, reject) => {
-              setTimeout(() => reject(new Error('Role fetch timeout')), 10000); // Increased to 10 seconds
-            });
-
-            const role = await Promise.race([rolePromise, timeoutPromise]);
+            const role = await fetchUserRole(session.user.id);
             console.log('=== ROLE FETCHED ===', role);
             setUserRole(role);
           } catch (error) {
             console.error('=== ROLE FETCH FAILED ===', error);
-            // Always set a fallback role so the app doesn't stay in loading state
             setUserRole('read-only');
           } finally {
             setIsLoading(false);
@@ -127,13 +131,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (session?.user) {
           try {
-            // Use timeout for initial role fetch as well
-            const rolePromise = fetchUserRole(session.user.id);
-            const timeoutPromise = new Promise<UserRole>((_, reject) => {
-              setTimeout(() => reject(new Error('Initial role fetch timeout')), 10000);
-            });
-
-            const role = await Promise.race([rolePromise, timeoutPromise]);
+            const role = await fetchUserRole(session.user.id);
             console.log('=== INITIAL ROLE FETCHED ===', role);
             setUserRole(role);
           } catch (error) {
