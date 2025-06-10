@@ -6,11 +6,7 @@ export const fetchPoliciesByType = async (policyType: string): Promise<Policy[]>
   
   let query = supabase
     .from('Policies')
-    .select(`
-      *,
-      creator:creator_id(id, name, email),
-      publisher:publisher_id(id, name, email)
-    `)
+    .select('*') // Remove the foreign key relationships that don't exist
     .eq('status', 'published')
     .is('archived_at', null); // Only show non-archived policies
 
@@ -80,11 +76,7 @@ const filterLatestVersions = (policies: Policy[]): Policy[] => {
 export const fetchPoliciesByPrefix = async (prefix: string): Promise<Policy[]> => {
   const { data, error } = await supabase
     .from('Policies')
-    .select(`
-      *,
-      creator:creator_id(id, name, email),
-      publisher:publisher_id(id, name, email)
-    `)
+    .select('*')
     .eq('status', 'published')
     .ilike('policy_number', `${prefix}%`)
     .is('archived_at', null) // Only show non-archived policies
@@ -101,11 +93,7 @@ export const fetchPoliciesByPrefix = async (prefix: string): Promise<Policy[]> =
 export const fetchAllPolicies = async (): Promise<Policy[]> => {
   const { data, error } = await supabase
     .from('Policies')
-    .select(`
-      *,
-      creator:creator_id(id, name, email),
-      publisher:publisher_id(id, name, email)
-    `)
+    .select('*')
     .is('archived_at', null) // Only show non-archived policies
     .order('created_at', { ascending: false });
 
@@ -120,11 +108,7 @@ export const fetchAllPolicies = async (): Promise<Policy[]> => {
 export const fetchPoliciesByStatus = async (status: string): Promise<Policy[]> => {
   const { data, error } = await supabase
     .from('Policies')
-    .select(`
-      *,
-      creator:creator_id(id, name, email),
-      publisher:publisher_id(id, name, email)
-    `)
+    .select('*')
     .eq('status', status)
     .is('archived_at', null) // Only show non-archived policies
     .order('created_at', { ascending: false });
@@ -140,11 +124,7 @@ export const fetchPoliciesByStatus = async (status: string): Promise<Policy[]> =
 export const fetchArchivedPolicies = async (): Promise<Policy[]> => {
   const { data, error } = await supabase
     .from('Policies')
-    .select(`
-      *,
-      creator:creator_id(id, name, email),
-      publisher:publisher_id(id, name, email)
-    `)
+    .select('*')
     .not('archived_at', 'is', null) // Only show archived policies
     .order('archived_at', { ascending: false });
 

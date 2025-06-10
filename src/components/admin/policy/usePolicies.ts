@@ -20,11 +20,7 @@ export const usePolicies = () => {
       
       const { data, error } = await supabase
         .from('Policies')
-        .select(`
-          *,
-          creator:creator_id(id, name, email),
-          publisher:publisher_id(id, name, email)
-        `)
+        .select('*') // Remove foreign key selections that don't exist
         .is('archived_at', null) // Only show non-archived policies
         .order('created_at', { ascending: false });
 
