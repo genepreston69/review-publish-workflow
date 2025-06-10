@@ -1,19 +1,11 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { User, UserRole } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
-import { UserRole } from '@/types/user';
 
-interface UserWithRole {
-  id: string;
-  name: string;
-  email: string;
-  created_at: string;
-  role: UserRole;
-}
-
-export const useUserManagement = () => {
-  const [users, setUsers] = useState<UserWithRole[]>([]);
+export function useUserManagement() {
+  const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -66,7 +58,7 @@ export const useUserManagement = () => {
       }
 
       // Map profiles to users with their roles
-      const usersWithRoles: UserWithRole[] = profiles.map(profile => {
+      const usersWithRoles: User[] = profiles.map(profile => {
         const userRoles = userRolesMap.get(profile.id) || [];
         
         // If user has multiple roles, pick the highest priority one
@@ -91,16 +83,11 @@ export const useUserManagement = () => {
           email: profile.email || '',
           role: finalRole,
           name: profile.name || '',
-          created_at: profile.created_at
+          createdAt: profile.created_at
         };
       });
 
       setUsers(usersWithRoles);
-      
-      toast({
-        title: "Success",
-        description: `Loaded ${usersWithRoles.length} users successfully.`,
-      });
     } catch (error) {
       console.error('Error in fetchUsers:', error);
       toast({
@@ -152,8 +139,21 @@ export const useUserManagement = () => {
 
   const deleteUser = async (userId: string) => {
     try {
-      const { error } = await supabase.rpc('delete_user', { user_id: userId });
-      if (error) throw error;
+      // Delete user roles first
+      const { error: rolesError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (rolesError) throw rolesError;
+
+      // Delete user profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (profileError) throw profileError;
 
       toast({
         title: "Success",
@@ -202,6 +202,6 @@ export const useUserManagement = () => {
     updateUserRole,
     deleteUser,
     updateUserName,
-    fetchUsers
+    refetch: fetchUsers
   };
-};
+}
