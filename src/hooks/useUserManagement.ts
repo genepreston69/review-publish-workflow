@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole } from '@/types/user';
@@ -12,68 +11,81 @@ export function useUserManagement() {
   const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log('=== FETCHING USERS (NON-ADMIN) ===');
+      console.log('=== FETCHING USERS ===');
 
-      // Since we can't use admin API, fetch users through profiles and user_roles
-      // First, get all profiles (which are created for all users)
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Get all user roles first to know which users we should look for
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
 
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-        throw profilesError;
+      if (rolesError) {
+        console.error('Error fetching user roles:', rolesError);
+        throw rolesError;
       }
 
-      console.log(`Found ${profiles?.length || 0} profiles`);
+      console.log(`Found ${userRoles?.length || 0} user role records`);
 
-      if (!profiles || profiles.length === 0) {
-        console.log('No profiles found');
+      if (!userRoles || userRoles.length === 0) {
+        console.log('No user roles found');
         setUsers([]);
         return;
       }
 
-      // Get user IDs from profiles
-      const userIds = profiles.map(profile => profile.id);
+      // Get user IDs from roles
+      const userIds = userRoles.map(role => role.user_id);
 
-      // Fetch user roles for these users
-      const { data: userRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role')
-        .in('user_id', userIds);
+      // Fetch profiles for these users - use left join approach by getting all profiles
+      // and then filtering, to handle missing profiles gracefully
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', userIds);
 
-      if (rolesError) {
-        console.error('Error fetching roles:', rolesError);
-        // Continue without roles rather than failing completely
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        // Don't throw here, continue with empty profiles
       }
 
-      console.log(`Found ${userRoles?.length || 0} role records`);
+      console.log(`Found ${profiles?.length || 0} profiles`);
+
+      // Create a map for efficient profile lookup
+      const profilesMap = new Map();
+      if (profiles) {
+        profiles.forEach(profile => {
+          profilesMap.set(profile.id, profile);
+        });
+      }
 
       // Create a map for efficient role lookup
       const userRolesMap = new Map<string, UserRole>();
-      if (userRoles) {
-        userRoles.forEach(roleRecord => {
-          userRolesMap.set(roleRecord.user_id, roleRecord.role as UserRole);
-        });
-      }
+      userRoles.forEach(roleRecord => {
+        userRolesMap.set(roleRecord.user_id, roleRecord.role as UserRole);
+      });
 
-      // Map profiles to users with their roles
-      const usersWithRoles: User[] = profiles.map(profile => {
-        const userRole = userRolesMap.get(profile.id) || 'read-only';
-        
-        console.log(`User ${profile.email}:`, {
-          profileName: profile.name,
+      // Create users list, handling missing profiles
+      const usersWithRoles: User[] = [];
+
+      for (const roleRecord of userRoles) {
+        const userId = roleRecord.user_id;
+        const userRole = roleRecord.role as UserRole;
+        const profile = profilesMap.get(userId);
+
+        // If no profile exists, create a user entry with minimal info
+        const user: User = {
+          id: userId,
+          email: profile?.email || `User ID: ${userId}`, // Fallback if no profile
+          role: userRole,
+          name: profile?.name || profile?.email || `User ${userId.slice(0, 8)}...` // Fallback name
+        };
+
+        console.log(`User ${user.email}:`, {
+          hasProfile: !!profile,
+          profileName: profile?.name,
           role: userRole
         });
 
-        return {
-          id: profile.id,
-          email: profile.email || '',
-          role: userRole,
-          name: profile.name || profile.email || 'Unknown User'
-        };
-      });
+        usersWithRoles.push(user);
+      }
 
       console.log(`=== FINAL USER LIST ===`);
       console.log(`Total users: ${usersWithRoles.length}`);
