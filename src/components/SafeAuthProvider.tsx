@@ -1,7 +1,8 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+// SafeAuthProvider.tsx - Clean implementation without syntax errors
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { User, Session } from '@supabase/supabase-js';
 import { UserRole } from '@/types/user';
 
 interface AuthContextType {
@@ -16,75 +17,28 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within a SafeAuthProvider');
-  }
-  return context;
-};
-
-interface SafeAuthProviderProps {
-  children: React.ReactNode;
-}
-
-// Emergency timeout for auth operations
-const AUTH_TIMEOUT = 10000; // 10 seconds
-const MAX_RETRIES = 3;
-
-export const SafeAuthProvider: React.FC<SafeAuthProviderProps> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
+export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // State management
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Prevent multiple simultaneous auth operations
-  const authOperationRef = useRef(false);
-  const retryCountRef = useRef(0);
-  const mountedRef = useRef(true);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+  // Refs for preventing infinite loops and race conditions
+  const isInitialized = useRef(false);
+  const currentUserId = useRef<string | null>(null);
+  const retryCount = useRef(0);
+  const maxRetries = 3;
 
-  // Safe async operation wrapper with timeout and retry
-  const safeAsyncOperation = useCallback(async <T>(
-    operation: () => Promise<T>,
-    operationName: string,
-    retries: number = MAX_RETRIES
-  ): Promise<T | null> => {
-    if (!mountedRef.current) return null;
-
-    try {
-      console.log(`=== STARTING ${operationName} ===`);
-      
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error(`${operationName} timeout`)), AUTH_TIMEOUT);
-      });
-
-      const result = await Promise.race([operation(), timeoutPromise]);
-      console.log(`=== ${operationName} SUCCESS ===`);
-      return result;
-    } catch (error) {
-      console.error(`=== ${operationName} ERROR ===`, error);
-      
-      if (retries > 0 && mountedRef.current) {
-        console.log(`=== RETRYING ${operationName} (${retries} attempts left) ===`);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
-        return safeAsyncOperation(operation, operationName, retries - 1);
-      }
-      
-      return null;
-    }
-  }, []);
-
-  // Safe role fetching with fallback
+  // Safe role fetcher with comprehensive error handling
   const fetchUserRole = useCallback(async (userId: string): Promise<UserRole> => {
-    const operation = async () => {
+    console.log('🔍 Fetching role for user:', userId);
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
@@ -92,124 +46,151 @@ export const SafeAuthProvider: React.FC<SafeAuthProviderProps> = ({ children }) 
         .order('role', { ascending: false })
         .limit(1);
 
+      clearTimeout(timeoutId);
+
       if (error) {
-        console.error('Role fetch error:', error);
+        console.error('❌ Role fetch error:', error);
         return 'read-only';
       }
 
       if (data && data.length > 0) {
-        return data[0].role as UserRole;
+        const role = data[0].role as UserRole;
+        console.log('✅ Role fetched successfully:', role);
+        return role;
       }
 
+      console.log('📝 No role found, using default role');
       return 'read-only';
-    };
 
-    const result = await safeAsyncOperation(operation, 'FETCH_USER_ROLE');
-    return result || 'read-only';
-  }, [safeAsyncOperation]);
-
-  // Safe session initialization
-  const initializeAuth = useCallback(async () => {
-    if (authOperationRef.current || !mountedRef.current) return;
-    
-    authOperationRef.current = true;
-    console.log('=== INITIALIZING AUTH ===');
-
-    try {
-      const operation = async () => {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        return session;
-      };
-
-      const initialSession = await safeAsyncOperation(operation, 'GET_INITIAL_SESSION');
+    } catch (error: any) {
+      console.error('💥 Role fetch failed:', error.message);
       
-      if (!mountedRef.current) return;
-
-      if (initialSession?.user) {
-        setSession(initialSession);
-        setCurrentUser(initialSession.user);
-        
-        const role = await fetchUserRole(initialSession.user.id);
-        if (mountedRef.current) {
-          setUserRole(role);
-        }
-      } else {
-        setSession(null);
-        setCurrentUser(null);
-        setUserRole(null);
+      if (error.name === 'AbortError') {
+        console.log('⏰ Role fetch timeout');
       }
-    } catch (error) {
-      console.error('=== AUTH INITIALIZATION ERROR ===', error);
-      if (mountedRef.current) {
-        setError('Authentication initialization failed');
-        setSession(null);
-        setCurrentUser(null);
-        setUserRole(null);
-      }
-    } finally {
-      if (mountedRef.current) {
-        setIsLoading(false);
-        authOperationRef.current = false;
-      }
+      
+      console.log('🛡️ Using fallback role due to error');
+      return 'read-only';
     }
-  }, [safeAsyncOperation, fetchUserRole]);
+  }, []);
 
-  // Safe auth state change handler
-  const handleAuthStateChange = useCallback(async (event: string, newSession: Session | null) => {
-    if (!mountedRef.current) return;
+  // Initialize authentication with safety checks
+  const initializeAuth = useCallback(async (newSession: Session | null) => {
+    const user = newSession?.user || null;
     
-    console.log('=== AUTH STATE CHANGE ===', event, newSession?.user?.email);
-
-    // Handle sign out immediately
-    if (event === 'SIGNED_OUT' || !newSession) {
-      setSession(null);
-      setCurrentUser(null);
-      setUserRole(null);
-      setError(null);
+    // Prevent duplicate initialization
+    if (user?.id === currentUserId.current && isInitialized.current) {
+      console.log('🔄 Auth already initialized for this user');
       return;
     }
 
-    // Handle sign in
-    if (newSession?.user) {
-      setSession(newSession);
-      setCurrentUser(newSession.user);
+    console.log('🚀 Initializing auth for:', user?.email || 'no user');
+    currentUserId.current = user?.id || null;
+
+    if (!newSession || !user) {
+      setSession(null);
+      setCurrentUser(null);
+      setUserRole(null);
+      setIsLoading(false);
+      setError(null);
+      retryCount.current = 0;
+      isInitialized.current = false;
+      return;
+    }
+
+    setSession(newSession);
+    setCurrentUser(user);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const role = await fetchUserRole(user.id);
+      
+      setUserRole(role);
+      setIsLoading(false);
       setError(null);
       
-      // Fetch role with safety measures
-      try {
-        const role = await fetchUserRole(newSession.user.id);
-        if (mountedRef.current) {
-          setUserRole(role);
-        }
-      } catch (error) {
-        console.error('=== ROLE FETCH FAILED IN STATE CHANGE ===', error);
-        if (mountedRef.current) {
-          setUserRole('read-only'); // Safe fallback
-        }
+      retryCount.current = 0;
+      isInitialized.current = true;
+      console.log('🎉 Auth initialization complete:', { email: user.email, role });
+
+    } catch (error: any) {
+      console.error('💥 Auth initialization failed:', error.message);
+      
+      retryCount.current++;
+      
+      if (retryCount.current >= maxRetries) {
+        console.log('⚠️ Max retries reached, using fallback state');
+        setUserRole('read-only');
+        setIsLoading(false);
+        setError(`Authentication failed after ${maxRetries} attempts: ${error.message}`);
+      } else {
+        console.log(`🔄 Retry ${retryCount.current}/${maxRetries} in 2 seconds...`);
+        setTimeout(() => {
+          if (currentUserId.current === user.id) {
+            initializeAuth(newSession);
+          }
+        }, 2000);
       }
     }
   }, [fetchUserRole]);
 
-  // Setup auth listener and initialize
+  // Auth state change listener
   useEffect(() => {
-    console.log('=== SETTING UP AUTH LISTENER ===');
+    console.log('🎧 Setting up auth listener');
     
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
-    
-    // Initialize auth state
-    initializeAuth();
+    // Emergency timeout to prevent infinite loading
+    const emergencyTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.log('🚨 Emergency timeout - forcing auth completion');
+        setIsLoading(false);
+        setError('Authentication timeout - please refresh the page');
+      }
+    }, 30000);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔔 Auth state changed:', event, session?.user?.email || 'no user');
+      clearTimeout(emergencyTimeout);
+      
+      if (event === 'SIGNED_OUT') {
+        isInitialized.current = false;
+        currentUserId.current = null;
+        retryCount.current = 0;
+      }
+      
+      await initializeAuth(session);
+    });
+
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Initial session error:', error);
+          setIsLoading(false);
+          setError('Failed to get initial session');
+          return;
+        }
+        await initializeAuth(session);
+      } catch (error: any) {
+        console.error('Initial auth error:', error);
+        setIsLoading(false);
+        setError('Authentication initialization failed');
+      }
+    };
+
+    getInitialSession();
 
     return () => {
-      console.log('=== CLEANING UP AUTH SUBSCRIPTION ===');
+      console.log('🧹 Cleaning up auth listener');
       subscription.unsubscribe();
+      clearTimeout(emergencyTimeout);
     };
-  }, [handleAuthStateChange, initializeAuth]);
+  }, [initializeAuth]);
 
-  // Safe sign out
+  // Action functions
   const signOut = useCallback(async () => {
-    console.log('=== SIGNING OUT ===');
+    console.log('👋 Signing out');
     
     try {
       // Clear local state immediately for responsive UI
@@ -224,23 +205,21 @@ export const SafeAuthProvider: React.FC<SafeAuthProviderProps> = ({ children }) 
         console.error('Sign out error:', error);
         // Don't throw - local state is already cleared
       }
-    } catch (error) {
-      console.error('=== UNEXPECTED SIGN OUT ERROR ===', error);
+    } catch (error: any) {
+      console.error('❌ Unexpected sign out error:', error);
       // Local state is already cleared, so this is fine
     }
   }, []);
 
-  // Manual refetch function
   const refetch = useCallback(async () => {
+    console.log('🔄 Refreshing auth state');
     if (currentUser) {
       const role = await fetchUserRole(currentUser.id);
-      if (mountedRef.current) {
-        setUserRole(role);
-      }
+      setUserRole(role);
     }
   }, [currentUser, fetchUserRole]);
 
-  // Memoize context value to prevent unnecessary re-renders
+  // Memoized context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
     currentUser,
     session,
@@ -251,16 +230,38 @@ export const SafeAuthProvider: React.FC<SafeAuthProviderProps> = ({ children }) 
     refetch
   }), [currentUser, session, userRole, isLoading, error, signOut, refetch]);
 
-  console.log('=== SAFE AUTH PROVIDER RENDER ===', { 
-    currentUser: !!currentUser, 
-    userRole, 
-    isLoading, 
-    error 
-  });
+  // Debug logging for development
+  useEffect(() => {
+    console.log('=== SAFE AUTH PROVIDER RENDER ===', { 
+      currentUser: !!currentUser, 
+      userRole, 
+      isLoading, 
+      error 
+    });
+  }, [currentUser, userRole, isLoading, error]);
 
   return (
     <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
+};
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    console.warn('⚠️ useAuth called outside SafeAuthProvider - using fallback state');
+    
+    // Return safe fallback values to prevent crashes
+    return {
+      currentUser: null,
+      session: null,
+      userRole: null,
+      isLoading: false,
+      error: 'Auth provider not found',
+      signOut: async () => console.warn('signOut called outside provider'),
+      refetch: async () => console.warn('refetch called outside provider')
+    };
+  }
+  return context;
 };
