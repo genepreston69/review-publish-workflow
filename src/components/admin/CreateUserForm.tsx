@@ -40,81 +40,45 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
     setIsLoading(true);
 
     try {
-      console.log('=== STARTING USER CREATION PROCESS ===');
+      console.log('=== STARTING ADMIN USER CREATION ===');
       console.log('Form data:', { 
         email: formData.email, 
         name: formData.name, 
         role: formData.role 
       });
       
-      // Create the user using regular signup
-      console.log('=== CALLING SUPABASE AUTH SIGNUP ===');
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Use the admin API to create user without signing them in
+      console.log('=== CALLING ADMIN USER CREATE ===');
+      const { data: userData, error: createError } = await supabase.auth.admin.createUser({
         email: formData.email,
         password: formData.password,
-        options: {
-          data: {
-            name: formData.name
-          }
+        email_confirm: true, // Skip email confirmation for admin-created users
+        user_metadata: {
+          name: formData.name
         }
       });
 
-      console.log('=== AUTH SIGNUP RESPONSE ===');
-      console.log('Auth data:', authData);
-      console.log('Auth error:', authError);
+      console.log('=== ADMIN USER CREATE RESPONSE ===');
+      console.log('User data:', userData);
+      console.log('Create error:', createError);
 
-      if (authError) {
-        console.error('=== AUTH SIGNUP ERROR ===', authError);
-        throw authError;
+      if (createError) {
+        console.error('=== ADMIN USER CREATE ERROR ===', createError);
+        throw createError;
       }
 
-      if (!authData.user) {
-        console.error('=== NO USER RETURNED FROM SIGNUP ===');
-        throw new Error('No user data returned from signup');
+      if (!userData.user) {
+        console.error('=== NO USER RETURNED FROM ADMIN CREATE ===');
+        throw new Error('No user data returned from admin create');
       }
 
       console.log('=== USER CREATED SUCCESSFULLY ===');
-      console.log('User ID:', authData.user.id);
-      console.log('User email:', authData.user.email);
-      console.log('User confirmation sent at:', authData.user.confirmation_sent_at);
-      console.log('User confirmed at:', authData.user.confirmed_at);
+      console.log('User ID:', userData.user.id);
+      console.log('User email:', userData.user.email);
       
       // Wait a moment for the profile to be created by the trigger
       console.log('=== WAITING FOR PROFILE CREATION ===');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Check if profile was created
-      console.log('=== CHECKING PROFILE CREATION ===');
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authData.user.id)
-        .maybeSingle();
-      
-      console.log('Profile check result:', { profileData, profileError });
-      
-      if (profileError) {
-        console.error('=== PROFILE CHECK ERROR ===', profileError);
-      }
-      
-      if (!profileData) {
-        console.error('=== NO PROFILE FOUND, CREATING MANUALLY ===');
-        
-        const { error: createProfileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            name: formData.name,
-            email: formData.email,
-            role: 'read-only'
-          });
-          
-        if (createProfileError) {
-          console.error('=== MANUAL PROFILE CREATION ERROR ===', createProfileError);
-        } else {
-          console.log('=== MANUAL PROFILE CREATED SUCCESSFULLY ===');
-        }
-      }
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Update the role if different from default
       if (formData.role !== 'read-only') {
@@ -124,7 +88,7 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         const { error: roleError } = await supabase
           .from('profiles')
           .update({ role: formData.role })
-          .eq('id', authData.user.id);
+          .eq('id', userData.user.id);
 
         if (roleError) {
           console.error('=== ROLE UPDATE ERROR ===', roleError);
@@ -175,6 +139,8 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         errorMessage = "Please provide a valid email address.";
       } else if (error.message?.includes('Invalid email')) {
         errorMessage = "Please provide a valid email address.";
+      } else if (error.message?.includes('Admin API')) {
+        errorMessage = "You don't have permission to create users. Please contact your system administrator.";
       }
       
       toast({
