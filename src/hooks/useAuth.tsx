@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,8 +15,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  if (context === undefined) {
+    console.warn('⚠️ useAuth called outside AuthProvider - using fallback state');
+    
+    // Return safe fallback values to prevent crashes
+    return {
+      currentUser: null,
+      session: null,
+      userRole: null,
+      isLoading: false,
+      error: 'Auth provider not found',
+      signOut: async () => console.warn('signOut called outside provider'),
+      refetch: async () => console.warn('refetch called outside provider')
+    };
   }
   return context;
 };
@@ -196,3 +206,5 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     </AuthContext.Provider>
   );
 };
+
+export default AuthProvider;
