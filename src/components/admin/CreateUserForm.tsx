@@ -25,6 +25,24 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
   });
   const { toast } = useToast();
 
+  const assignUserRole = async (userId: string, role: UserRole) => {
+    console.log('=== ASSIGNING USER ROLE ===');
+    console.log('User ID:', userId);
+    console.log('Target role:', role);
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('=== ROLE ASSIGNMENT ERROR ===', error);
+      throw error;
+    }
+    
+    console.log('=== ROLE ASSIGNED SUCCESSFULLY ===');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -47,20 +65,8 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         role: formData.role 
       });
       
-      // Store current admin session details before creating new user
-      console.log('=== STORING CURRENT ADMIN SESSION ===');
-      const { data: adminSession } = await supabase.auth.getSession();
-      const adminAccessToken = adminSession.session?.access_token;
-      const adminRefreshToken = adminSession.session?.refresh_token;
-      
-      if (!adminAccessToken || !adminRefreshToken) {
-        throw new Error('No valid admin session found');
-      }
-      
-      console.log('Admin session stored successfully');
-      
-      // Create the new user using signUp (this will automatically sign them in)
-      console.log('=== CREATING NEW USER ===');
+      // Step 1: Create the user account
+      console.log('=== CREATING NEW USER ACCOUNT ===');
       const { data: userData, error: createError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -72,12 +78,8 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         }
       });
 
-      console.log('=== SIGNUP RESPONSE ===');
-      console.log('User data:', userData);
-      console.log('Create error:', createError);
-
       if (createError) {
-        console.error('=== SIGNUP ERROR ===', createError);
+        console.error('=== USER CREATION ERROR ===', createError);
         throw createError;
       }
 
@@ -86,54 +88,50 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         throw new Error('No user data returned from signup');
       }
 
-      console.log('=== USER CREATED SUCCESSFULLY ===');
+      console.log('=== USER ACCOUNT CREATED ===');
       console.log('User ID:', userData.user.id);
       console.log('User email:', userData.user.email);
       
-      // Update the role if different from default
-      if (formData.role !== 'read-only') {
-        console.log('=== UPDATING USER ROLE ===');
-        console.log('Target role:', formData.role);
-        
-        const { error: roleError } = await supabase
-          .from('profiles')
-          .update({ role: formData.role })
-          .eq('id', userData.user.id);
-
-        if (roleError) {
-          console.error('=== ROLE UPDATE ERROR ===', roleError);
-        } else {
-          console.log('=== ROLE UPDATED SUCCESSFULLY ===');
-        }
-      }
-
-      // Sign out the newly created user
+      // Step 2: Sign out the newly created user immediately
       console.log('=== SIGNING OUT NEW USER ===');
       await supabase.auth.signOut();
       
-      // Restore the admin session
-      console.log('=== RESTORING ADMIN SESSION ===');
-      const { error: restoreError } = await supabase.auth.setSession({
-        access_token: adminAccessToken,
-        refresh_token: adminRefreshToken
-      });
+      // Step 3: Wait a moment for the profile to be created by the trigger
+      console.log('=== WAITING FOR PROFILE CREATION ===');
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      if (restoreError) {
-        console.error('=== SESSION RESTORE ERROR ===', restoreError);
-        // Still show success but warn about session
-        toast({
-          title: "User Created",
-          description: `User ${formData.name} created successfully. Please refresh the page to restore your admin session.`,
-        });
-      } else {
-        console.log('=== ADMIN SESSION RESTORED ===');
-        toast({
-          title: "Success",
-          description: `User ${formData.name} created successfully.`,
-        });
+      // Step 4: Assign the role (admin session should be restored automatically)
+      if (formData.role !== 'read-only') {
+        try {
+          await assignUserRole(userData.user.id, formData.role);
+          console.log('=== ROLE ASSIGNMENT COMPLETE ===');
+        } catch (roleError) {
+          console.error('=== ROLE ASSIGNMENT FAILED ===', roleError);
+          // Don't fail the entire process if role assignment fails
+          toast({
+            title: "User Created",
+            description: `User ${formData.name} created successfully, but role assignment failed. Please update their role manually.`,
+          });
+          
+          // Reset form and refresh list
+          setFormData({
+            email: '',
+            name: '',
+            role: 'read-only',
+            password: ''
+          });
+          setOpen(false);
+          onUserCreated();
+          return;
+        }
       }
 
       console.log('=== USER CREATION PROCESS COMPLETE ===');
+      
+      toast({
+        title: "Success",
+        description: `User ${formData.name} created successfully with ${formData.role} role.`,
+      });
 
       // Reset form and close dialog
       setFormData({
