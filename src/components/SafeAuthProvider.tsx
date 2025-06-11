@@ -1,4 +1,5 @@
 
+
 // SafeAuthProvider.tsx - Clean implementation with enhanced debugging
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -197,16 +198,9 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     }, 30000);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session, error) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔔 Auth state changed:', event, session?.user?.email || 'no user');
       console.log('🔔 Full event details:', { event, hasSession: !!session, userId: session?.user?.id });
-      
-      // Handle refresh token errors
-      if (error && error.message.includes('refresh_token_not_found')) {
-        console.log('🚨 REFRESH TOKEN ERROR - SIGNING OUT');
-        await supabase.auth.signOut();
-        return;
-      }
       
       clearTimeout(emergencyTimeout);
       
@@ -327,3 +321,4 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
+
