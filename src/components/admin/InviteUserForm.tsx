@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { UserRole } from '@/types/user';
 import { supabase } from '@/integrations/supabase/client';
 import { UserPlus, Loader2 } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/components/SafeAuthProvider';
 
 interface InviteUserFormProps {
   onUserInvited: () => void;
@@ -23,7 +23,7 @@ export const InviteUserForm = ({ onUserInvited }: InviteUserFormProps) => {
     role: 'read-only' as UserRole
   });
   const { toast } = useToast();
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,29 +46,41 @@ export const InviteUserForm = ({ onUserInvited }: InviteUserFormProps) => {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('name')
-        .eq('id', currentUser?.id)
+        .eq('id', user?.id)
         .single();
 
       if (profileError) {
         throw new Error('Failed to get user profile');
       }
 
-      // Create invitation record
+      // Create invitation record using raw SQL to match our table structure
       const { data: invitation, error: inviteError } = await supabase
-        .from('invitations')
-        .insert({
-          email: formData.email,
-          invited_by: currentUser?.id
-        })
-        .select('token')
-        .single();
+        .rpc('create_invitation', {
+          p_email: formData.email,
+          p_invited_by: user?.id
+        });
 
       if (inviteError) {
         console.error('Invitation creation error:', inviteError);
-        throw inviteError;
-      }
+        // Fallback: try direct insert
+        const { data: directInvite, error: directError } = await supabase
+          .from('invitations')
+          .insert({
+            email: formData.email,
+            invited_by: user?.id
+          })
+          .select('token')
+          .single();
 
-      console.log('Invitation created:', invitation);
+        if (directError) {
+          console.error('Direct invitation creation error:', directError);
+          throw directError;
+        }
+
+        console.log('Direct invitation created:', directInvite);
+      } else {
+        console.log('Invitation created via RPC:', invitation);
+      }
 
       // Send invitation email
       const { error: emailError } = await supabase.functions.invoke('send-invitation', {

@@ -1,6 +1,5 @@
-
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/components/SafeAuthProvider';
 import { Navigate } from 'react-router-dom';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { AssignmentManagement } from '@/components/admin/AssignmentManagement';
@@ -20,7 +19,7 @@ import { ReviewForms } from '@/components/admin/ReviewForms';
 import { ArchivedPolicies } from '@/components/admin/ArchivedPolicies';
 
 const Admin = () => {
-  const { userRole, isLoading } = useAuth();
+  const { role, isLoading } = useAuth();
   const { activeSection } = useAppNavigation();
 
   if (isLoading) {
@@ -32,17 +31,17 @@ const Admin = () => {
   }
 
   // Allow editors, publishers, and super-admins to access this page
-  const hasAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
+  const hasAccess = role === 'edit' || role === 'publish' || role === 'super-admin';
   if (!hasAccess) {
     return <Navigate to="/" replace />;
   }
 
-  const isSuperAdmin = userRole === 'super-admin';
+  const isSuperAdmin = role === 'super-admin';
 
   const getPageTitle = () => {
-    if (userRole === 'super-admin') return 'Super Admin Dashboard';
-    if (userRole === 'publish') return 'Publisher Dashboard';
-    if (userRole === 'edit') return 'Editor Dashboard';
+    if (role === 'super-admin') return 'Super Admin Dashboard';
+    if (role === 'publish') return 'Publisher Dashboard';
+    if (role === 'edit') return 'Editor Dashboard';
     return 'Dashboard';
   };
 
