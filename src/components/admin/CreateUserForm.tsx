@@ -40,9 +40,15 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
     setIsLoading(true);
 
     try {
-      console.log('=== CREATING USER ===', formData.email);
+      console.log('=== STARTING USER CREATION PROCESS ===');
+      console.log('Form data:', { 
+        email: formData.email, 
+        name: formData.name, 
+        role: formData.role 
+      });
       
       // Create the user using regular signup
+      console.log('=== CALLING SUPABASE AUTH SIGNUP ===');
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -53,55 +59,111 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         }
       });
 
+      console.log('=== AUTH SIGNUP RESPONSE ===');
+      console.log('Auth data:', authData);
+      console.log('Auth error:', authError);
+
       if (authError) {
-        console.error('Auth signup error:', authError);
+        console.error('=== AUTH SIGNUP ERROR ===', authError);
         throw authError;
       }
 
-      if (authData.user) {
-        console.log('User created successfully:', authData.user.id);
-        
-        // Wait a moment for the profile to be created by the trigger
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Update the role if different from default
-        if (formData.role !== 'read-only') {
-          console.log('Updating user role to:', formData.role);
-          
-          const { error: roleError } = await supabase
-            .from('profiles')
-            .update({ role: formData.role })
-            .eq('id', authData.user.id);
-
-          if (roleError) {
-            console.error('Role update error:', roleError);
-            toast({
-              variant: "destructive",
-              title: "Warning",
-              description: "User created but role assignment failed. Please update manually.",
-            });
-          } else {
-            console.log('Role updated successfully');
-          }
-        }
-
-        toast({
-          title: "Success",
-          description: `User ${formData.name} created successfully.`,
-        });
-
-        // Reset form and close dialog
-        setFormData({
-          email: '',
-          name: '',
-          role: 'read-only',
-          password: ''
-        });
-        setOpen(false);
-        onUserCreated();
+      if (!authData.user) {
+        console.error('=== NO USER RETURNED FROM SIGNUP ===');
+        throw new Error('No user data returned from signup');
       }
+
+      console.log('=== USER CREATED SUCCESSFULLY ===');
+      console.log('User ID:', authData.user.id);
+      console.log('User email:', authData.user.email);
+      console.log('User confirmation sent at:', authData.user.confirmation_sent_at);
+      console.log('User confirmed at:', authData.user.confirmed_at);
+      
+      // Wait a moment for the profile to be created by the trigger
+      console.log('=== WAITING FOR PROFILE CREATION ===');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Check if profile was created
+      console.log('=== CHECKING PROFILE CREATION ===');
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authData.user.id)
+        .maybeSingle();
+      
+      console.log('Profile check result:', { profileData, profileError });
+      
+      if (profileError) {
+        console.error('=== PROFILE CHECK ERROR ===', profileError);
+      }
+      
+      if (!profileData) {
+        console.error('=== NO PROFILE FOUND, CREATING MANUALLY ===');
+        
+        const { error: createProfileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authData.user.id,
+            name: formData.name,
+            email: formData.email,
+            role: 'read-only'
+          });
+          
+        if (createProfileError) {
+          console.error('=== MANUAL PROFILE CREATION ERROR ===', createProfileError);
+        } else {
+          console.log('=== MANUAL PROFILE CREATED SUCCESSFULLY ===');
+        }
+      }
+      
+      // Update the role if different from default
+      if (formData.role !== 'read-only') {
+        console.log('=== UPDATING USER ROLE ===');
+        console.log('Target role:', formData.role);
+        
+        const { error: roleError } = await supabase
+          .from('profiles')
+          .update({ role: formData.role })
+          .eq('id', authData.user.id);
+
+        if (roleError) {
+          console.error('=== ROLE UPDATE ERROR ===', roleError);
+          toast({
+            variant: "destructive",
+            title: "Warning",
+            description: "User created but role assignment failed. Please update manually.",
+          });
+        } else {
+          console.log('=== ROLE UPDATED SUCCESSFULLY ===');
+        }
+      }
+
+      console.log('=== USER CREATION PROCESS COMPLETE ===');
+      
+      toast({
+        title: "Success",
+        description: `User ${formData.name} created successfully.`,
+      });
+
+      // Reset form and close dialog
+      setFormData({
+        email: '',
+        name: '',
+        role: 'read-only',
+        password: ''
+      });
+      setOpen(false);
+      onUserCreated();
+      
     } catch (error: any) {
-      console.error('Error creating user:', error);
+      console.error('=== FATAL ERROR IN USER CREATION ===', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        stack: error.stack
+      });
       
       let errorMessage = "Failed to create user. Please try again.";
       
@@ -110,6 +172,8 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
       } else if (error.message?.includes('Password')) {
         errorMessage = "Password must be at least 6 characters long.";
       } else if (error.message?.includes('Email')) {
+        errorMessage = "Please provide a valid email address.";
+      } else if (error.message?.includes('Invalid email')) {
         errorMessage = "Please provide a valid email address.";
       }
       
