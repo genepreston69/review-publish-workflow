@@ -25,27 +25,15 @@ export function ReviewPolicies() {
     
     if (!needsReview) return false;
     
-    // Super-admins can see all policies needing review
-    if (isSuperAdmin) {
+    // Super-admins and publishers can see all policies needing review
+    if (isSuperAdmin || userRole === 'publish') {
       return true;
-    }
-    
-    // Publishers can see policies assigned to them or that they can review
-    if (userRole === 'publish') {
-      // Don't show policies they created (maker/checker rule)
-      if (policy.creator_id === currentUser?.id) {
-        return false;
-      }
-      
-      // Show if assigned as reviewer or if no specific reviewer assigned
-      const canReview = policy.reviewer === currentUser?.email || !policy.reviewer;
-      return canReview;
     }
     
     return false;
   });
 
-  // Super admins can publish any policy, publishers follow maker/checker rules
+  // Publishers and super admins can publish any policy
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
   const canArchive = isSuperAdmin || userRole === 'publish';
 
@@ -130,8 +118,7 @@ export function ReviewPolicies() {
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Review Policies</h2>
             <p className="text-muted-foreground">
-              Review and approve policies for publication. This includes draft policies ready for review and policies awaiting changes.
-              {!isSuperAdmin && " (You cannot review policies you created due to maker/checker controls)"}
+              Review and approve policies for publication. Publishers can review and publish all policies.
             </p>
             {reviewPolicies.length > 0 && (
               <div className="text-sm text-gray-600 mt-1">

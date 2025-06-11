@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,10 +39,10 @@ export function PolicyViewActions({
   const isSuperAdmin = userRole === 'super-admin';
   const { duplicatePolicyForUpdate, archiveByPolicyNumber, isLoading: isDuplicating } = usePolicyDuplication();
 
-  // Check if current user is the creator (maker/checker enforcement)
+  // Check if current user is the creator (only applies to editors, not publishers/super-admins)
   const isCreator = currentUser?.id === policy.creator_id;
-  // Super admins can approve/publish any policy, regular publishers can't approve their own
-  const canApproveOrPublish = isSuperAdmin || (canPublish && !isCreator);
+  // Publishers and super admins can approve/publish any policy, editors follow maker/checker rules
+  const canApproveOrPublish = isSuperAdmin || canPublish || (isEditor && !isCreator);
 
   const handleUpdatePolicy = async () => {
     const newPolicyId = await duplicatePolicyForUpdate(policy.id);
@@ -105,13 +104,7 @@ export function PolicyViewActions({
     if (actionType === 'request-changes') {
       await onUpdateStatus(policy.id, 'awaiting-changes', reviewerComment);
     } else if (actionType === 'publish') {
-      // Check maker/checker rule before publishing
-      if (isCreator && !isSuperAdmin) {
-        console.log('=== MAKER/CHECKER RULE VIOLATION PREVENTED ===');
-        return;
-      }
-      
-      // When publishing, archive old versions first using policy number
+      // Publishers can publish any policy
       try {
         if (policy.policy_number) {
           await archiveByPolicyNumber(policy.policy_number, policy.id);
@@ -136,20 +129,11 @@ export function PolicyViewActions({
   };
 
   const handlePublishWithComment = () => {
-    // Check maker/checker rule before showing comment section
-    if (isCreator && !isSuperAdmin) {
-      return; // Don't show publish options for creators unless super admin
-    }
     setActionType('publish');
     setShowCommentSection(true);
   };
 
   const handleDirectPublish = async () => {
-    // Check maker/checker rule before publishing
-    if (isCreator && !isSuperAdmin) {
-      return; // Don't allow publishing for creators unless super admin
-    }
-    
     if (onPublish) {
       // Archive old versions before publishing using policy number
       try {
@@ -220,8 +204,8 @@ export function PolicyViewActions({
           Print
         </Button>
 
-        {/* Archive Button - Super admins only */}
-        {isSuperAdmin && onArchive && (
+        {/* Archive Button - Super admins and publishers */}
+        {(isSuperAdmin || canPublish) && onArchive && (
           <Button 
             variant="outline" 
             onClick={() => onArchive(policy.id)}
@@ -269,11 +253,10 @@ export function PolicyViewActions({
           </Button>
         )}
 
-        {/* Edit Button - Super admins can edit any policy, others follow existing rules */}
+        {/* Edit Button - Publishers and super admins can edit any policy, editors follow existing rules */}
         {onEdit && (
-          (isSuperAdmin ||
-          (isCreator && (policy.status === 'draft' || policy.status === 'awaiting-changes')) ||
-          (canPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review')))
+          (isSuperAdmin || canPublish ||
+          (isCreator && (policy.status === 'draft' || policy.status === 'awaiting-changes')))
         ) && (
           <Button 
             variant="outline" 
@@ -285,7 +268,7 @@ export function PolicyViewActions({
           </Button>
         )}
 
-        {/* Publish Button - Super admins can publish any policy, others follow maker/checker rules */}
+        {/* Publish Button - Publishers and super admins can publish any policy */}
         {canApproveOrPublish && (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') && (
           <>
             <Button 
@@ -314,8 +297,8 @@ export function PolicyViewActions({
           </div>
         )}
 
-        {/* Show maker/checker warning for creators (but not super admins) */}
-        {isCreator && canPublish && !isSuperAdmin && (policy.status === 'under-review' || policy.status === 'under review') && (
+        {/* Show maker/checker warning only for editors who created the policy */}
+        {isCreator && isEditor && (policy.status === 'under-review' || policy.status === 'under review') && (
           <div className="w-full mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
             <p className="text-amber-800 text-sm">
               <strong>Note:</strong> You cannot publish this policy since you created it. Another reviewer must approve it.
