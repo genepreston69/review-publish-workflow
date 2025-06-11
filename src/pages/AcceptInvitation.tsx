@@ -36,35 +36,27 @@ const AcceptInvitation = () => {
       }
 
       try {
-        // Try to fetch invitation using raw SQL since the types might not be updated yet
+        // Fetch invitation directly from the table
         const { data, error } = await supabase
-          .rpc('get_invitation_by_token', { p_token: token });
+          .from('invitations')
+          .select('*')
+          .eq('token', token)
+          .is('accepted_at', null)
+          .gt('expires_at', new Date().toISOString())
+          .single();
 
-        if (error) {
+        if (error || !data) {
           console.error('Error fetching invitation:', error);
-          // Fallback: try direct query
-          const { data: directData, error: directError } = await supabase
-            .from('invitations')
-            .select('*')
-            .eq('token', token)
-            .is('accepted_at', null)
-            .gt('expires_at', new Date().toISOString())
-            .single();
-
-          if (directError || !directData) {
-            toast({
-              variant: "destructive",
-              title: "Invalid or Expired Invitation",
-              description: "This invitation link is invalid or has expired.",
-            });
-            navigate('/auth');
-            return;
-          }
-
-          setInvitation(directData);
-        } else {
-          setInvitation(data);
+          toast({
+            variant: "destructive",
+            title: "Invalid or Expired Invitation",
+            description: "This invitation link is invalid or has expired.",
+          });
+          navigate('/auth');
+          return;
         }
+
+        setInvitation(data);
       } catch (error) {
         console.error('Error loading invitation:', error);
         toast({
@@ -130,16 +122,11 @@ const AcceptInvitation = () => {
       }
 
       if (authData.user) {
-        // Mark invitation as accepted using RPC or direct update
-        try {
-          await supabase.rpc('accept_invitation', { p_token: token });
-        } catch (rpcError) {
-          // Fallback: direct update
-          await supabase
-            .from('invitations')
-            .update({ accepted_at: new Date().toISOString() })
-            .eq('token', token);
-        }
+        // Mark invitation as accepted
+        await supabase
+          .from('invitations')
+          .update({ accepted_at: new Date().toISOString() })
+          .eq('token', token);
 
         toast({
           title: "Welcome!",

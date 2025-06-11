@@ -53,17 +53,11 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     console.log('🔍 Fetching role for user:', userId);
     
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
-
       const { data, error } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', userId)
-        .single()
-        .abortSignal(controller.signal);
-
-      clearTimeout(timeoutId);
+        .single();
 
       if (error) {
         console.error('❌ Role fetch error:', error);
@@ -81,10 +75,6 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     } catch (error: any) {
       console.error('💥 Role fetch failed:', error.message);
-      
-      if (error.name === 'AbortError') {
-        throw new Error('Role fetch timeout - server may be slow');
-      }
       
       // For other errors, return default role to prevent app crash
       console.log('🛡️ Using fallback role due to error');

@@ -53,34 +53,22 @@ export const InviteUserForm = ({ onUserInvited }: InviteUserFormProps) => {
         throw new Error('Failed to get user profile');
       }
 
-      // Create invitation record using raw SQL to match our table structure
+      // Create invitation record directly
       const { data: invitation, error: inviteError } = await supabase
-        .rpc('create_invitation', {
-          p_email: formData.email,
-          p_invited_by: user?.id
-        });
+        .from('invitations')
+        .insert({
+          email: formData.email,
+          invited_by: user?.id
+        })
+        .select('token')
+        .single();
 
       if (inviteError) {
         console.error('Invitation creation error:', inviteError);
-        // Fallback: try direct insert
-        const { data: directInvite, error: directError } = await supabase
-          .from('invitations')
-          .insert({
-            email: formData.email,
-            invited_by: user?.id
-          })
-          .select('token')
-          .single();
-
-        if (directError) {
-          console.error('Direct invitation creation error:', directError);
-          throw directError;
-        }
-
-        console.log('Direct invitation created:', directInvite);
-      } else {
-        console.log('Invitation created via RPC:', invitation);
+        throw inviteError;
       }
+
+      console.log('Invitation created:', invitation);
 
       // Send invitation email
       const { error: emailError } = await supabase.functions.invoke('send-invitation', {
