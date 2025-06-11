@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/user';
@@ -31,8 +31,13 @@ export const ServerAuthProvider = ({ children }: ServerAuthProviderProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Emergency render counter to prevent infinite loops
+  const renderCountRef = useRef(0);
+  const isInitializingRef = useRef(false);
+  const lastSessionIdRef = useRef<string | null>(null);
 
-  const callAuthService = async (action: string, data?: any) => {
+  const callAuthService = useCallback(async (action: string, data?: any) => {
     try {
       const response = await supabase.functions.invoke('auth-service', {
         body: { action, ...data }
@@ -48,11 +53,25 @@ export const ServerAuthProvider = ({ children }: ServerAuthProviderProps) => {
       console.error('=== AUTH SERVICE CALL ERROR ===', error);
       return null;
     }
-  };
+  }, []);
 
-  const initializeAuth = async () => {
-    console.log('=== INITIALIZING SERVER AUTH ===');
-    setIsLoading(true);
+  const initializeAuth = useCallback(async () => {
+    // Prevent multiple simultaneous initializations
+    if (isInitializingRef.current) {
+      console.log('=== SKIPPING INIT - ALREADY INITIALIZING ===');
+      return;
+    }
+
+    // Emergency render loop protection
+    renderCountRef.current += 1;
+    if (renderCountRef.current > 50) {
+      console.error('=== EMERGENCY: TOO MANY AUTH RENDERS, STOPPING ===');
+      setIsLoading(false);
+      return;
+    }
+
+    isInitializingRef.current = true;
+    console.log('=== INITIALIZING SERVER AUTH ===', renderCountRef.current);
 
     try {
       // Get current session from Supabase
@@ -66,6 +85,15 @@ export const ServerAuthProvider = ({ children }: ServerAuthProviderProps) => {
         setIsLoading(false);
         return;
       }
+
+      // Check if session actually changed to prevent unnecessary updates
+      const currentSessionId = currentSession?.access_token || null;
+      if (lastSessionIdRef.current === currentSessionId) {
+        console.log('=== SESSION UNCHANGED, SKIPPING UPDATE ===');
+        setIsLoading(false);
+        return;
+      }
+      lastSessionIdRef.current = currentSessionId;
 
       if (!currentSession?.access_token) {
         console.log('=== NO SESSION FOUND ===');
@@ -99,21 +127,32 @@ export const ServerAuthProvider = ({ children }: ServerAuthProviderProps) => {
       setUserRole('read-only');
     } finally {
       setIsLoading(false);
+      isInitializingRef.current = false;
     }
-  };
+  }, [callAuthService]);
 
   useEffect(() => {
     console.log('=== SERVER AUTH PROVIDER STARTING ===');
     
+    // Reset render counter on mount
+    renderCountRef.current = 0;
+    
     // Initialize auth state
     initializeAuth();
 
-    // Set up auth state listener (simplified)
+    // Set up auth state listener with protection against loops
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('=== AUTH STATE CHANGED ===', event);
         
+        // Prevent rapid state changes
+        if (isInitializingRef.current) {
+          console.log('=== SKIPPING STATE CHANGE - ALREADY INITIALIZING ===');
+          return;
+        }
+        
         if (event === 'SIGNED_OUT') {
+          lastSessionIdRef.current = null;
           setSession(null);
           setCurrentUser(null);
           setUserRole(null);
@@ -128,13 +167,26 @@ export const ServerAuthProvider = ({ children }: ServerAuthProviderProps) => {
       }
     );
 
+    // Emergency timeout to prevent infinite loading
+    const emergencyTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.log('=== EMERGENCY TIMEOUT - FORCING LOADING TO FALSE ===');
+        setIsLoading(false);
+        if (currentUser && !userRole) {
+          setUserRole('read-only');
+        }
+      }
+    }, 10000); // 10 seconds emergency timeout
+
     return () => {
       console.log('=== CLEANING UP SERVER AUTH ===');
       subscription.unsubscribe();
+      clearTimeout(emergencyTimeout);
+      isInitializingRef.current = false;
     };
-  }, []);
+  }, []); // Empty dependency array to prevent re-initialization
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     console.log('=== SIGNING OUT (SERVER) ===');
     try {
       // Call server-side sign out
@@ -143,6 +195,7 @@ export const ServerAuthProvider = ({ children }: ServerAuthProviderProps) => {
       });
 
       // Clear local state
+      lastSessionIdRef.current = null;
       setSession(null);
       setCurrentUser(null);
       setUserRole(null);
@@ -157,12 +210,13 @@ export const ServerAuthProvider = ({ children }: ServerAuthProviderProps) => {
     } catch (error) {
       console.error('=== SIGN OUT ERROR ===', error);
     }
-  };
+  }, [session?.access_token, callAuthService]);
 
   console.log('=== SERVER AUTH PROVIDER RENDER ===', { 
     currentUser: !!currentUser, 
     userRole, 
-    isLoading 
+    isLoading,
+    renderCount: renderCountRef.current
   });
 
   return (

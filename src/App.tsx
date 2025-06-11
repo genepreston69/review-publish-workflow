@@ -9,10 +9,25 @@ import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { useState, useEffect } from "react";
 
 const queryClient = new QueryClient();
 
 function App() {
+  // Emergency render counter to detect infinite loops
+  const [renderCount, setRenderCount] = useState(0);
+
+  useEffect(() => {
+    setRenderCount(prev => {
+      const newCount = prev + 1;
+      if (newCount > 100) {
+        console.error('EMERGENCY: Too many renders detected, forcing reload');
+        window.location.reload();
+      }
+      return newCount;
+    });
+  });
+
   return (
     <QueryClientProvider client={queryClient}>
       <ServerAuthProvider>
