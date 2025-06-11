@@ -61,32 +61,22 @@ export const AssignmentManagement = () => {
       setAssignments(formattedAssignments);
 
       // Fetch users with editor role
-      const { data: editorRoles, error: editorError } = await supabase
-        .from('user_roles')
-        .select(`
-          user_id,
-          profiles!user_roles_user_id_fkey(id, name, email)
-        `)
+      const { data: editorUsers, error: editorError } = await supabase
+        .from('profiles')
+        .select('id, name, email')
         .eq('role', 'edit');
 
       if (editorError) throw editorError;
-
-      const editorUsers = editorRoles.map(role => role.profiles).filter(Boolean);
-      setEditors(editorUsers);
+      setEditors(editorUsers || []);
 
       // Fetch users with publisher role
-      const { data: publisherRoles, error: publisherError } = await supabase
-        .from('user_roles')
-        .select(`
-          user_id,
-          profiles!user_roles_user_id_fkey(id, name, email)
-        `)
+      const { data: publisherUsers, error: publisherError } = await supabase
+        .from('profiles')
+        .select('id, name, email')
         .eq('role', 'publish');
 
       if (publisherError) throw publisherError;
-
-      const publisherUsers = publisherRoles.map(role => role.profiles).filter(Boolean);
-      setPublishers(publisherUsers);
+      setPublishers(publisherUsers || []);
 
     } catch (error) {
       console.error('Error fetching data:', error);
