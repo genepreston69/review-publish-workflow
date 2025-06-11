@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { useServerAuth } from '@/hooks/useServerAuth';
 import { Loader2 } from 'lucide-react';
 
 const Auth = () => {
@@ -26,7 +25,7 @@ const Auth = () => {
   
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { currentUser, isLoading: authLoading } = useAuth();
+  const { currentUser, isLoading: authLoading } = useServerAuth();
 
   // Redirect if user is already authenticated
   useEffect(() => {
@@ -84,6 +83,7 @@ const Auth = () => {
           data: {
             name: signUpName,
           },
+          emailRedirectTo: `${window.location.origin}/`,
         },
       });
 
@@ -135,15 +135,6 @@ const Auth = () => {
     try {
       console.log('=== ATTEMPTING SIGN IN ===', { email: signInEmail });
       
-      // First, let's check if a profile exists for this email
-      const { data: existingProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('email', signInEmail)
-        .maybeSingle();
-      
-      console.log('=== EXISTING PROFILE CHECK ===', { existingProfile, profileError });
-      
       const { error } = await supabase.auth.signInWithPassword({
         email: signInEmail,
         password: signInPassword,
@@ -155,11 +146,7 @@ const Auth = () => {
         // Provide more helpful error messages
         let errorMessage = error.message;
         if (error.message === 'Invalid login credentials') {
-          if (!existingProfile) {
-            errorMessage = "No account found with this email address. Please sign up first or check your email.";
-          } else {
-            errorMessage = "Incorrect password. Please check your password and try again.";
-          }
+          errorMessage = "Invalid email or password. Please check your credentials and try again.";
         }
         
         toast({
@@ -198,6 +185,7 @@ const Auth = () => {
           data: {
             name: 'Test Admin',
           },
+          emailRedirectTo: `${window.location.origin}/`,
         },
       });
 

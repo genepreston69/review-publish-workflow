@@ -1,5 +1,6 @@
+
 import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useServerAuth } from '@/hooks/useServerAuth';
 import { PolicyList } from './policy/PolicyList';
 import { PolicyEditForm } from './policy/PolicyEditForm';
 import { PolicyViewModal } from './policy/PolicyViewModal';
@@ -7,7 +8,7 @@ import { usePolicies } from './policy/usePolicies';
 import { Policy } from './policy/types';
 
 export function ReviewPolicies() {
-  const { currentUser, userRole } = useAuth();
+  const { currentUser, userRole } = useServerAuth();
   const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, archivePolicy, isSuperAdmin, fetchPolicies } = usePolicies();
   const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
