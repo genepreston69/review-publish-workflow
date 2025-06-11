@@ -36,11 +36,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       console.log('=== FETCHING ROLE FOR USER ===', userId);
       
-      const { data, error } = await supabase
+      // Add a timeout to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Role fetch timeout')), 10000);
+      });
+
+      const fetchPromise = supabase
         .from('profiles')
         .select('role')
         .eq('id', userId)
         .single();
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
       if (error) {
         console.error('=== ERROR FETCHING USER ROLE ===', error);
@@ -59,6 +66,36 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } catch (error) {
       console.error('=== ERROR IN FETCH USER ROLE ===', error);
       return 'read-only';
+    }
+  };
+
+  const handleAuthChange = async (event: string, session: Session | null) => {
+    console.log('=== AUTH STATE CHANGED ===', event, session?.user?.email);
+    
+    if (event === 'SIGNED_OUT' || !session?.user) {
+      console.log('=== USER SIGNED OUT OR NO SESSION ===');
+      setSession(null);
+      setCurrentUser(null);
+      setUserRole(null);
+      setIsLoading(false);
+      return;
+    }
+    
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      setSession(session);
+      setCurrentUser(session.user);
+      
+      console.log('=== USER FOUND, FETCHING ROLE ===');
+      try {
+        const role = await fetchUserRole(session.user.id);
+        console.log('=== ROLE FETCHED ===', role);
+        setUserRole(role);
+      } catch (error) {
+        console.error('=== ROLE FETCH FAILED ===', error);
+        setUserRole('read-only');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -99,43 +136,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       } catch (error) {
         console.error('=== INITIAL AUTH ERROR ===', error);
+        setUserRole('read-only');
       } finally {
         setIsLoading(false);
       }
     };
 
     // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('=== AUTH STATE CHANGED ===', event, session?.user?.email);
-        
-        if (event === 'SIGNED_OUT' || !session?.user) {
-          console.log('=== USER SIGNED OUT OR NO SESSION ===');
-          setSession(null);
-          setCurrentUser(null);
-          setUserRole(null);
-          setIsLoading(false);
-          return;
-        }
-        
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          setSession(session);
-          setCurrentUser(session.user);
-          
-          console.log('=== USER FOUND, FETCHING ROLE ===');
-          try {
-            const role = await fetchUserRole(session.user.id);
-            console.log('=== ROLE FETCHED ===', role);
-            setUserRole(role);
-          } catch (error) {
-            console.error('=== ROLE FETCH FAILED ===', error);
-            setUserRole('read-only');
-          } finally {
-            setIsLoading(false);
-          }
-        }
-      }
-    );
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
 
     initAuth();
 
