@@ -132,36 +132,6 @@ export type Database = {
         }
         Relationships: []
       }
-      invitations: {
-        Row: {
-          accepted_at: string | null
-          created_at: string | null
-          email: string
-          expires_at: string | null
-          id: string
-          invited_by: string | null
-          token: string
-        }
-        Insert: {
-          accepted_at?: string | null
-          created_at?: string | null
-          email: string
-          expires_at?: string | null
-          id?: string
-          invited_by?: string | null
-          token?: string
-        }
-        Update: {
-          accepted_at?: string | null
-          created_at?: string | null
-          email?: string
-          expires_at?: string | null
-          id?: string
-          invited_by?: string | null
-          token?: string
-        }
-        Relationships: []
-      }
       notification_preferences: {
         Row: {
           created_at: string | null
@@ -339,7 +309,6 @@ export type Database = {
           email: string
           id: string
           name: string
-          role: Database["public"]["Enums"]["app_role"]
           updated_at: string | null
         }
         Insert: {
@@ -348,7 +317,6 @@ export type Database = {
           email: string
           id: string
           name: string
-          role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string | null
         }
         Update: {
@@ -357,10 +325,38 @@ export type Database = {
           email?: string
           id?: string
           name?: string
-          role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string | null
         }
         Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -377,7 +373,7 @@ export type Database = {
       }
       get_user_role: {
         Args: Record<PropertyKey, never> | { user_id: string }
-        Returns: Database["public"]["Enums"]["app_role"]
+        Returns: string
       }
       has_role: {
         Args: {

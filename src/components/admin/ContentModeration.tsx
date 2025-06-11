@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -29,33 +30,17 @@ export const ContentModeration = () => {
     try {
       setIsLoading(true);
       
-      // First fetch all content
-      const { data: contentData, error: contentError } = await supabase
+      const { data, error } = await supabase
         .from('content')
-        .select('*')
+        .select(`
+          *,
+          profiles!content_author_id_fkey(name)
+        `)
         .order('created_at', { ascending: false });
 
-      if (contentError) throw contentError;
+      if (error) throw error;
 
-      // Get unique author IDs
-      const authorIds = [...new Set(contentData.map(item => item.author_id))];
-
-      // Fetch profiles for these authors
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, name')
-        .in('id', authorIds);
-
-      if (profileError) throw profileError;
-
-      // Create a map of author ID to name
-      const authorMap = new Map();
-      profileData.forEach(profile => {
-        authorMap.set(profile.id, profile.name);
-      });
-
-      // Format content with author names
-      const formattedContent: ContentWithAuthor[] = contentData.map(item => ({
+      const formattedContent: ContentWithAuthor[] = data.map(item => ({
         id: item.id,
         title: item.title,
         body: item.body,
@@ -65,7 +50,7 @@ export const ContentModeration = () => {
         createdAt: new Date(item.created_at),
         updatedAt: new Date(item.updated_at),
         publishedAt: item.published_at ? new Date(item.published_at) : undefined,
-        author_name: authorMap.get(item.author_id) || 'Unknown User'
+        author_name: item.profiles?.name || 'Unknown User'
       }));
 
       setContents(formattedContent);

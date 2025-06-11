@@ -23,7 +23,18 @@ export const UserDeleteButton = ({ userId, userName, userEmail, onUserDeleted }:
       console.log('=== DELETE USER ATTEMPT ===');
       console.log('Target user ID:', userId);
 
-      // Delete profile - this will handle cascading deletes
+      // First delete user roles
+      const { error: rolesError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (rolesError) {
+        console.error('Error deleting user roles:', rolesError);
+        throw rolesError;
+      }
+
+      // Then delete profile
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
@@ -34,7 +45,7 @@ export const UserDeleteButton = ({ userId, userName, userEmail, onUserDeleted }:
         throw profileError;
       }
 
-      // Try to delete from auth - this may fail if we don't have admin privileges
+      // Finally try to delete from auth - this may fail if we don't have admin privileges
       try {
         const { error: authError } = await supabase.auth.admin.deleteUser(userId);
         if (authError) {

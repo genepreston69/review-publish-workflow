@@ -16,27 +16,27 @@ export const usePolicies = () => {
 
   const fetchPolicies = async () => {
     try {
-      console.log('=== FETCH POLICIES START ===');
       setIsLoadingPolicies(true);
       
       const { data, error } = await supabase
         .from('Policies')
-        .select('*')
-        .is('archived_at', null)
+        .select(`
+          *,
+          creator:creator_id(id, name, email),
+          publisher:publisher_id(id, name, email)
+        `)
+        .is('archived_at', null) // Only show non-archived policies
         .order('created_at', { ascending: false });
-
-      console.log('=== POLICIES QUERY RESULT ===', { data: data?.length, error });
 
       if (error) {
         console.error('Error fetching policies:', error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load policies. Please check your permissions.",
+          description: "Failed to load policies.",
         });
-        setPolicies([]);
+        setPolicies([]); // Set empty array on error
       } else {
-        console.log('=== POLICIES LOADED SUCCESSFULLY ===', data?.length);
         setPolicies(data || []);
       }
     } catch (error) {
@@ -46,7 +46,7 @@ export const usePolicies = () => {
         title: "Error",
         description: "An unexpected error occurred while loading policies.",
       });
-      setPolicies([]);
+      setPolicies([]); // Set empty array on error
     } finally {
       setIsLoadingPolicies(false);
     }

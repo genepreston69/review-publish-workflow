@@ -1,19 +1,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CreateUserForm } from './CreateUserForm';
-import { InviteUserForm } from './InviteUserForm';
 import { UserTable } from './UserTable';
 import { useUserManagement } from '@/hooks/useUserManagement';
 import { User, Loader2 } from 'lucide-react';
-import { useEffect } from 'react';
 
 export const UserManagement = () => {
-  const { users, isLoading, refetch } = useUserManagement();
-
-  // Refresh users when component mounts or when coming back to this tab
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
+  const { users, isLoading, fetchUsers } = useUserManagement();
 
   if (isLoading) {
     return (
@@ -25,11 +18,6 @@ export const UserManagement = () => {
     );
   }
 
-  const handleUserCreatedOrInvited = () => {
-    console.log('User created/invited, refreshing list...');
-    refetch();
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -38,14 +26,11 @@ export const UserManagement = () => {
             <User className="w-5 h-5" />
             User Management
           </CardTitle>
-          <div className="flex gap-2">
-            <InviteUserForm onUserInvited={handleUserCreatedOrInvited} />
-            <CreateUserForm onUserCreated={handleUserCreatedOrInvited} />
-          </div>
+          <CreateUserForm onUserCreated={fetchUsers} />
         </div>
       </CardHeader>
       <CardContent>
-        <UserTable users={users} onUserUpdated={refetch} />
+        <UserTable users={users} onUserUpdated={fetchUsers} />
       </CardContent>
     </Card>
   );

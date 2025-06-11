@@ -19,16 +19,16 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
     name: '',
-    role: 'read-only' as UserRole
+    role: 'read-only' as UserRole,
+    password: ''
   });
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.password) {
+    if (!formData.email || !formData.name || !formData.password) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -40,109 +40,83 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
     setIsLoading(true);
 
     try {
-      console.log('=== CREATING NEW USER ===');
-      console.log('Email:', formData.email);
-      console.log('Name:', formData.name);
-      console.log('Role:', formData.role);
-
-      // Try to create user with admin API first
-      let authData;
-      let useAdminAPI = true;
+      console.log('=== CREATING USER ===', formData.email);
       
-      try {
-        const { data, error: adminError } = await supabase.auth.admin.createUser({
-          email: formData.email,
-          password: formData.password,
-          user_metadata: {
-            name: formData.name || formData.email
-          },
-          email_confirm: true
-        });
-        
-        if (adminError) throw adminError;
-        authData = data;
-        console.log('User created with admin API:', authData.user?.id);
-      } catch (adminError) {
-        console.log('Admin API failed, falling back to regular signup:', adminError);
-        useAdminAPI = false;
-        
-        // Fall back to regular signup
-        const { data, error: signupError } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              name: formData.name || formData.email
-            }
+      // Create the user using regular signup
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name
           }
-        });
+        }
+      });
+
+      if (authError) {
+        console.error('Auth signup error:', authError);
+        throw authError;
+      }
+
+      if (authData.user) {
+        console.log('User created successfully:', authData.user.id);
         
-        if (signupError) throw signupError;
-        authData = data;
-        console.log('User created with regular signup:', authData.user?.id);
+        // Wait a moment for the profile to be created by the trigger
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // The trigger will create a default 'read-only' role, so we only need to update if different
+        if (formData.role !== 'read-only') {
+          console.log('Updating user role to:', formData.role);
+          
+          // Delete the default role first
+          await supabase
+            .from('user_roles')
+            .delete()
+            .eq('user_id', authData.user.id);
+          
+          // Insert the new role
+          const { error: roleError } = await supabase
+            .from('user_roles')
+            .insert({ user_id: authData.user.id, role: formData.role });
+
+          if (roleError) {
+            console.error('Role update error:', roleError);
+            toast({
+              variant: "destructive",
+              title: "Warning",
+              description: "User created but role assignment failed. Please update manually.",
+            });
+          } else {
+            console.log('Role updated successfully');
+          }
+        }
+
+        toast({
+          title: "Success",
+          description: `User ${formData.name} created successfully.`,
+        });
+
+        // Reset form and close dialog
+        setFormData({
+          email: '',
+          name: '',
+          role: 'read-only',
+          password: ''
+        });
+        setOpen(false);
+        onUserCreated();
       }
-
-      if (!authData.user) {
-        throw new Error('User creation failed - no user returned');
-      }
-
-      const userId = authData.user.id;
-
-      // Wait a moment for any triggers to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Update the profile with the role - the profile should already exist from the trigger
-      console.log('Setting user role to:', formData.role);
-      
-      const { error: roleError } = await supabase
-        .from('profiles')
-        .update({
-          role: formData.role,
-          name: formData.name || formData.email
-        })
-        .eq('id', userId);
-
-      if (roleError) {
-        console.error('Profile update error:', roleError);
-        throw new Error(`Failed to set user role: ${roleError.message}`);
-      }
-
-      console.log('Role successfully set in profiles table');
-      console.log('=== USER CREATION SUCCESS ===');
-
-      let successMessage = `User ${formData.email} created successfully with ${formData.role} role.`;
-      if (!useAdminAPI) {
-        successMessage += ' The user will need to confirm their email before they can log in.';
-      }
-
-      toast({
-        title: "Success",
-        description: successMessage,
-      });
-
-      // Reset form and close dialog
-      setFormData({
-        email: '',
-        password: '',
-        name: '',
-        role: 'read-only'
-      });
-      setOpen(false);
-      onUserCreated();
-      
     } catch (error: any) {
-      console.error('=== USER CREATION FAILED ===', error);
+      console.error('Error creating user:', error);
       
       let errorMessage = "Failed to create user. Please try again.";
       
-      if (error.message?.includes('already exists') || error.message?.includes('already registered')) {
-        errorMessage = "A user with this email already exists.";
-      } else if (error.message?.includes('invalid email')) {
+      if (error.message?.includes('User already registered')) {
+        errorMessage = "A user with this email address already exists.";
+      } else if (error.message?.includes('Password')) {
+        errorMessage = "Password must be at least 6 characters long.";
+      } else if (error.message?.includes('Email')) {
         errorMessage = "Please provide a valid email address.";
-      } else if (error.message?.includes('weak password')) {
-        errorMessage = "Password is too weak. Please use a stronger password.";
-      } else if (error.message?.includes('role')) {
-        errorMessage = `Failed to assign role: ${error.message}`;
       }
       
       toast({
@@ -160,7 +134,7 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
       <DialogTrigger asChild>
         <Button>
           <UserPlus className="w-4 h-4 mr-2" />
-          Create User
+          Add New User
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-sm">
@@ -168,6 +142,18 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
           <DialogTitle>Create New User</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Full Name *</Label>
+            <Input
+              id="name"
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Enter full name"
+              required
+            />
+          </div>
+          
           <div className="space-y-2">
             <Label htmlFor="email">Email Address *</Label>
             <Input
@@ -187,24 +173,14 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              placeholder="Enter password"
+              placeholder="Enter password (min 6 characters)"
               required
+              minLength={6}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
-            <Input
-              id="name"
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Enter full name"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
+            <Label htmlFor="role">Initial Role</Label>
             <Select
               value={formData.role}
               onValueChange={(value: UserRole) => setFormData({ ...formData, role: value })}
