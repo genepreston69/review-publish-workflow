@@ -44,11 +44,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (error) {
         console.error('=== ERROR FETCHING USER ROLE ===', error);
-        return 'read-only';
+        // If profile doesn't exist, return default role
+        if (error.code === 'PGRST116') {
+          console.log('=== PROFILE NOT FOUND, RETURNING DEFAULT ROLE ===');
+          return 'read-only';
+        }
+        throw error;
       }
 
       console.log('=== USER ROLE DATA ===', data);
-      const role = data.role as UserRole;
+      const role = data?.role as UserRole || 'read-only';
       console.log('=== FOUND ROLE ===', role);
       return role;
     } catch (error) {
@@ -60,12 +65,51 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     console.log('=== AUTH PROVIDER USEEFFECT STARTING ===');
     
+    // Get initial session
+    const initAuth = async () => {
+      try {
+        console.log('=== GETTING INITIAL SESSION ===');
+        
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('=== INITIAL SESSION ERROR ===', error);
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log('=== INITIAL SESSION ===', initialSession?.user?.email);
+        
+        if (initialSession?.user) {
+          setSession(initialSession);
+          setCurrentUser(initialSession.user);
+          
+          try {
+            const role = await fetchUserRole(initialSession.user.id);
+            console.log('=== INITIAL ROLE FETCHED ===', role);
+            setUserRole(role);
+          } catch (error) {
+            console.error('=== INITIAL ROLE FETCH FAILED ===', error);
+            setUserRole('read-only');
+          }
+        } else {
+          setSession(null);
+          setCurrentUser(null);
+          setUserRole(null);
+        }
+      } catch (error) {
+        console.error('=== INITIAL AUTH ERROR ===', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('=== AUTH STATE CHANGED ===', event, session?.user?.email);
         
-        if (event === 'SIGNED_OUT' || !session) {
+        if (event === 'SIGNED_OUT' || !session?.user) {
           console.log('=== USER SIGNED OUT OR NO SESSION ===');
           setSession(null);
           setCurrentUser(null);
@@ -74,10 +118,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           return;
         }
         
-        setSession(session);
-        setCurrentUser(session?.user ?? null);
-        
-        if (session?.user) {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          setSession(session);
+          setCurrentUser(session.user);
+          
           console.log('=== USER FOUND, FETCHING ROLE ===');
           try {
             const role = await fetchUserRole(session.user.id);
@@ -92,40 +136,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       }
     );
-
-    // Get initial session
-    const initAuth = async () => {
-      try {
-        console.log('=== GETTING INITIAL SESSION ===');
-        
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('=== INITIAL SESSION ERROR ===', error);
-          setIsLoading(false);
-          return;
-        }
-        
-        console.log('=== INITIAL SESSION ===', session?.user?.email);
-        setSession(session);
-        setCurrentUser(session?.user ?? null);
-        
-        if (session?.user) {
-          try {
-            const role = await fetchUserRole(session.user.id);
-            console.log('=== INITIAL ROLE FETCHED ===', role);
-            setUserRole(role);
-          } catch (error) {
-            console.error('=== INITIAL ROLE FETCH FAILED ===', error);
-            setUserRole('read-only');
-          }
-        }
-      } catch (error) {
-        console.error('=== INITIAL AUTH ERROR ===', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
     initAuth();
 
