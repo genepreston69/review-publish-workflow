@@ -40,65 +40,64 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
     setIsLoading(true);
 
     try {
-      console.log('=== STARTING ADMIN USER CREATION ===');
+      console.log('=== STARTING USER CREATION PROCESS ===');
       console.log('Form data:', { 
         email: formData.email, 
         name: formData.name, 
         role: formData.role 
       });
       
-      // Store the current session before creating the new user
-      console.log('=== STORING CURRENT SESSION ===');
+      // Store the current admin session
+      console.log('=== STORING CURRENT ADMIN SESSION ===');
       const { data: currentSession } = await supabase.auth.getSession();
-      console.log('Current session stored:', !!currentSession.session);
+      console.log('Current admin session stored:', !!currentSession.session);
       
-      // Use the admin API to create user without signing them in
-      console.log('=== CALLING ADMIN USER CREATE ===');
-      const { data: userData, error: createError } = await supabase.auth.admin.createUser({
+      if (!currentSession.session) {
+        throw new Error('No admin session found');
+      }
+
+      // Create the new user using signUp
+      console.log('=== CREATING NEW USER ===');
+      const { data: userData, error: createError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        email_confirm: true, // Skip email confirmation for admin-created users
-        user_metadata: {
-          name: formData.name
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            name: formData.name
+          }
         }
       });
 
-      console.log('=== ADMIN USER CREATE RESPONSE ===');
+      console.log('=== SIGNUP RESPONSE ===');
       console.log('User data:', userData);
       console.log('Create error:', createError);
 
       if (createError) {
-        console.error('=== ADMIN USER CREATE ERROR ===', createError);
+        console.error('=== SIGNUP ERROR ===', createError);
         throw createError;
       }
 
       if (!userData.user) {
-        console.error('=== NO USER RETURNED FROM ADMIN CREATE ===');
-        throw new Error('No user data returned from admin create');
+        console.error('=== NO USER RETURNED FROM SIGNUP ===');
+        throw new Error('No user data returned from signup');
       }
 
       console.log('=== USER CREATED SUCCESSFULLY ===');
       console.log('User ID:', userData.user.id);
       console.log('User email:', userData.user.email);
       
-      // Restore the admin session if it was changed
-      console.log('=== CHECKING IF SESSION NEEDS RESTORATION ===');
-      const { data: newSession } = await supabase.auth.getSession();
+      // Immediately restore the admin session
+      console.log('=== RESTORING ADMIN SESSION ===');
+      await supabase.auth.setSession({
+        access_token: currentSession.session.access_token,
+        refresh_token: currentSession.session.refresh_token
+      });
+      console.log('=== ADMIN SESSION RESTORED ===');
       
-      if (currentSession.session && (!newSession.session || newSession.session.user.id !== currentSession.session.user.id)) {
-        console.log('=== RESTORING ADMIN SESSION ===');
-        await supabase.auth.setSession({
-          access_token: currentSession.session.access_token,
-          refresh_token: currentSession.session.refresh_token
-        });
-        console.log('=== ADMIN SESSION RESTORED ===');
-      } else {
-        console.log('=== SESSION UNCHANGED ===');
-      }
-      
-      // Wait a moment for the profile to be created by the trigger
+      // Wait for the profile to be created by the trigger
       console.log('=== WAITING FOR PROFILE CREATION ===');
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Update the role if different from default
       if (formData.role !== 'read-only') {
@@ -140,13 +139,12 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
       onUserCreated();
       
     } catch (error: any) {
-      console.error('=== FATAL ERROR IN USER CREATION ===', error);
+      console.error('=== ERROR IN USER CREATION ===', error);
       console.error('Error details:', {
         message: error.message,
         code: error.code,
         details: error.details,
-        hint: error.hint,
-        stack: error.stack
+        hint: error.hint
       });
       
       let errorMessage = "Failed to create user. Please try again.";
@@ -159,8 +157,6 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         errorMessage = "Please provide a valid email address.";
       } else if (error.message?.includes('Invalid email')) {
         errorMessage = "Please provide a valid email address.";
-      } else if (error.message?.includes('Admin API')) {
-        errorMessage = "You don't have permission to create users. Please contact your system administrator.";
       }
       
       toast({
