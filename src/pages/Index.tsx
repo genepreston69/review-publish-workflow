@@ -1,7 +1,7 @@
 
 import { Button } from '@/components/ui/button';
 import { RoleBadge } from '@/components/RoleBadge';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/components/SafeAuthProvider';
 import { User, LogOut, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Dashboard } from '@/components/Dashboard';
