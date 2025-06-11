@@ -36,28 +36,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       console.log('=== FETCHING ROLE FOR USER ===', userId);
       
-      // Add a timeout to prevent hanging
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Role fetch timeout')), 5000);
-      });
-
-      const fetchPromise = supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', userId)
-        .maybeSingle();
-
-      const result = await Promise.race([fetchPromise, timeoutPromise]);
-      const { data, error } = result;
+        .single();
 
       if (error) {
         console.error('=== ERROR FETCHING USER ROLE ===', error);
-        // If profile doesn't exist, return default role
-        if (error.code === 'PGRST116') {
-          console.log('=== PROFILE NOT FOUND, RETURNING DEFAULT ROLE ===');
-          return 'read-only';
-        }
-        throw error;
+        return 'read-only';
       }
 
       console.log('=== USER ROLE DATA ===', data);
@@ -70,17 +57,40 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const initializeAuth = async (session: Session | null) => {
+    console.log('=== INITIALIZING AUTH ===', session?.user?.email);
+    
+    if (!session?.user) {
+      setSession(null);
+      setCurrentUser(null);
+      setUserRole(null);
+      setIsLoading(false);
+      return;
+    }
+
+    setSession(session);
+    setCurrentUser(session.user);
+
+    try {
+      const role = await fetchUserRole(session.user.id);
+      setUserRole(role);
+    } catch (error) {
+      console.error('=== ROLE FETCH FAILED ===', error);
+      setUserRole('read-only');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     console.log('=== AUTH PROVIDER USEEFFECT STARTING ===');
     
     let mounted = true;
     
     // Get initial session
-    const initAuth = async () => {
+    const getInitialSession = async () => {
       try {
-        console.log('=== GETTING INITIAL SESSION ===');
-        
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('=== INITIAL SESSION ERROR ===', error);
@@ -90,35 +100,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           return;
         }
         
-        console.log('=== INITIAL SESSION ===', initialSession?.user?.email);
-        
-        if (initialSession?.user && mounted) {
-          setSession(initialSession);
-          setCurrentUser(initialSession.user);
-          
-          try {
-            const role = await fetchUserRole(initialSession.user.id);
-            console.log('=== INITIAL ROLE FETCHED ===', role);
-            if (mounted) {
-              setUserRole(role);
-            }
-          } catch (error) {
-            console.error('=== INITIAL ROLE FETCH FAILED ===', error);
-            if (mounted) {
-              setUserRole('read-only');
-            }
-          }
-        } else if (mounted) {
-          setSession(null);
-          setCurrentUser(null);
-          setUserRole(null);
+        if (mounted) {
+          await initializeAuth(session);
         }
       } catch (error) {
         console.error('=== INITIAL AUTH ERROR ===', error);
-        if (mounted) {
-          setUserRole('read-only');
-        }
-      } finally {
         if (mounted) {
           setIsLoading(false);
         }
@@ -132,8 +118,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (!mounted) return;
         
-        if (event === 'SIGNED_OUT' || !session?.user) {
-          console.log('=== USER SIGNED OUT OR NO SESSION ===');
+        if (event === 'SIGNED_OUT') {
           setSession(null);
           setCurrentUser(null);
           setUserRole(null);
@@ -142,35 +127,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          setSession(session);
-          setCurrentUser(session.user);
-          
-          console.log('=== USER FOUND, FETCHING ROLE ===');
-          
-          // Use setTimeout to prevent blocking the auth state change
-          setTimeout(async () => {
-            if (!mounted) return;
-            
-            try {
-              const role = await fetchUserRole(session.user.id);
-              console.log('=== ROLE FETCHED ===', role);
-              if (mounted) {
-                setUserRole(role);
-                setIsLoading(false);
-              }
-            } catch (error) {
-              console.error('=== ROLE FETCH FAILED ===', error);
-              if (mounted) {
-                setUserRole('read-only');
-                setIsLoading(false);
-              }
-            }
-          }, 0);
+          await initializeAuth(session);
         }
       }
     );
 
-    initAuth();
+    getInitialSession();
 
     return () => {
       console.log('=== CLEANING UP AUTH SUBSCRIPTION ===');
@@ -182,12 +144,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signOut = async () => {
     console.log('=== SIGNING OUT ===');
     try {
-      // Clear local state first to provide immediate feedback
       setSession(null);
       setCurrentUser(null);
       setUserRole(null);
       
-      // Then sign out from Supabase
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Error signing out:', error);
@@ -196,9 +156,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     } catch (error) {
       console.error('=== UNEXPECTED SIGN OUT ERROR ===', error);
-      setSession(null);
-      setCurrentUser(null);
-      setUserRole(null);
     }
   };
 
