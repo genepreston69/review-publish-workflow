@@ -47,7 +47,19 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         role: formData.role 
       });
       
-      // Create the new user using signUp
+      // Store current admin session details before creating new user
+      console.log('=== STORING CURRENT ADMIN SESSION ===');
+      const { data: adminSession } = await supabase.auth.getSession();
+      const adminAccessToken = adminSession.session?.access_token;
+      const adminRefreshToken = adminSession.session?.refresh_token;
+      
+      if (!adminAccessToken || !adminRefreshToken) {
+        throw new Error('No valid admin session found');
+      }
+      
+      console.log('Admin session stored successfully');
+      
+      // Create the new user using signUp (this will automatically sign them in)
       console.log('=== CREATING NEW USER ===');
       const { data: userData, error: createError } = await supabase.auth.signUp({
         email: formData.email,
@@ -78,10 +90,6 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
       console.log('User ID:', userData.user.id);
       console.log('User email:', userData.user.email);
       
-      // Wait for the profile to be created by the trigger
-      console.log('=== WAITING FOR PROFILE CREATION ===');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
       // Update the role if different from default
       if (formData.role !== 'read-only') {
         console.log('=== UPDATING USER ROLE ===');
@@ -94,22 +102,38 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
 
         if (roleError) {
           console.error('=== ROLE UPDATE ERROR ===', roleError);
-          toast({
-            variant: "destructive",
-            title: "Warning",
-            description: "User created but role assignment failed. Please update manually.",
-          });
         } else {
           console.log('=== ROLE UPDATED SUCCESSFULLY ===');
         }
       }
 
-      console.log('=== USER CREATION PROCESS COMPLETE ===');
+      // Sign out the newly created user
+      console.log('=== SIGNING OUT NEW USER ===');
+      await supabase.auth.signOut();
       
-      toast({
-        title: "Success",
-        description: `User ${formData.name} created successfully. You may need to refresh to see them in the list.`,
+      // Restore the admin session
+      console.log('=== RESTORING ADMIN SESSION ===');
+      const { error: restoreError } = await supabase.auth.setSession({
+        access_token: adminAccessToken,
+        refresh_token: adminRefreshToken
       });
+      
+      if (restoreError) {
+        console.error('=== SESSION RESTORE ERROR ===', restoreError);
+        // Still show success but warn about session
+        toast({
+          title: "User Created",
+          description: `User ${formData.name} created successfully. Please refresh the page to restore your admin session.`,
+        });
+      } else {
+        console.log('=== ADMIN SESSION RESTORED ===');
+        toast({
+          title: "Success",
+          description: `User ${formData.name} created successfully.`,
+        });
+      }
+
+      console.log('=== USER CREATION PROCESS COMPLETE ===');
 
       // Reset form and close dialog
       setFormData({
@@ -120,10 +144,8 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
       });
       setOpen(false);
       
-      // Refresh the user list after a delay to allow for profile creation
-      setTimeout(() => {
-        onUserCreated();
-      }, 1000);
+      // Refresh the user list
+      onUserCreated();
       
     } catch (error: any) {
       console.error('=== ERROR IN USER CREATION ===', error);
