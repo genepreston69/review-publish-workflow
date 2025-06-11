@@ -27,7 +27,8 @@ export function ReviewPolicies() {
     if (!needsReview) return false;
     
     // Super-admins and publishers can see all policies needing review
-    if (isSuperAdmin || userRole === 'publish') {
+    // Fix: Check for both 'publish' and 'publisher' role variations
+    if (isSuperAdmin || userRole === 'publish' || userRole === 'publisher') {
       return true;
     }
     
@@ -35,8 +36,9 @@ export function ReviewPolicies() {
   });
 
   // Publishers and super admins can publish any policy
-  const canPublish = userRole === 'publish' || userRole === 'super-admin';
-  const canArchive = isSuperAdmin || userRole === 'publish';
+  // Fix: Check for both 'publish' and 'publisher' role variations
+  const canPublish = userRole === 'publish' || userRole === 'publisher' || userRole === 'super-admin';
+  const canArchive = isSuperAdmin || userRole === 'publish' || userRole === 'publisher';
 
   // Debug info about all policies
   const policyStatusCounts = policies.reduce((acc, policy) => {
@@ -94,6 +96,12 @@ export function ReviewPolicies() {
           <p className="text-muted-foreground">
             You need publish access or higher to review policies.
           </p>
+          <div className="mt-3 text-sm text-red-600">
+            <p><strong>Debug Info:</strong></p>
+            <p>Current User Role: <span className="font-medium">{userRole}</span></p>
+            <p>Is Super Admin: <span className="font-medium">{isSuperAdmin ? 'Yes' : 'No'}</span></p>
+            <p>Can Publish: <span className="font-medium">{canPublish ? 'Yes' : 'No'}</span></p>
+          </div>
         </div>
       </div>
     );
@@ -166,7 +174,20 @@ export function ReviewPolicies() {
                   <div className="mt-2 pt-2 border-t border-gray-200">
                     <p><strong>User Role:</strong> {userRole}</p>
                     <p><strong>Can Publish:</strong> {canPublish ? 'Yes' : 'No'}</p>
+                    <p><strong>Is Super Admin:</strong> {isSuperAdmin ? 'Yes' : 'No'}</p>
                     <p><strong>Is Loading:</strong> {isLoadingPolicies ? 'Yes' : 'No'}</p>
+                    <p><strong>Current User ID:</strong> {currentUser?.id || 'Not logged in'}</p>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-gray-200">
+                    <h5 className="font-medium mb-1">Sample Policies (first 3):</h5>
+                    {policies.slice(0, 3).map((policy, index) => (
+                      <div key={policy.id} className="text-xs mb-1">
+                        <p><strong>Policy {index + 1}:</strong> {policy.name || 'Untitled'}</p>
+                        <p>Status: {policy.status || 'No status'}</p>
+                        <p>Creator: {policy.creator_id || 'No creator'}</p>
+                        <p>---</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -196,9 +217,12 @@ export function ReviewPolicies() {
               : "All policies are either published or archived."}
           </p>
           {policies.length > 0 && (
-            <p className="mt-1 text-xs text-gray-400">
-              Try refreshing or check other sections like Draft Policies to create policies that need review.
-            </p>
+            <div className="mt-2 text-xs text-gray-400 space-y-1">
+              <p>Try refreshing or check other sections like Draft Policies to create policies that need review.</p>
+              <p className="text-red-500">
+                <strong>Debug:</strong> Found {policies.length} total policies, but none match review criteria for role "{userRole}"
+              </p>
+            </div>
           )}
         </div>
       )}
