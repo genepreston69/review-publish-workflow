@@ -1,5 +1,5 @@
 
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/components/SafeAuthProvider';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
@@ -8,13 +8,32 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { currentUser, userRole, isLoading } = useAuth();
+  const { currentUser, userRole, isLoading, error } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Authentication Error: {error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
