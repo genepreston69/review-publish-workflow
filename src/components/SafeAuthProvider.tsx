@@ -1,4 +1,3 @@
-
 // SafeAuthProvider.tsx - Clean implementation with enhanced debugging
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -170,6 +169,23 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Auth state change listener
   useEffect(() => {
     console.log('🎧 Setting up auth listener');
+    
+    // EMERGENCY: Clear any invalid sessions first
+    const clearInvalidSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error && error.message.includes('refresh_token_not_found')) {
+          console.log('🚨 CLEARING INVALID SESSION');
+          await supabase.auth.signOut();
+          return;
+        }
+      } catch (e) {
+        console.log('🚨 SESSION CHECK FAILED - FORCING SIGNOUT');
+        await supabase.auth.signOut();
+      }
+    };
+    
+    clearInvalidSession();
     
     // Emergency timeout to prevent infinite loading
     const emergencyTimeout = setTimeout(() => {
