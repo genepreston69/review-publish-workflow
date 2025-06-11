@@ -47,15 +47,6 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         role: formData.role 
       });
       
-      // Store the current admin session
-      console.log('=== STORING CURRENT ADMIN SESSION ===');
-      const { data: currentSession } = await supabase.auth.getSession();
-      console.log('Current admin session stored:', !!currentSession.session);
-      
-      if (!currentSession.session) {
-        throw new Error('No admin session found');
-      }
-
       // Create the new user using signUp
       console.log('=== CREATING NEW USER ===');
       const { data: userData, error: createError } = await supabase.auth.signUp({
@@ -87,14 +78,6 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
       console.log('User ID:', userData.user.id);
       console.log('User email:', userData.user.email);
       
-      // Immediately restore the admin session
-      console.log('=== RESTORING ADMIN SESSION ===');
-      await supabase.auth.setSession({
-        access_token: currentSession.session.access_token,
-        refresh_token: currentSession.session.refresh_token
-      });
-      console.log('=== ADMIN SESSION RESTORED ===');
-      
       // Wait for the profile to be created by the trigger
       console.log('=== WAITING FOR PROFILE CREATION ===');
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -125,7 +108,7 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
       
       toast({
         title: "Success",
-        description: `User ${formData.name} created successfully.`,
+        description: `User ${formData.name} created successfully. You may need to refresh to see them in the list.`,
       });
 
       // Reset form and close dialog
@@ -136,16 +119,14 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         password: ''
       });
       setOpen(false);
-      onUserCreated();
+      
+      // Refresh the user list after a delay to allow for profile creation
+      setTimeout(() => {
+        onUserCreated();
+      }, 1000);
       
     } catch (error: any) {
       console.error('=== ERROR IN USER CREATION ===', error);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint
-      });
       
       let errorMessage = "Failed to create user. Please try again.";
       
