@@ -1,5 +1,5 @@
 
-// SafeAuthProvider.tsx - Clean implementation without syntax errors
+// SafeAuthProvider.tsx - Clean implementation with enhanced debugging
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -34,11 +34,18 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Safe role fetcher with comprehensive error handling
   const fetchUserRole = useCallback(async (userId: string): Promise<UserRole> => {
     console.log('🔍 Fetching role for user:', userId);
+    console.log('🔍 Starting role fetch at:', new Date().toISOString());
     
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => {
+        console.log('⏰ Role fetch timeout triggered after 10 seconds');
+        controller.abort();
+      }, 10000);
 
+      console.log('🔍 Making Supabase query to user_roles table...');
+      const startTime = Date.now();
+      
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
@@ -46,12 +53,22 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .order('role', { ascending: false })
         .limit(1);
 
+      const endTime = Date.now();
+      console.log(`🔍 Supabase query completed in ${endTime - startTime}ms`);
       clearTimeout(timeoutId);
 
       if (error) {
         console.error('❌ Role fetch error:', error);
+        console.error('❌ Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         return 'read-only';
       }
+
+      console.log('🔍 Raw role data from Supabase:', data);
 
       if (data && data.length > 0) {
         const role = data[0].role as UserRole;
@@ -64,6 +81,7 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     } catch (error: any) {
       console.error('💥 Role fetch failed:', error.message);
+      console.error('💥 Full error object:', error);
       
       if (error.name === 'AbortError') {
         console.log('⏰ Role fetch timeout');
@@ -78,9 +96,18 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const initializeAuth = useCallback(async (newSession: Session | null) => {
     const user = newSession?.user || null;
     
+    console.log('🚀 initializeAuth called with:', {
+      hasSession: !!newSession,
+      hasUser: !!user,
+      userId: user?.id,
+      userEmail: user?.email,
+      currentUserId: currentUserId.current,
+      isInitialized: isInitialized.current
+    });
+    
     // Prevent duplicate initialization
     if (user?.id === currentUserId.current && isInitialized.current) {
-      console.log('🔄 Auth already initialized for this user');
+      console.log('🔄 Auth already initialized for this user - skipping');
       return;
     }
 
@@ -88,6 +115,7 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     currentUserId.current = user?.id || null;
 
     if (!newSession || !user) {
+      console.log('🚀 No session or user - clearing auth state');
       setSession(null);
       setCurrentUser(null);
       setUserRole(null);
@@ -98,13 +126,16 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
+    console.log('🚀 Setting session and user state');
     setSession(newSession);
     setCurrentUser(user);
     setIsLoading(true);
     setError(null);
 
     try {
+      console.log('🚀 Starting role fetch...');
       const role = await fetchUserRole(user.id);
+      console.log('🚀 Role fetch completed, result:', role);
       
       setUserRole(role);
       setIsLoading(false);
@@ -116,6 +147,7 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     } catch (error: any) {
       console.error('💥 Auth initialization failed:', error.message);
+      console.error('💥 Full initialization error:', error);
       
       retryCount.current++;
       
@@ -150,9 +182,11 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔔 Auth state changed:', event, session?.user?.email || 'no user');
+      console.log('🔔 Full event details:', { event, hasSession: !!session, userId: session?.user?.id });
       clearTimeout(emergencyTimeout);
       
       if (event === 'SIGNED_OUT') {
+        console.log('🔔 User signed out - resetting state');
         isInitialized.current = false;
         currentUserId.current = null;
         retryCount.current = 0;
@@ -164,6 +198,7 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Get initial session
     const getInitialSession = async () => {
       try {
+        console.log('🔔 Getting initial session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('Initial session error:', error);
@@ -171,6 +206,7 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           setError('Failed to get initial session');
           return;
         }
+        console.log('🔔 Initial session retrieved:', { hasSession: !!session, userId: session?.user?.id });
         await initializeAuth(session);
       } catch (error: any) {
         console.error('Initial auth error:', error);
@@ -236,7 +272,8 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       currentUser: !!currentUser, 
       userRole, 
       isLoading, 
-      error 
+      error,
+      timestamp: new Date().toISOString()
     });
   }, [currentUser, userRole, isLoading, error]);
 
