@@ -31,52 +31,60 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [retryCount, setRetryCount] = useState(0);
-
-  const MAX_RETRIES = 3;
-  const ROLE_FETCH_TIMEOUT = 10000; // 10 seconds
 
   const fetchUserRole = async (userId: string): Promise<UserRole> => {
-    return new Promise(async (resolve, reject) => {
-      console.log('=== FETCHING ROLE FOR USER ===', userId);
-      console.log('=== RETRY COUNT ===', retryCount);
-      
-      // Check retry limit
-      if (retryCount >= MAX_RETRIES) {
-        console.log('=== MAX RETRIES REACHED, DEFAULTING TO READ-ONLY ===');
-        resolve('read-only');
-        return;
-      }
+    console.log('=== FETCHING ROLE FOR USER ===', userId);
+    
+    try {
+      // Use a more direct query with better error handling
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle(); // Use maybeSingle to handle case where no row exists
 
-      const timeoutId = setTimeout(() => {
-        console.log('=== ROLE FETCH TIMEOUT ===');
-        reject(new Error('Role fetch timeout'));
-      }, ROLE_FETCH_TIMEOUT);
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', userId)
-          .single();
-
-        clearTimeout(timeoutId);
-
-        if (error) {
-          console.error('=== ERROR FETCHING USER ROLE ===', error);
+      if (error) {
+        console.error('=== ERROR FETCHING USER ROLE ===', error);
+        // If it's a connection error, throw to trigger retry
+        if (error.message?.includes('Failed to fetch') || error.code === 'PGRST301') {
           throw error;
         }
-
-        console.log('=== USER ROLE DATA ===', data);
-        const role = data?.role as UserRole || 'read-only';
-        console.log('=== FOUND ROLE ===', role);
-        resolve(role);
-      } catch (error) {
-        clearTimeout(timeoutId);
-        console.error('=== ERROR IN FETCH USER ROLE ===', error);
-        reject(error);
+        // For other errors, return default role
+        console.log('=== USING DEFAULT ROLE DUE TO ERROR ===');
+        return 'read-only';
       }
-    });
+
+      if (!data) {
+        console.log('=== NO PROFILE FOUND, CREATING DEFAULT PROFILE ===');
+        // Try to create a profile for this user
+        try {
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: userId,
+              name: 'New User',
+              email: session?.user?.email || '',
+              role: 'read-only'
+            });
+          
+          if (insertError) {
+            console.error('=== ERROR CREATING PROFILE ===', insertError);
+          }
+        } catch (insertErr) {
+          console.error('=== PROFILE CREATION FAILED ===', insertErr);
+        }
+        
+        return 'read-only';
+      }
+
+      console.log('=== USER ROLE DATA ===', data);
+      const role = data.role as UserRole || 'read-only';
+      console.log('=== FOUND ROLE ===', role);
+      return role;
+    } catch (error) {
+      console.error('=== ERROR IN FETCH USER ROLE ===', error);
+      throw error;
+    }
   };
 
   const initializeAuth = async (session: Session | null) => {
@@ -87,37 +95,49 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setCurrentUser(null);
       setUserRole(null);
       setIsLoading(false);
-      setRetryCount(0);
       return;
     }
 
     setSession(session);
     setCurrentUser(session.user);
 
-    try {
-      const role = await fetchUserRole(session.user.id);
-      setUserRole(role);
-      setRetryCount(0); // Reset retry count on success
-    } catch (error) {
-      console.error('=== ROLE FETCH FAILED ===', error);
-      setRetryCount(prev => prev + 1);
-      
-      // If we've hit max retries, set default role and stop loading
-      if (retryCount >= MAX_RETRIES - 1) {
-        console.log('=== SETTING DEFAULT ROLE AFTER MAX RETRIES ===');
-        setUserRole('read-only');
-      } else {
-        // Retry after a delay
-        setTimeout(() => {
-          console.log('=== RETRYING ROLE FETCH ===');
-          initializeAuth(session);
-        }, 2000 * (retryCount + 1)); // Exponential backoff
-        return; // Don't set loading to false yet
-      }
-    } finally {
-      // Only set loading to false if we're not retrying
-      if (retryCount >= MAX_RETRIES - 1) {
+    // Try to fetch role with retries and timeout
+    let attempts = 0;
+    const maxAttempts = 3;
+    const attemptDelay = 1000; // 1 second between attempts
+
+    while (attempts < maxAttempts) {
+      try {
+        console.log(`=== ROLE FETCH ATTEMPT ${attempts + 1}/${maxAttempts} ===`);
+        
+        // Create a promise that races against timeout
+        const rolePromise = fetchUserRole(session.user.id);
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Role fetch timeout')), 5000)
+        );
+
+        const role = await Promise.race([rolePromise, timeoutPromise]);
+        setUserRole(role);
         setIsLoading(false);
+        console.log('=== AUTH INITIALIZATION SUCCESSFUL ===', role);
+        return;
+
+      } catch (error: any) {
+        attempts++;
+        console.error(`=== ROLE FETCH ATTEMPT ${attempts} FAILED ===`, error.message);
+        
+        if (attempts >= maxAttempts) {
+          console.log('=== MAX ATTEMPTS REACHED, USING DEFAULT ROLE ===');
+          setUserRole('read-only');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Wait before next attempt
+        if (attempts < maxAttempts) {
+          console.log(`=== WAITING ${attemptDelay}ms BEFORE RETRY ===`);
+          await new Promise(resolve => setTimeout(resolve, attemptDelay));
+        }
       }
     }
   };
@@ -146,6 +166,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       } catch (error) {
         console.error('=== INITIAL AUTH ERROR ===', error);
         if (mounted) {
+          setUserRole('read-only');
           setIsLoading(false);
         }
       }
@@ -163,7 +184,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setCurrentUser(null);
           setUserRole(null);
           setIsLoading(false);
-          setRetryCount(0);
           return;
         }
         
@@ -175,17 +195,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     getInitialSession();
 
-    return () => {
-      console.log('=== CLEANING UP AUTH SUBSCRIPTION ===');
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  // Emergency timeout to prevent infinite loading
-  useEffect(() => {
+    // Emergency timeout to prevent infinite loading
     const emergencyTimeout = setTimeout(() => {
-      if (isLoading) {
+      if (mounted && isLoading) {
         console.log('=== EMERGENCY TIMEOUT - FORCING LOADING TO FALSE ===');
         setIsLoading(false);
         if (currentUser && !userRole) {
@@ -193,10 +205,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUserRole('read-only');
         }
       }
-    }, 30000); // 30 seconds emergency timeout
+    }, 15000); // 15 seconds emergency timeout
 
-    return () => clearTimeout(emergencyTimeout);
-  }, [isLoading, currentUser, userRole]);
+    return () => {
+      console.log('=== CLEANING UP AUTH SUBSCRIPTION ===');
+      mounted = false;
+      subscription.unsubscribe();
+      clearTimeout(emergencyTimeout);
+    };
+  }, []);
 
   const signOut = async () => {
     console.log('=== SIGNING OUT ===');
@@ -204,7 +221,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setSession(null);
       setCurrentUser(null);
       setUserRole(null);
-      setRetryCount(0);
       
       const { error } = await supabase.auth.signOut();
       if (error) {
@@ -217,7 +233,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  console.log('=== AUTH PROVIDER RENDER ===', { currentUser: !!currentUser, userRole, isLoading, retryCount });
+  console.log('=== AUTH PROVIDER RENDER ===', { currentUser: !!currentUser, userRole, isLoading });
 
   return (
     <AuthContext.Provider value={{ 
