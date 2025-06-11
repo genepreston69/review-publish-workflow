@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -74,7 +75,9 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log('=== ATTEMPTING SIGN UP ===', { email: signUpEmail, name: signUpName });
+      
+      const { data, error } = await supabase.auth.signUp({
         email: signUpEmail,
         password: signUpPassword,
         options: {
@@ -85,15 +88,17 @@ const Auth = () => {
       });
 
       if (error) {
+        console.error('=== SIGN UP ERROR ===', error);
         toast({
           variant: "destructive",
           title: "Sign up failed",
           description: error.message,
         });
       } else {
+        console.log('=== SIGN UP SUCCESSFUL ===', data);
         toast({
           title: "Account created!",
-          description: "Please check your email for verification.",
+          description: "Please check your email for verification, or you can sign in immediately.",
         });
         // Clear the form
         setSignUpEmail('');
@@ -102,6 +107,7 @@ const Auth = () => {
         setSignUpName('');
       }
     } catch (error) {
+      console.error('=== UNEXPECTED SIGN UP ERROR ===', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -129,6 +135,15 @@ const Auth = () => {
     try {
       console.log('=== ATTEMPTING SIGN IN ===', { email: signInEmail });
       
+      // First, let's check if a profile exists for this email
+      const { data: existingProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', signInEmail)
+        .maybeSingle();
+      
+      console.log('=== EXISTING PROFILE CHECK ===', { existingProfile, profileError });
+      
       const { error } = await supabase.auth.signInWithPassword({
         email: signInEmail,
         password: signInPassword,
@@ -136,10 +151,21 @@ const Auth = () => {
 
       if (error) {
         console.error('=== SIGN IN ERROR ===', error);
+        
+        // Provide more helpful error messages
+        let errorMessage = error.message;
+        if (error.message === 'Invalid login credentials') {
+          if (!existingProfile) {
+            errorMessage = "No account found with this email address. Please sign up first or check your email.";
+          } else {
+            errorMessage = "Incorrect password. Please check your password and try again.";
+          }
+        }
+        
         toast({
           variant: "destructive",
           title: "Sign in failed",
-          description: error.message,
+          description: errorMessage,
         });
       } else {
         console.log('=== SIGN IN SUCCESSFUL ===');
@@ -154,6 +180,60 @@ const Auth = () => {
         title: "Error",
         description: "An unexpected error occurred.",
       });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Helper function to create a test admin account
+  const createTestAdmin = async () => {
+    setIsLoading(true);
+    try {
+      console.log('=== CREATING TEST ADMIN ===');
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: 'admin@test.com',
+        password: 'admin123',
+        options: {
+          data: {
+            name: 'Test Admin',
+          },
+        },
+      });
+
+      if (error) {
+        console.error('=== TEST ADMIN CREATION ERROR ===', error);
+        toast({
+          variant: "destructive",
+          title: "Failed to create test admin",
+          description: error.message,
+        });
+      } else {
+        console.log('=== TEST ADMIN CREATED ===', data);
+        
+        // Wait a moment for the profile to be created
+        setTimeout(async () => {
+          if (data.user) {
+            const { error: roleError } = await supabase
+              .from('profiles')
+              .update({ role: 'super-admin' })
+              .eq('id', data.user.id);
+              
+            if (roleError) {
+              console.error('=== ROLE UPDATE ERROR ===', roleError);
+            } else {
+              console.log('=== TEST ADMIN ROLE UPDATED ===');
+            }
+          }
+        }, 1000);
+        
+        toast({
+          title: "Test admin created!",
+          description: "Email: admin@test.com, Password: admin123",
+        });
+      }
+    } catch (error) {
+      console.error('=== UNEXPECTED TEST ADMIN ERROR ===', error);
     } finally {
       setIsLoading(false);
     }
@@ -237,6 +317,18 @@ const Auth = () => {
                     Sign In
                   </Button>
                 </form>
+                
+                {/* Debug helper for testing */}
+                <div className="mt-4 pt-4 border-t border-slate-200">
+                  <Button 
+                    onClick={createTestAdmin}
+                    disabled={isLoading}
+                    variant="outline"
+                    className="w-full text-sm"
+                  >
+                    Create Test Admin Account
+                  </Button>
+                </div>
               </TabsContent>
               
               <TabsContent value="signup" className="space-y-4">
