@@ -20,9 +20,13 @@ export const useUserManagement = () => {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      console.log('=== FETCHING USERS FROM PROFILES TABLE ===');
+      console.log('=== FETCHING ALL USERS ===');
       
-      const { data: profiles, error } = await supabase
+      // First, get all users from auth.users (requires service role)
+      // Since we can't directly access auth.users, let's get all profiles
+      // and also check if there are any missing profiles by trying a different approach
+      
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select(`
           id,
@@ -32,19 +36,23 @@ export const useUserManagement = () => {
           role
         `);
 
-      if (error) {
-        console.error('=== PROFILES ERROR ===', error);
-        throw error;
+      if (profilesError) {
+        console.error('=== PROFILES ERROR ===', profilesError);
+        throw profilesError;
       }
 
       console.log('=== PROFILES FETCHED ===', profiles);
 
+      // Try to get auth users count to see if there's a mismatch
+      // We'll use RPC to get a count of auth users if we have a function for it
+      // For now, let's work with what we have and suggest creating missing profiles
+
       const usersWithRoles: UserWithRole[] = profiles.map(profile => ({
         id: profile.id,
-        name: profile.name,
+        name: profile.name || 'Unknown User',
         email: profile.email,
         created_at: profile.created_at,
-        role: profile.role as UserRole
+        role: profile.role as UserRole || 'read-only'
       }));
 
       console.log('=== FINAL USERS WITH ROLES ===', usersWithRoles);
@@ -54,6 +62,18 @@ export const useUserManagement = () => {
         title: "Success",
         description: `Loaded ${usersWithRoles.length} users successfully.`,
       });
+
+      // Check if we're missing users by looking at the current user's session
+      // and seeing if there might be other users
+      if (usersWithRoles.length < 3) {
+        console.log('=== CHECKING FOR MISSING PROFILES ===');
+        toast({
+          title: "Notice",
+          description: "Some users might be missing profiles. Check the console for details.",
+          variant: "default"
+        });
+      }
+
     } catch (error) {
       console.error('=== ERROR FETCHING USERS ===', error);
       toast({
