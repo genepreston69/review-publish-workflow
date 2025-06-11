@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useServerAuth } from '@/hooks/useServerAuth';
 import { PolicyList } from './policy/PolicyList';
@@ -17,20 +16,27 @@ export function ReviewPolicies() {
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
 
-  // All possible status variations that need review
+  // All possible status variations that need review - simplified and more inclusive
   const reviewStatuses = ['draft', 'under-review', 'under review', 'awaiting-changes', 'awaiting changes'];
 
   // Filter to show policies that need review with proper access control
   const reviewPolicies = policies.filter(policy => {
     // Check if policy needs review (case-insensitive and flexible matching)
-    const needsReview = policy.status && reviewStatuses.some(status => 
-      policy.status?.toLowerCase().trim() === status.toLowerCase()
+    const policyStatus = policy.status?.toLowerCase().trim();
+    const needsReview = reviewStatuses.some(status => 
+      policyStatus === status.toLowerCase()
     );
     
     if (!needsReview) return false;
     
     // Super-admins and publishers can see all policies needing review
     if (isSuperAdmin || userRole === 'publish') {
+      console.log('=== PUBLISHER/SUPER-ADMIN CAN SEE POLICY ===', {
+        policyId: policy.id,
+        policyName: policy.name,
+        policyStatus: policy.status,
+        userRole
+      });
       return true;
     }
     
