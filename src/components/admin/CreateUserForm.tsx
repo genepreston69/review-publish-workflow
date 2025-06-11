@@ -47,6 +47,11 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         role: formData.role 
       });
       
+      // Store the current session before creating the new user
+      console.log('=== STORING CURRENT SESSION ===');
+      const { data: currentSession } = await supabase.auth.getSession();
+      console.log('Current session stored:', !!currentSession.session);
+      
       // Use the admin API to create user without signing them in
       console.log('=== CALLING ADMIN USER CREATE ===');
       const { data: userData, error: createError } = await supabase.auth.admin.createUser({
@@ -75,6 +80,21 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
       console.log('=== USER CREATED SUCCESSFULLY ===');
       console.log('User ID:', userData.user.id);
       console.log('User email:', userData.user.email);
+      
+      // Restore the admin session if it was changed
+      console.log('=== CHECKING IF SESSION NEEDS RESTORATION ===');
+      const { data: newSession } = await supabase.auth.getSession();
+      
+      if (currentSession.session && (!newSession.session || newSession.session.user.id !== currentSession.session.user.id)) {
+        console.log('=== RESTORING ADMIN SESSION ===');
+        await supabase.auth.setSession({
+          access_token: currentSession.session.access_token,
+          refresh_token: currentSession.session.refresh_token
+        });
+        console.log('=== ADMIN SESSION RESTORED ===');
+      } else {
+        console.log('=== SESSION UNCHANGED ===');
+      }
       
       // Wait a moment for the profile to be created by the trigger
       console.log('=== WAITING FOR PROFILE CREATION ===');
