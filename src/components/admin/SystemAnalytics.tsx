@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { BarChart3, Users, FileText, Eye, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { UserRole } from '@/types/user';
 
 interface Analytics {
   totalUsers: number;
@@ -58,7 +59,7 @@ export const SystemAnalytics = () => {
       const reviewContent = contentData.filter(c => c.status === 'under-review').length;
 
       const usersByRole = roleData.reduce((acc, user) => {
-        const role = user.role as keyof typeof acc;
+        const role = user.role as UserRole;
         acc[role] = (acc[role] || 0) + 1;
         return acc;
       }, { 'read-only': 0, 'edit': 0, 'publish': 0, 'super-admin': 0 });

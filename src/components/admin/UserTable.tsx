@@ -3,22 +3,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { RoleBadge } from '@/components/RoleBadge';
 import { UserRoleSelect } from './UserRoleSelect';
 import { UserDeleteButton } from './UserDeleteButton';
-import { UserRole } from '@/types/user';
-
-interface UserWithRole {
-  id: string;
-  name: string;
-  email: string;
-  created_at: string;
-  role: UserRole;
-}
+import { EditUserNameForm } from './EditUserNameForm';
+import { PasswordChangeForm } from './PasswordChangeForm';
+import { User } from '@/types/user';
+import { useAuth } from '@/hooks/useAuth';
 
 interface UserTableProps {
-  users: UserWithRole[];
+  users: User[];
   onUserUpdated: () => void;
 }
 
 export const UserTable = ({ users, onUserUpdated }: UserTableProps) => {
+  const { currentUser } = useAuth();
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -27,20 +24,22 @@ export const UserTable = ({ users, onUserUpdated }: UserTableProps) => {
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Current Role</TableHead>
-            <TableHead>Joined</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {users.map((user) => (
-            <TableRow key={user.id}>
-              <TableCell className="font-medium">{user.name}</TableCell>
+            <TableRow key={user.id} className="group">
+              <TableCell>
+                <EditUserNameForm
+                  userId={user.id}
+                  currentName={user.name}
+                  onNameUpdated={onUserUpdated}
+                />
+              </TableCell>
               <TableCell>{user.email}</TableCell>
               <TableCell>
                 <RoleBadge role={user.role} />
-              </TableCell>
-              <TableCell>
-                {new Date(user.created_at).toLocaleDateString()}
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
@@ -48,6 +47,12 @@ export const UserTable = ({ users, onUserUpdated }: UserTableProps) => {
                     userId={user.id}
                     currentRole={user.role}
                     onRoleUpdated={onUserUpdated}
+                  />
+                  
+                  <PasswordChangeForm
+                    userId={user.id}
+                    userEmail={user.email}
+                    isCurrentUser={user.id === currentUser?.id}
                   />
                   
                   <UserDeleteButton
@@ -62,7 +67,7 @@ export const UserTable = ({ users, onUserUpdated }: UserTableProps) => {
           ))}
           {users.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+              <TableCell colSpan={4} className="text-center text-gray-500 py-8">
                 No users found
               </TableCell>
             </TableRow>

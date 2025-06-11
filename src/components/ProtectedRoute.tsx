@@ -1,5 +1,5 @@
 
-import { useServerAuth } from '@/hooks/useServerAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { currentUser, userRole, isLoading } = useServerAuth();
+  const { currentUser, userRole, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {

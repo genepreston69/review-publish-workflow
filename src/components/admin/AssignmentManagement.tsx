@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Link, Plus, Trash2, Loader2 } from 'lucide-react';
+import { UserRole } from '@/types/user';
 
 interface User {
   id: string;
@@ -38,45 +39,62 @@ export const AssignmentManagement = () => {
     try {
       setIsLoading(true);
 
-      // Fetch assignments with user names
+      // First, fetch all assignments
       const { data: assignmentData, error: assignmentError } = await supabase
         .from('assignment_relations')
-        .select(`
-          *,
-          editor:profiles!assignment_relations_edit_user_id_fkey(name),
-          publisher:profiles!assignment_relations_publish_user_id_fkey(name)
-        `);
+        .select('*');
 
       if (assignmentError) throw assignmentError;
 
+      // Get unique user IDs from assignments
+      const userIds = new Set<string>();
+      assignmentData.forEach(assignment => {
+        userIds.add(assignment.edit_user_id);
+        userIds.add(assignment.publish_user_id);
+      });
+
+      // Fetch profiles for these users
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, name, email')
+        .in('id', Array.from(userIds));
+
+      if (profileError) throw profileError;
+
+      // Create a map of user ID to profile
+      const profileMap = new Map();
+      profileData.forEach(profile => {
+        profileMap.set(profile.id, profile);
+      });
+
+      // Format assignments with user names
       const formattedAssignments = assignmentData.map(assignment => ({
         id: assignment.id,
         edit_user_id: assignment.edit_user_id,
         publish_user_id: assignment.publish_user_id,
         created_at: assignment.created_at,
-        editor_name: assignment.editor?.name || 'Unknown',
-        publisher_name: assignment.publisher?.name || 'Unknown'
+        editor_name: profileMap.get(assignment.edit_user_id)?.name || 'Unknown',
+        publisher_name: profileMap.get(assignment.publish_user_id)?.name || 'Unknown'
       }));
 
       setAssignments(formattedAssignments);
 
-      // Fetch users with editor role
-      const { data: editorUsers, error: editorError } = await supabase
+      // Fetch users with editor and publisher roles from profiles table
+      const { data: editorProfiles, error: editorError } = await supabase
         .from('profiles')
         .select('id, name, email')
         .eq('role', 'edit');
 
       if (editorError) throw editorError;
-      setEditors(editorUsers || []);
+      setEditors(editorProfiles || []);
 
-      // Fetch users with publisher role
-      const { data: publisherUsers, error: publisherError } = await supabase
+      const { data: publisherProfiles, error: publisherError } = await supabase
         .from('profiles')
         .select('id, name, email')
         .eq('role', 'publish');
 
       if (publisherError) throw publisherError;
-      setPublishers(publisherUsers || []);
+      setPublishers(publisherProfiles || []);
 
     } catch (error) {
       console.error('Error fetching data:', error);

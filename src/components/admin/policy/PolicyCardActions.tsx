@@ -31,7 +31,6 @@ export function PolicyCardActions({
   const { userRole, currentUser } = useAuth();
   const isSuperAdmin = userRole === 'super-admin';
   const isEditor = userRole === 'edit';
-  const isPublisher = userRole === 'publish';
   const { duplicatePolicyForUpdate, archiveByPolicyNumber, isLoading: isDuplicating } = usePolicyDuplication();
   const { toast } = useToast();
 
@@ -46,7 +45,7 @@ export function PolicyCardActions({
     try {
       console.log('=== PUBLISHING POLICY WITH ARCHIVING ===', policyId);
 
-      // Get the policy being published to check policy number
+      // Get the policy being published to check creator and policy number
       const { data: currentPolicy } = await supabase
         .from('Policies')
         .select('policy_number, creator_id')
@@ -54,6 +53,16 @@ export function PolicyCardActions({
         .single();
 
       if (currentPolicy) {
+        // Check maker/checker rule before attempting publish
+        if (currentPolicy.creator_id === currentUser?.id && !isSuperAdmin) {
+          toast({
+            variant: "destructive",
+            title: "Publishing Not Allowed",
+            description: "You cannot publish a policy you created. Another reviewer must publish it due to maker/checker controls.",
+          });
+          return;
+        }
+
         console.log('=== ARCHIVING POLICIES WITH SAME POLICY NUMBER ===', currentPolicy.policy_number);
         
         // Archive all other policies with the same policy number using the new method
@@ -76,7 +85,7 @@ export function PolicyCardActions({
 
   // Special layout for published policies
   if (policyStatus === 'published') {
-    const showUpdateButton = (isSuperAdmin || isEditor || isPublisher);
+    const showUpdateButton = (isSuperAdmin || isEditor || canPublish);
 
     return (
       <CardFooter className="pt-6">
@@ -118,14 +127,14 @@ export function PolicyCardActions({
   // Determine which buttons to show in each row
   const showEditButton = onEdit && (
     isSuperAdmin ||
-    isPublisher ||
-    (isEditor && policyStatus === 'draft')
+    (isEditor && policyStatus === 'draft') ||
+    (canPublish && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review'))
   );
 
-  const showSubmitButton = policyStatus === 'draft' && (isSuperAdmin || isEditor || isPublisher);
+  const showSubmitButton = policyStatus === 'draft' && (isSuperAdmin || isEditor || canPublish);
 
-  // Publishers can publish any policy
-  const showPublishButton = (isSuperAdmin || isPublisher) && (
+  // Enhanced publish button logic - ensure it shows for review policies
+  const showPublishButton = canPublish && (
     policyStatus === 'draft' || 
     policyStatus === 'under-review' || 
     policyStatus === 'under review' ||
@@ -133,7 +142,7 @@ export function PolicyCardActions({
     policyStatus === 'awaiting changes'
   );
   
-  const showArchiveButton = (isSuperAdmin || isPublisher) && (
+  const showArchiveButton = (isSuperAdmin || canPublish) && (
     policyStatus === 'draft' || 
     policyStatus === 'under-review' || 
     policyStatus === 'under review' ||

@@ -26,6 +26,7 @@ export const UserRoleSelect = ({ userId, currentRole, onRoleUpdated }: UserRoleS
       console.log('Target user ID:', userId);
       console.log('New role:', newRole);
       
+      // Update the role in the profiles table
       const { error } = await supabase
         .from('profiles')
         .update({ role: newRole })

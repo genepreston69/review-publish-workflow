@@ -1,99 +1,151 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { User, UserRole } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
-import { UserRole } from '@/types/user';
 
-interface UserWithRole {
-  id: string;
-  name: string;
-  email: string;
-  created_at: string;
-  role: UserRole;
-}
-
-export const useUserManagement = () => {
-  const [users, setUsers] = useState<UserWithRole[]>([]);
+export function useUserManagement() {
+  const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log('=== FETCHING ALL USERS ===');
-      
-      // First, get all users from auth.users (requires service role)
-      // Since we can't directly access auth.users, let's get all profiles
-      // and also check if there are any missing profiles by trying a different approach
-      
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          name,
-          email,
-          created_at,
-          role
-        `);
+      console.log('=== FETCHING USERS FROM PROFILES ===');
 
-      if (profilesError) {
-        console.error('=== PROFILES ERROR ===', profilesError);
-        throw profilesError;
+      // Fetch all profiles with roles
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching profiles:', error);
+        throw error;
       }
 
-      console.log('=== PROFILES FETCHED ===', profiles);
+      console.log(`Found ${profiles?.length || 0} user profiles`);
 
-      // Try to get auth users count to see if there's a mismatch
-      // We'll use RPC to get a count of auth users if we have a function for it
-      // For now, let's work with what we have and suggest creating missing profiles
-
-      const usersWithRoles: UserWithRole[] = profiles.map(profile => ({
+      const usersWithRoles: User[] = (profiles || []).map(profile => ({
         id: profile.id,
-        name: profile.name || 'Unknown User',
         email: profile.email,
-        created_at: profile.created_at,
-        role: profile.role as UserRole || 'read-only'
+        role: profile.role as UserRole,
+        name: profile.name || profile.email
       }));
 
-      console.log('=== FINAL USERS WITH ROLES ===', usersWithRoles);
+      console.log(`=== FINAL USER LIST ===`);
+      console.log(`Total users: ${usersWithRoles.length}`);
+      usersWithRoles.forEach(user => {
+        console.log(`- ${user.email} (${user.name}) - ${user.role}`);
+      });
+
       setUsers(usersWithRoles);
-
-      toast({
-        title: "Success",
-        description: `Loaded ${usersWithRoles.length} users successfully.`,
-      });
-
-      // Check if we're missing users by looking at the current user's session
-      // and seeing if there might be other users
-      if (usersWithRoles.length < 3) {
-        console.log('=== CHECKING FOR MISSING PROFILES ===');
-        toast({
-          title: "Notice",
-          description: "Some users might be missing profiles. Check the console for details.",
-          variant: "default"
-        });
-      }
-
     } catch (error) {
-      console.error('=== ERROR FETCHING USERS ===', error);
+      console.error('Error in fetchUsers:', error);
       toast({
-        variant: "destructive",
         title: "Error",
-        description: "Failed to load users. Please check your permissions.",
+        description: "Failed to fetch users. Please try again.",
+        variant: "destructive",
       });
-      setUsers([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
+
+  const updateUserRole = async (userId: string, newRole: UserRole) => {
+    try {
+      console.log('Updating user role:', { userId, newRole });
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "User role updated successfully",
+      });
+
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update user role. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    try {
+      console.log('Deleting user:', userId);
+
+      // Delete the profile (this will also remove access)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (profileError) {
+        console.error('Error deleting profile:', profileError);
+        throw profileError;
+      }
+
+      toast({
+        title: "Success",
+        description: "User access removed successfully",
+      });
+
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove user access. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateUserName = async (userId: string, newName: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ name: newName })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "User name updated successfully",
+      });
+
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error updating user name:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update user name. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return {
     users,
     isLoading,
-    fetchUsers
+    updateUserRole,
+    deleteUser,
+    updateUserName,
+    refetch: fetchUsers
   };
-};
+}

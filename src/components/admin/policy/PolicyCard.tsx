@@ -35,28 +35,26 @@ export function PolicyCard({
   const canDelete = userRole === 'super-admin';
   const canArchive = userRole === 'super-admin' || userRole === 'publish';
   const isSuperAdmin = userRole === 'super-admin';
-  const isPublisher = userRole === 'publish';
   const isCreator = policy.creator_id === currentUser?.id;
 
-  // Publishers and super admins can publish any policy, editors follow maker/checker rules
-  const canPublishPolicy = isSuperAdmin || isPublisher || (
-    canPublish && 
+  // Super admins can publish any policy regardless of status or creator
+  const canPublishPolicy = isSuperAdmin || (
+    (canPublish || userRole === 'publish') && 
     (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'awaiting-changes') &&
     !isCreator
   );
 
-  // Publishers and super admins can edit any policy, others follow existing rules
+  // Super admins can edit any policy, others follow existing rules
   const showEdit = onEdit && (
     isSuperAdmin || 
-    isPublisher ||
     (canEdit && (
       (policy.status === 'draft' || policy.status === 'awaiting-changes') ||
       canPublish
     ))
   );
 
-  // Publishers and super admins can submit any draft policy, others follow existing rules
-  const showSubmit = (policy.status === 'draft') && (isSuperAdmin || isPublisher || canEdit || isCreator);
+  // Super admins can submit any draft policy, others follow existing rules
+  const showSubmit = (policy.status === 'draft') && (isSuperAdmin || canEdit || isCreator);
 
   if (listView) {
     return (
