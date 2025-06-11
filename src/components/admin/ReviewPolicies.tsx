@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { PolicyList } from './policy/PolicyList';
@@ -27,8 +26,7 @@ export function ReviewPolicies() {
     if (!needsReview) return false;
     
     // Super-admins and publishers can see all policies needing review
-    // Fix: Check for both 'publish' and 'publisher' role variations
-    if (isSuperAdmin || userRole === 'publish' || userRole === 'publisher') {
+    if (isSuperAdmin || userRole === 'publish') {
       return true;
     }
     
@@ -36,9 +34,8 @@ export function ReviewPolicies() {
   });
 
   // Publishers and super admins can publish any policy
-  // Fix: Check for both 'publish' and 'publisher' role variations
-  const canPublish = userRole === 'publish' || userRole === 'publisher' || userRole === 'super-admin';
-  const canArchive = isSuperAdmin || userRole === 'publish' || userRole === 'publisher';
+  const canPublish = userRole === 'publish' || userRole === 'super-admin';
+  const canArchive = isSuperAdmin || userRole === 'publish';
 
   // Debug info about all policies
   const policyStatusCounts = policies.reduce((acc, policy) => {
