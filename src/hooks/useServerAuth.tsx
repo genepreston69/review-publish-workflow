@@ -32,10 +32,8 @@ export const ServerAuthProvider = ({ children }: ServerAuthProviderProps) => {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Emergency render counter to prevent infinite loops
-  const renderCountRef = useRef(0);
-  const isInitializingRef = useRef(false);
-  const lastSessionIdRef = useRef<string | null>(null);
+  // Prevent multiple initializations
+  const isInitialized = useRef(false);
 
   const callAuthService = useCallback(async (action: string, data?: any) => {
     try {
@@ -55,47 +53,32 @@ export const ServerAuthProvider = ({ children }: ServerAuthProviderProps) => {
     }
   }, []);
 
-  const initializeAuth = useCallback(async () => {
-    // Prevent multiple simultaneous initializations
-    if (isInitializingRef.current) {
-      console.log('=== SKIPPING INIT - ALREADY INITIALIZING ===');
+  const initializeAuth = useCallback(async (currentSession?: Session | null) => {
+    if (isInitialized.current) {
+      console.log('=== SKIPPING INIT - ALREADY INITIALIZED ===');
       return;
     }
 
-    // Emergency render loop protection
-    renderCountRef.current += 1;
-    if (renderCountRef.current > 50) {
-      console.error('=== EMERGENCY: TOO MANY AUTH RENDERS, STOPPING ===');
-      setIsLoading(false);
-      return;
-    }
-
-    isInitializingRef.current = true;
-    console.log('=== INITIALIZING SERVER AUTH ===', renderCountRef.current);
+    console.log('=== INITIALIZING SERVER AUTH ===');
+    isInitialized.current = true;
 
     try {
-      // Get current session from Supabase
-      const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('=== SESSION ERROR ===', error);
-        setSession(null);
-        setCurrentUser(null);
-        setUserRole(null);
-        setIsLoading(false);
-        return;
+      // Use provided session or get current session
+      let sessionToUse = currentSession;
+      if (!sessionToUse) {
+        const { data: { session: fetchedSession }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('=== SESSION ERROR ===', error);
+          setSession(null);
+          setCurrentUser(null);
+          setUserRole(null);
+          setIsLoading(false);
+          return;
+        }
+        sessionToUse = fetchedSession;
       }
 
-      // Check if session actually changed to prevent unnecessary updates
-      const currentSessionId = currentSession?.access_token || null;
-      if (lastSessionIdRef.current === currentSessionId) {
-        console.log('=== SESSION UNCHANGED, SKIPPING UPDATE ===');
-        setIsLoading(false);
-        return;
-      }
-      lastSessionIdRef.current = currentSessionId;
-
-      if (!currentSession?.access_token) {
+      if (!sessionToUse?.access_token) {
         console.log('=== NO SESSION FOUND ===');
         setSession(null);
         setCurrentUser(null);
@@ -106,7 +89,7 @@ export const ServerAuthProvider = ({ children }: ServerAuthProviderProps) => {
 
       // Validate session and get user role from server
       const authData = await callAuthService('getSession', { 
-        token: currentSession.access_token 
+        token: sessionToUse.access_token 
       });
 
       if (authData && authData.user) {
@@ -118,71 +101,59 @@ export const ServerAuthProvider = ({ children }: ServerAuthProviderProps) => {
         console.log('=== SERVER AUTH FAILED ===');
         setSession(null);
         setCurrentUser(null);
-        setUserRole(null);
+        setUserRole('read-only'); // Default fallback
       }
     } catch (error) {
       console.error('=== INIT AUTH ERROR ===', error);
       setSession(null);
       setCurrentUser(null);
-      setUserRole('read-only');
+      setUserRole('read-only'); // Default fallback
     } finally {
       setIsLoading(false);
-      isInitializingRef.current = false;
     }
   }, [callAuthService]);
 
   useEffect(() => {
     console.log('=== SERVER AUTH PROVIDER STARTING ===');
     
-    // Reset render counter on mount
-    renderCountRef.current = 0;
-    
     // Initialize auth state
     initializeAuth();
 
-    // Set up auth state listener with protection against loops
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('=== AUTH STATE CHANGED ===', event);
         
-        // Prevent rapid state changes
-        if (isInitializingRef.current) {
-          console.log('=== SKIPPING STATE CHANGE - ALREADY INITIALIZING ===');
-          return;
-        }
-        
         if (event === 'SIGNED_OUT') {
-          lastSessionIdRef.current = null;
           setSession(null);
           setCurrentUser(null);
           setUserRole(null);
           setIsLoading(false);
+          isInitialized.current = false;
           return;
         }
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          // Re-initialize with new session
-          await initializeAuth();
+          // Reset initialization flag and re-initialize
+          isInitialized.current = false;
+          initializeAuth(session);
         }
       }
     );
 
     // Emergency timeout to prevent infinite loading
     const emergencyTimeout = setTimeout(() => {
-      if (isLoading) {
-        console.log('=== EMERGENCY TIMEOUT - FORCING LOADING TO FALSE ===');
-        setIsLoading(false);
-        if (currentUser && !userRole) {
-          setUserRole('read-only');
-        }
+      console.log('=== EMERGENCY TIMEOUT - FORCING LOADING TO FALSE ===');
+      setIsLoading(false);
+      if (!userRole) {
+        setUserRole('read-only');
       }
-    }, 10000); // 10 seconds emergency timeout
+    }, 5000); // 5 seconds emergency timeout
 
     return () => {
       console.log('=== CLEANING UP SERVER AUTH ===');
       subscription.unsubscribe();
       clearTimeout(emergencyTimeout);
-      isInitializingRef.current = false;
     };
   }, []); // Empty dependency array to prevent re-initialization
 
@@ -195,10 +166,10 @@ export const ServerAuthProvider = ({ children }: ServerAuthProviderProps) => {
       });
 
       // Clear local state
-      lastSessionIdRef.current = null;
       setSession(null);
       setCurrentUser(null);
       setUserRole(null);
+      isInitialized.current = false;
       
       // Sign out from Supabase client
       const { error } = await supabase.auth.signOut();
@@ -215,8 +186,7 @@ export const ServerAuthProvider = ({ children }: ServerAuthProviderProps) => {
   console.log('=== SERVER AUTH PROVIDER RENDER ===', { 
     currentUser: !!currentUser, 
     userRole, 
-    isLoading,
-    renderCount: renderCountRef.current
+    isLoading
   });
 
   return (
