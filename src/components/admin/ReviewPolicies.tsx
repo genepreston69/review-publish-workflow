@@ -12,6 +12,7 @@ export function ReviewPolicies() {
   const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, archivePolicy, isSuperAdmin, fetchPolicies } = usePolicies();
   const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
 
   // All possible status variations that need review
   const reviewStatuses = ['draft', 'under-review', 'under review', 'awaiting-changes', 'awaiting changes'];
@@ -36,6 +37,13 @@ export function ReviewPolicies() {
   // Publishers and super admins can publish any policy
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
   const canArchive = isSuperAdmin || userRole === 'publish';
+
+  // Debug info about all policies
+  const policyStatusCounts = policies.reduce((acc, policy) => {
+    const status = policy.status?.toLowerCase() || 'unknown';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   const handleEditPolicy = (policyId: string) => {
     setEditingPolicyId(policyId);
@@ -120,16 +128,49 @@ export function ReviewPolicies() {
             <p className="text-muted-foreground">
               Review and approve policies for publication. Publishers can review and publish all policies.
             </p>
-            {reviewPolicies.length > 0 && (
-              <div className="text-sm text-gray-600 mt-1">
-                <p>Showing {reviewPolicies.length} {reviewPolicies.length === 1 ? 'policy' : 'policies'} awaiting review</p>
-                <div className="flex gap-4 mt-1">
-                  <span>Draft: {reviewPolicies.filter(p => p.status?.toLowerCase() === 'draft').length}</span>
-                  <span>Under Review: {reviewPolicies.filter(p => p.status?.toLowerCase().includes('under')).length}</span>
-                  <span>Awaiting Changes: {reviewPolicies.filter(p => p.status?.toLowerCase().includes('awaiting')).length}</span>
-                </div>
+            
+            {/* Show counts and status */}
+            <div className="mt-3 space-y-2">
+              <div className="text-sm text-gray-600">
+                <p>Total policies loaded: <span className="font-medium">{policies.length}</span></p>
+                <p>Policies awaiting review: <span className="font-medium">{reviewPolicies.length}</span></p>
+                {reviewPolicies.length > 0 && (
+                  <div className="flex gap-4 mt-1">
+                    <span>Draft: {reviewPolicies.filter(p => p.status?.toLowerCase() === 'draft').length}</span>
+                    <span>Under Review: {reviewPolicies.filter(p => p.status?.toLowerCase().includes('under')).length}</span>
+                    <span>Awaiting Changes: {reviewPolicies.filter(p => p.status?.toLowerCase().includes('awaiting')).length}</span>
+                  </div>
+                )}
               </div>
-            )}
+              
+              {/* Debug toggle */}
+              <button
+                onClick={() => setShowDebugInfo(!showDebugInfo)}
+                className="text-xs text-blue-600 hover:text-blue-800 underline"
+              >
+                {showDebugInfo ? 'Hide' : 'Show'} debug info
+              </button>
+              
+              {/* Debug info */}
+              {showDebugInfo && (
+                <div className="mt-2 p-3 bg-gray-50 rounded-md text-xs">
+                  <h4 className="font-medium mb-2">All Policy Status Counts:</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(policyStatusCounts).map(([status, count]) => (
+                      <div key={status} className="flex justify-between">
+                        <span className="capitalize">{status}:</span>
+                        <span className="font-medium">{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-gray-200">
+                    <p><strong>User Role:</strong> {userRole}</p>
+                    <p><strong>Can Publish:</strong> {canPublish ? 'Yes' : 'No'}</p>
+                    <p><strong>Is Loading:</strong> {isLoadingPolicies ? 'Yes' : 'No'}</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <button
             onClick={handleRefresh}
@@ -140,18 +181,43 @@ export function ReviewPolicies() {
         </div>
       </div>
 
-      <PolicyList
-        policies={reviewPolicies}
-        isLoading={isLoadingPolicies}
-        isEditor={false}
-        canPublish={true}
-        editingPolicyId={editingPolicyId}
-        onUpdateStatus={handleUpdateStatus}
-        onEdit={handleEditPolicy}
-        onView={handleViewPolicy}
-        onDelete={isSuperAdmin ? deletePolicy : undefined}
-        onArchive={canArchive ? handleArchivePolicy : undefined}
-      />
+      {/* Show message if no policies need review */}
+      {!isLoadingPolicies && reviewPolicies.length === 0 && (
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
+            <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="mt-2 text-sm font-semibold text-gray-900">No policies need review</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            {policies.length === 0 
+              ? "No policies have been created yet." 
+              : "All policies are either published or archived."}
+          </p>
+          {policies.length > 0 && (
+            <p className="mt-1 text-xs text-gray-400">
+              Try refreshing or check other sections like Draft Policies to create policies that need review.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Policy list */}
+      {reviewPolicies.length > 0 && (
+        <PolicyList
+          policies={reviewPolicies}
+          isLoading={isLoadingPolicies}
+          isEditor={false}
+          canPublish={true}
+          editingPolicyId={editingPolicyId}
+          onUpdateStatus={handleUpdateStatus}
+          onEdit={handleEditPolicy}
+          onView={handleViewPolicy}
+          onDelete={isSuperAdmin ? deletePolicy : undefined}
+          onArchive={canArchive ? handleArchivePolicy : undefined}
+        />
+      )}
 
       {viewingPolicyId && (
         <PolicyViewModal
