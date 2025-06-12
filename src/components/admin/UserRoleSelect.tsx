@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { UserRole } from '@/types/user';
-import { useAuth } from '@/hooks/useAuth';
+import { useConditionalAuth } from '@/hooks/useConditionalAuth';
 
 interface UserRoleSelectProps {
   userId: string;
@@ -15,7 +15,7 @@ interface UserRoleSelectProps {
 export const UserRoleSelect = ({ userId, currentRole, onRoleUpdated }: UserRoleSelectProps) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
-  const { currentUser, userRole } = useAuth();
+  const { currentUser, userRole } = useConditionalAuth();
 
   const updateUserRole = async (newRole: UserRole) => {
     try {

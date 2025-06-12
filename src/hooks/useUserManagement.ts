@@ -41,7 +41,10 @@ export const useUserManagement = () => {
       console.log('=== PROFILES WITH ROLES FETCHED ===', profiles);
 
       const usersWithRoles: UserWithRole[] = profiles.map(profile => ({
-        ...profile,
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        created_at: profile.created_at,
         role: profile.role as UserRole
       }));
 
