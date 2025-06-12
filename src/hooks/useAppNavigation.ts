@@ -65,9 +65,9 @@ export function useAppNavigation() {
     setActiveSection(sectionId);
     console.log('Set activeSection to:', sectionId);
     
-    // Define admin-only sections
+    // Define admin-only sections - ADDED archived-policies here
     const adminOnlySections = [
-      'create-policy', 'draft-policies', 'review-policies', 
+      'create-policy', 'draft-policies', 'review-policies', 'archived-policies',
       'policy-manuals', 'create-form', 'draft-forms', 'review-forms', 'published-forms',
       'users', 'assignments', 'analytics', 'moderation'
     ];
