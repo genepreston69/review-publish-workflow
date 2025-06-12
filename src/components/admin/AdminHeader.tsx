@@ -12,7 +12,7 @@ interface AdminHeaderProps {
 }
 
 export function AdminHeader({ isSuperAdmin, pageTitle }: AdminHeaderProps) {
-  const { currentUser, userRole, signOut } = useAuth();
+  const { user, userRole, signOut } = useAuth();
 
   const handleLogout = async () => {
     await signOut();
@@ -25,8 +25,8 @@ export function AdminHeader({ isSuperAdmin, pageTitle }: AdminHeaderProps) {
   };
 
   // Get user name from metadata or email
-  const userName = currentUser?.user_metadata?.name || 
-                  currentUser?.email?.split('@')[0] || 
+  const userName = user?.user_metadata?.name || 
+                  user?.email?.split('@')[0] || 
                   'User';
 
   return (
@@ -37,12 +37,12 @@ export function AdminHeader({ isSuperAdmin, pageTitle }: AdminHeaderProps) {
             <h1 className="text-3xl font-bold text-gray-900">{pageTitle}</h1>
           </div>
           
-          {currentUser && userRole && (
+          {user && userRole && (
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-gray-500" />
                 <span className="text-sm font-medium">{userName}</span>
-                <RoleBadge role={userRole} />
+                <RoleBadge role={userRole as any} />
               </div>
               <div className="flex items-center gap-2">
                 <Link to="/">

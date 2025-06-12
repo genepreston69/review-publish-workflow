@@ -1,268 +1,200 @@
 
-// SafeAuthProvider.tsx - Simplified with better error handling
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Session } from '@supabase/supabase-js';
-import { UserRole } from '@/types/user';
 
 interface AuthContextType {
-  currentUser: User | null;
-  session: Session | null;
-  userRole: UserRole | null;
+  user: User | null;
+  userRole: string;
   isLoading: boolean;
-  error: string | null;
   signOut: () => Promise<void>;
-  refetch: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  userRole: 'read-only',
+  isLoading: true,
+  signOut: async () => {},
+});
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    console.warn('⚠️ useAuth called outside AuthProvider - using fallback state');
+    return {
+      user: null,
+      userRole: 'read-only',
+      isLoading: false,
+      signOut: async () => {},
+    };
+  }
+  return context;
+};
 
 export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<string>('read-only');
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
+  
   const isInitialized = useRef(false);
   const currentUserId = useRef<string | null>(null);
 
-  // Simplified role fetcher with immediate fallback
-  const fetchUserRole = useCallback(async (userId: string): Promise<UserRole> => {
-    console.log('🔍 Fetching role for user:', userId);
-    
+  const signOut = async () => {
     try {
-      // Set a shorter timeout - 5 seconds max
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        console.log('⏰ Role fetch timeout - using fallback');
-        controller.abort();
-      }, 5000);
+      console.log('🚪 Signing out user');
+      await supabase.auth.signOut();
+      setUser(null);
+      setUserRole('read-only');
+      isInitialized.current = false;
+      currentUserId.current = null;
+    } catch (error) {
+      console.error('❌ Error signing out:', error);
+    }
+  };
 
+  const fetchUserRole = async (userId: string): Promise<string> => {
+    try {
+      console.log('🔍 Fetching role from profiles table for user:', userId);
+      
       const { data, error } = await supabase
         .from('profiles')
-        .select('role')
+        .select('user_role')
         .eq('id', userId)
-        .single()
-        .abortSignal(controller.signal);
-
-      clearTimeout(timeoutId);
+        .single();
 
       if (error) {
-        console.error('❌ Role fetch error:', error.message);
-        console.log('🛡️ Using fallback role: read-only');
+        console.log('⚠️ Error fetching role:', error.message);
         return 'read-only';
       }
 
-      if (data?.role) {
-        const role = data.role as UserRole;
-        console.log('✅ Role fetched successfully:', role);
-        return role;
+      if (!data) {
+        console.log('⚠️ No profile found, defaulting to read-only');
+        return 'read-only';
       }
 
-      console.log('📝 No role found, using fallback: read-only');
+      const role = data.user_role || 'read-only';
+      console.log('✅ Role fetched successfully:', role);
+      return role;
+    } catch (error) {
+      console.log('❌ Exception fetching role:', error);
       return 'read-only';
-
-    } catch (error: any) {
-      console.error('💥 Role fetch failed:', error.message);
-      console.log('🛡️ Using fallback role: read-only');
-      return 'read-only';
     }
-  }, []);
+  };
 
-  // Initialize authentication
-  const initializeAuth = useCallback(async (newSession: Session | null) => {
-    const user = newSession?.user || null;
-    
-    console.log('🚀 initializeAuth called:', {
-      hasSession: !!newSession,
-      hasUser: !!user,
-      userId: user?.id,
-      userEmail: user?.email
-    });
-    
-    // Prevent duplicate initialization
-    if (user?.id === currentUserId.current && isInitialized.current) {
-      console.log('🔄 Auth already initialized - skipping');
-      return;
-    }
-
-    currentUserId.current = user?.id || null;
-
-    if (!newSession || !user) {
-      console.log('🚀 No session - clearing auth state');
-      setSession(null);
-      setCurrentUser(null);
-      setUserRole(null);
-      setIsLoading(false);
-      setError(null);
-      isInitialized.current = false;
-      return;
-    }
-
-    console.log('🚀 Setting session and user state');
-    setSession(newSession);
-    setCurrentUser(user);
-    setIsLoading(true);
-    setError(null);
-
+  const initializeAuth = async (authUser: User | null) => {
     try {
-      console.log('🚀 Starting role fetch...');
-      const role = await fetchUserRole(user.id);
-      console.log('🚀 Role fetch completed:', role);
+      console.log('🚀 Initializing auth for:', authUser?.email || 'no user');
+
+      if (!authUser) {
+        console.log('👤 No user, setting defaults');
+        setUser(null);
+        setUserRole('read-only');
+        setIsLoading(false);
+        isInitialized.current = true;
+        currentUserId.current = null;
+        return;
+      }
+
+      // Skip if already initialized for this user
+      if (isInitialized.current && currentUserId.current === authUser.id) {
+        console.log('✅ Already initialized for this user');
+        setIsLoading(false);
+        return;
+      }
+
+      setUser(authUser);
+      currentUserId.current = authUser.id;
+
+      // Fetch user role with timeout
+      const rolePromise = fetchUserRole(authUser.id);
+      const timeoutPromise = new Promise<string>((resolve) => {
+        setTimeout(() => {
+          console.log('⏰ Role fetch timeout, using default');
+          resolve('read-only');
+        }, 3000);
+      });
+
+      const role = await Promise.race([rolePromise, timeoutPromise]);
       
       setUserRole(role);
       setIsLoading(false);
-      setError(null);
       isInitialized.current = true;
       
-      console.log('🎉 Auth initialization complete:', { email: user.email, role });
-
-    } catch (error: any) {
-      console.error('💥 Auth initialization failed:', error.message);
+      console.log('✅ Auth initialization complete. Role:', role);
       
-      // Always set fallback to prevent infinite loading
+    } catch (error) {
+      console.log('❌ Auth initialization error:', error);
       setUserRole('read-only');
       setIsLoading(false);
-      setError(null); // Don't show error to user, just use fallback
       isInitialized.current = true;
-      
-      console.log('🛡️ Using fallback state due to error');
     }
-  }, [fetchUserRole]);
+  };
 
-  // Auth state change listener
   useEffect(() => {
     console.log('🎧 Setting up auth listener');
     
-    // Emergency timeout to prevent infinite loading (reduced to 15 seconds)
-    const emergencyTimeout = setTimeout(() => {
-      if (isLoading) {
-        console.log('🚨 Emergency timeout - forcing auth completion');
-        setIsLoading(false);
-        setUserRole('read-only');
-        setError(null);
+    // Emergency session cleanup
+    const clearInvalidSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error && error.message.includes('refresh_token_not_found')) {
+          console.log('🚨 CLEARING INVALID SESSION');
+          await supabase.auth.signOut();
+          return;
+        }
+      } catch (e) {
+        console.log('🚨 SESSION CHECK FAILED - FORCING SIGNOUT');
+        await supabase.auth.signOut();
       }
-    }, 15000);
+    };
+    
+    clearInvalidSession();
 
+    // Emergency timeout to prevent infinite loading
+    const emergencyTimeout = setTimeout(() => {
+      console.log('🚨 EMERGENCY TIMEOUT - Setting defaults');
+      setIsLoading(false);
+      setUserRole('read-only');
+      isInitialized.current = true;
+    }, 10000);
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('📋 Initial session check:', session?.user?.email || 'no session');
+      initializeAuth(session?.user || null);
+    });
+
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔔 Auth state changed:', event, session?.user?.email || 'no user');
       
       clearTimeout(emergencyTimeout);
       
       if (event === 'SIGNED_OUT') {
-        console.log('🔔 User signed out - resetting state');
         isInitialized.current = false;
         currentUserId.current = null;
       }
       
-      await initializeAuth(session);
+      await initializeAuth(session?.user || null);
     });
-
-    // Get initial session
-    const getInitialSession = async () => {
-      try {
-        console.log('🔔 Getting initial session...');
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Initial session error:', error);
-          setIsLoading(false);
-          setUserRole('read-only');
-          setError(null);
-          return;
-        }
-        console.log('🔔 Initial session retrieved:', { hasSession: !!session, userId: session?.user?.id });
-        await initializeAuth(session);
-      } catch (error: any) {
-        console.error('Initial auth error:', error);
-        setIsLoading(false);
-        setUserRole('read-only');
-        setError(null);
-      }
-    };
-
-    getInitialSession();
 
     return () => {
       console.log('🧹 Cleaning up auth listener');
-      subscription.unsubscribe();
       clearTimeout(emergencyTimeout);
+      subscription.unsubscribe();
     };
-  }, [initializeAuth]);
-
-  const signOut = useCallback(async () => {
-    console.log('👋 Signing out');
-    
-    try {
-      setSession(null);
-      setCurrentUser(null);
-      setUserRole(null);
-      setError(null);
-      
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Sign out error:', error);
-      }
-    } catch (error: any) {
-      console.error('❌ Unexpected sign out error:', error);
-    }
   }, []);
 
-  const refetch = useCallback(async () => {
-    console.log('🔄 Refreshing auth state');
-    if (currentUser) {
-      try {
-        const role = await fetchUserRole(currentUser.id);
-        setUserRole(role);
-      } catch (error) {
-        console.error('Refetch error:', error);
-        setUserRole('read-only');
-      }
-    }
-  }, [currentUser, fetchUserRole]);
-
-  const contextValue = useMemo(() => ({
-    currentUser,
-    session,
+  const value: AuthContextType = {
+    user,
     userRole,
     isLoading,
-    error,
     signOut,
-    refetch
-  }), [currentUser, session, userRole, isLoading, error, signOut, refetch]);
-
-  // Debug logging
-  useEffect(() => {
-    console.log('=== SAFE AUTH PROVIDER RENDER ===', { 
-      currentUser: !!currentUser, 
-      userRole, 
-      isLoading, 
-      error,
-      timestamp: new Date().toISOString()
-    });
-  }, [currentUser, userRole, isLoading, error]);
+  };
 
   return (
-    <AuthContext.Provider value={contextValue}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    console.warn('⚠️ useAuth called outside SafeAuthProvider - using fallback state');
-    
-    return {
-      currentUser: null,
-      session: null,
-      userRole: null,
-      isLoading: false,
-      error: 'Auth provider not found',
-      signOut: async () => console.warn('signOut called outside provider'),
-      refetch: async () => console.warn('refetch called outside provider')
-    };
-  }
-  return context;
 };
