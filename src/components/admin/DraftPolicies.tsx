@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { PolicyList } from './policy/PolicyList';
@@ -8,7 +7,7 @@ import { usePolicies } from './policy/usePolicies';
 import { Policy } from './policy/types';
 
 export function DraftPolicies() {
-  const { currentUser, userRole } = useAuth();
+  const { user, userRole } = useAuth();
   const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, archivePolicy, isSuperAdmin } = usePolicies();
   const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
@@ -24,14 +23,14 @@ export function DraftPolicies() {
     
     // Editors can only see their own drafts
     if (userRole === 'edit') {
-      return policy.creator_id === currentUser?.id;
+      return policy.creator_id === user?.id;
     }
     
     // Publishers can see drafts assigned to them for review or their own
     if (userRole === 'publish') {
-      return policy.creator_id === currentUser?.id || 
-             policy.reviewer === currentUser?.email ||
-             policy.publisher_id === currentUser?.id;
+      return policy.creator_id === user?.id || 
+             policy.reviewer === user?.email ||
+             policy.publisher_id === user?.id;
     }
     
     return false;

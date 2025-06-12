@@ -1,330 +1,156 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+
+import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/components/SafeAuthProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
-import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import { Loader2 } from 'lucide-react';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Separate state for sign-in form
-  const [signInEmail, setSignInEmail] = useState('');
-  const [signInPassword, setSignInPassword] = useState('');
-  
-  // Separate state for sign-up form
-  const [signUpEmail, setSignUpEmail] = useState('');
-  const [signUpPassword, setSignUpPassword] = useState('');
-  const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
-  const [signUpName, setSignUpName] = useState('');
-  
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
-  const { currentUser, isLoading: authLoading } = useAuth();
 
-  // Redirect if user is already authenticated
-  useEffect(() => {
-    console.log('=== AUTH PAGE - USER STATE ===', { currentUser, authLoading });
-    if (!authLoading && currentUser) {
-      console.log('=== REDIRECTING TO MAIN PAGE ===');
-      navigate('/');
-    }
-  }, [currentUser, authLoading, navigate]);
-
-  // Show loading spinner while checking auth state
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-600" />
-      </div>
-    );
-  }
-
-  // Don't render auth form if user is authenticated
-  if (currentUser) {
+  // Redirect if already authenticated
+  if (user) {
+    const from = location.state?.from?.pathname || '/';
+    navigate(from, { replace: true });
     return null;
   }
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!signUpEmail || !signUpPassword || !signUpName || !signUpConfirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Missing information",
-        description: "Please fill in all fields.",
-      });
-      return;
-    }
-
-    if (signUpPassword !== signUpConfirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Password mismatch",
-        description: "Passwords do not match.",
-      });
-      return;
-    }
-    
     setIsLoading(true);
+    setError(null);
 
     try {
-      const { error } = await supabase.auth.signUp({
-        email: signUpEmail,
-        password: signUpPassword,
-        options: {
-          data: {
-            name: signUpName,
-          },
-        },
-      });
-
-      if (error) {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        
+        if (error) throw error;
+        
         toast({
-          variant: "destructive",
-          title: "Sign up failed",
-          description: error.message,
+          title: "Check your email",
+          description: "We've sent you a confirmation link.",
         });
       } else {
-        toast({
-          title: "Account created!",
-          description: "Please check your email for verification.",
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
         });
-        // Clear the form
-        setSignUpEmail('');
-        setSignUpPassword('');
-        setSignUpConfirmPassword('');
-        setSignUpName('');
-      }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "An unexpected error occurred.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!signInEmail || !signInPassword) {
-      toast({
-        variant: "destructive",
-        title: "Missing information",
-        description: "Please enter both email and password.",
-      });
-      return;
-    }
-    
-    setIsLoading(true);
-
-    try {
-      console.log('=== ATTEMPTING SIGN IN ===', { email: signInEmail });
-      
-      const { error } = await supabase.auth.signInWithPassword({
-        email: signInEmail,
-        password: signInPassword,
-      });
-
-      if (error) {
-        console.error('=== SIGN IN ERROR ===', error);
+        
+        if (error) throw error;
+        
         toast({
-          variant: "destructive",
-          title: "Sign in failed",
-          description: error.message,
+          title: "Welcome back!",
+          description: "You've been signed in successfully.",
         });
-      } else {
-        console.log('=== SIGN IN SUCCESSFUL ===');
-        // Clear the form
-        setSignInEmail('');
-        setSignInPassword('');
       }
-    } catch (error) {
-      console.error('=== UNEXPECTED SIGN IN ERROR ===', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "An unexpected error occurred.",
-      });
+    } catch (error: any) {
+      console.error('Auth error:', error);
+      setError(error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-6">
-      <div className="w-full max-w-sm">
-        <Card className="shadow-xl border-0 bg-white/95 backdrop-blur max-w-sm mx-auto">
-          <CardHeader className="text-center pb-6 px-6">
-            <div className="mx-auto mb-3">
-              <img 
-                src="/lovable-uploads/574646d6-6de7-444f-a9a2-327c1a816521.png" 
-                alt="Recovery Point West Virginia" 
-                className="h-16 w-auto mx-auto"
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">
+            {isSignUp ? 'Create an account' : 'Welcome back'}
+          </CardTitle>
+          <CardDescription className="text-center">
+            {isSignUp 
+              ? 'Enter your details to create your account'
+              : 'Enter your credentials to access your account'
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleAuth} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoading}
               />
             </div>
-            <CardTitle className="text-lg text-slate-700">Content Management System</CardTitle>
-            <CardDescription className="text-sm text-slate-500">
-              Access your policy and form management dashboard
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent className="px-6 pb-6">
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="signin" className="text-sm">Sign In</TabsTrigger>
-                <TabsTrigger value="signup" className="text-sm">Sign Up</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="signin" className="space-y-4">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email" className="text-sm font-medium text-slate-700">
-                      Email
-                    </Label>
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={signInEmail}
-                      onChange={(e) => setSignInEmail(e.target.value)}
-                      className="h-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                      required
-                      autoComplete="email"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password" className="text-sm font-medium text-slate-700">
-                      Password
-                    </Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="Enter your password"
-                      value={signInPassword}
-                      onChange={(e) => setSignInPassword(e.target.value)}
-                      className="h-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                      required
-                      autoComplete="current-password"
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center space-x-2 text-slate-600">
-                      <input type="checkbox" className="rounded border-slate-300" />
-                      <span>Remember me</span>
-                    </div>
-                    <button type="button" className="text-blue-600 hover:text-blue-800 font-medium bg-transparent border-none cursor-pointer">
-                      Forgot password?
-                    </button>
-                  </div>
-                  
-                  <Button 
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
-                  >
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Sign In
-                  </Button>
-                </form>
-              </TabsContent>
-              
-              <TabsContent value="signup" className="space-y-4">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name" className="text-sm font-medium text-slate-700">
-                      Full Name
-                    </Label>
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={signUpName}
-                      onChange={(e) => setSignUpName(e.target.value)}
-                      className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                      required
-                      autoComplete="name"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email" className="text-sm font-medium text-slate-700">
-                      Email
-                    </Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={signUpEmail}
-                      onChange={(e) => setSignUpEmail(e.target.value)}
-                      className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                      required
-                      autoComplete="email"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password" className="text-sm font-medium text-slate-700">
-                      Password
-                    </Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="Create a password"
-                      value={signUpPassword}
-                      onChange={(e) => setSignUpPassword(e.target.value)}
-                      className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                      required
-                      minLength={6}
-                      autoComplete="new-password"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-confirm" className="text-sm font-medium text-slate-700">
-                      Confirm Password
-                    </Label>
-                    <Input
-                      id="signup-confirm"
-                      type="password"
-                      placeholder="Confirm your password"
-                      value={signUpConfirmPassword}
-                      onChange={(e) => setSignUpConfirmPassword(e.target.value)}
-                      className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                      required
-                      autoComplete="new-password"
-                    />
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    disabled={isLoading}
-                    className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
-                  >
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Create Account
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-            
-            <div className="mt-6 text-center text-xs text-slate-500">
-              <p>© 2025 Recovery Point West Virginia</p>
-              <p className="mt-1">Secure policy and compliance management</p>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={isLoading}
+                minLength={6}
+              />
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isSignUp ? 'Creating account...' : 'Signing in...'}
+                </>
+              ) : (
+                isSignUp ? 'Create account' : 'Sign in'
+              )}
+            </Button>
+            
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setError(null);
+                }}
+                className="text-sm text-blue-600 hover:text-blue-500"
+                disabled={isLoading}
+              >
+                {isSignUp 
+                  ? 'Already have an account? Sign in'
+                  : "Don't have an account? Sign up"
+                }
+              </button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };

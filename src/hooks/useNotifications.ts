@@ -18,16 +18,16 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
 
   const fetchNotifications = async () => {
-    if (!currentUser?.id) return;
+    if (!user?.id) return;
 
     try {
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
-        .eq('user_id', currentUser.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -74,13 +74,13 @@ export const useNotifications = () => {
   };
 
   const markAllAsRead = async () => {
-    if (!currentUser?.id) return;
+    if (!user?.id) return;
 
     try {
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
-        .eq('user_id', currentUser.id)
+        .eq('user_id', user.id)
         .eq('read', false);
 
       if (error) {
@@ -98,11 +98,11 @@ export const useNotifications = () => {
 
   useEffect(() => {
     fetchNotifications();
-  }, [currentUser?.id]);
+  }, [user?.id]);
 
   // Set up real-time subscription
   useEffect(() => {
-    if (!currentUser?.id) return;
+    if (!user?.id) return;
 
     const channel = supabase
       .channel('notifications')
@@ -112,7 +112,7 @@ export const useNotifications = () => {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${currentUser.id}`,
+          filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
           const newNotification = {
@@ -129,7 +129,7 @@ export const useNotifications = () => {
           event: 'UPDATE',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${currentUser.id}`,
+          filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
           const updatedNotification = {
@@ -149,7 +149,7 @@ export const useNotifications = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentUser?.id]);
+  }, [user?.id]);
 
   return {
     notifications,

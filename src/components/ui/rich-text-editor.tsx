@@ -10,7 +10,6 @@ import { useUserProfile } from './rich-text-editor/useUserProfile';
 import { processContentForDisplay, determineJsonMode } from './rich-text-editor/contentUtils';
 import { EnhancedChangeTrackingPanel } from './rich-text-editor/EnhancedChangeTrackingPanel';
 import { AdminControls } from './rich-text-editor/AdminControls';
-import { AIToolbar } from './rich-text-editor/AIToolbar';
 import { usePolicyChangeTracking } from '@/hooks/usePolicyChangeTrackingSimple';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -123,24 +122,6 @@ export function RichTextEditor({
     setTrackingEnabled(!trackingEnabled);
   };
 
-  const handleAISuggestion = (changeId: string, operation: string, originalText: string, suggestedText: string) => {
-    // Record AI suggestion in change tracking
-    if (policyId && changeTracking.recordChange) {
-      changeTracking.recordChange({
-        changeType: 'modify',
-        contentBefore: originalText,
-        contentAfter: suggestedText,
-        positionStart: 0,
-        positionEnd: suggestedText.length,
-        metadata: { 
-          isAISuggestion: true, 
-          aiOperation: operation,
-          changeId 
-        }
-      });
-    }
-  };
-
   const handleAcceptChange = (changeId: string) => {
     changeTracking.updateChangeStatus(changeId, true);
   };
@@ -167,9 +148,6 @@ export function RichTextEditor({
     });
   };
 
-  // Check if user can use AI tools (edit, publish, super-admin)
-  const canUseAITools = userRole && ['edit', 'publish', 'super-admin'].includes(userRole);
-
   // Enhance changes with AI metadata
   const enhancedChanges = changeTracking.changes.map(change => ({
     ...change,
@@ -189,19 +167,7 @@ export function RichTextEditor({
           content={displayContent}
           onContentChange={onChange}
           showTrackingToggle={!!policyId}
-          onAISuggestion={handleAISuggestion}
-          context={context}
         />
-        
-        {/* AI Toolbar - Show for users who can edit */}
-        {canUseAITools && (
-          <AIToolbar
-            editor={editor}
-            userInitials={userInitials}
-            context={context}
-            onAISuggestion={handleAISuggestion}
-          />
-        )}
         
         <EditorContent 
           editor={editor} 
@@ -219,8 +185,6 @@ export function RichTextEditor({
             content={displayContent}
             onContentChange={onChange}
             showTrackingToggle={!!policyId}
-            onAISuggestion={handleAISuggestion}
-            context={context}
           />
         )}
         

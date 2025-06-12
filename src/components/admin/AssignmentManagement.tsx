@@ -13,6 +13,7 @@ interface User {
   id: string;
   name: string;
   email: string;
+  user_role: string;
 }
 
 interface Assignment {
@@ -60,33 +61,23 @@ export const AssignmentManagement = () => {
 
       setAssignments(formattedAssignments);
 
-      // Fetch users with editor role
-      const { data: editorRoles, error: editorError } = await supabase
-        .from('user_roles')
-        .select(`
-          user_id,
-          profiles!user_roles_user_id_fkey(id, name, email)
-        `)
-        .eq('role', 'edit');
+      // Fetch users with editor role from profiles table
+      const { data: editorProfiles, error: editorError } = await supabase
+        .from('profiles')
+        .select('id, name, email, user_role')
+        .eq('user_role', 'edit');
 
       if (editorError) throw editorError;
+      setEditors(editorProfiles || []);
 
-      const editorUsers = editorRoles.map(role => role.profiles).filter(Boolean);
-      setEditors(editorUsers);
-
-      // Fetch users with publisher role
-      const { data: publisherRoles, error: publisherError } = await supabase
-        .from('user_roles')
-        .select(`
-          user_id,
-          profiles!user_roles_user_id_fkey(id, name, email)
-        `)
-        .eq('role', 'publish');
+      // Fetch users with publisher role from profiles table
+      const { data: publisherProfiles, error: publisherError } = await supabase
+        .from('profiles')
+        .select('id, name, email, user_role')
+        .eq('user_role', 'publish');
 
       if (publisherError) throw publisherError;
-
-      const publisherUsers = publisherRoles.map(role => role.profiles).filter(Boolean);
-      setPublishers(publisherUsers);
+      setPublishers(publisherProfiles || []);
 
     } catch (error) {
       console.error('Error fetching data:', error);

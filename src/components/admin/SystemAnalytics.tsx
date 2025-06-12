@@ -15,6 +15,7 @@ interface Analytics {
     'read-only': number;
     'edit': number;
     'publish': number;
+    'super-admin': number;
   };
   contentThisMonth: number;
   publishedThisMonth: number;
@@ -43,12 +44,12 @@ export const SystemAnalytics = () => {
 
       if (contentError) throw contentError;
 
-      // Get users by role
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role');
+      // Get users by role from profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_role');
 
-      if (roleError) throw roleError;
+      if (profileError) throw profileError;
 
       // Calculate analytics
       const totalContent = contentData.length;
@@ -56,10 +57,13 @@ export const SystemAnalytics = () => {
       const draftContent = contentData.filter(c => c.status === 'draft').length;
       const reviewContent = contentData.filter(c => c.status === 'under-review').length;
 
-      const usersByRole = roleData.reduce((acc, user) => {
-        acc[user.role as keyof typeof acc] = (acc[user.role as keyof typeof acc] || 0) + 1;
+      const usersByRole = profileData.reduce((acc, profile) => {
+        const role = profile.user_role as keyof typeof acc;
+        if (role in acc) {
+          acc[role] = (acc[role] || 0) + 1;
+        }
         return acc;
-      }, { 'read-only': 0, 'edit': 0, 'publish': 0 });
+      }, { 'read-only': 0, 'edit': 0, 'publish': 0, 'super-admin': 0 });
 
       // Calculate this month's statistics
       const thisMonth = new Date();
@@ -175,6 +179,10 @@ export const SystemAnalytics = () => {
               <div className="flex justify-between items-center">
                 <span>Publishers</span>
                 <span className="font-bold">{analytics.usersByRole['publish']}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Super Admins</span>
+                <span className="font-bold">{analytics.usersByRole['super-admin']}</span>
               </div>
             </div>
           </CardContent>

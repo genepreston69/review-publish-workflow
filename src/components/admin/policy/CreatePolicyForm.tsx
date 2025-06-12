@@ -18,7 +18,7 @@ interface CreatePolicyFormProps {
 }
 
 export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
-  const { currentUser, userRole } = useAuth();
+  const { user, userRole } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -51,13 +51,13 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
   const onSubmit = async (data: PolicyFormValues) => {
     console.log('=== FORM SUBMISSION STARTED ===');
     console.log('Form data:', data);
-    console.log('Current user:', currentUser);
+    console.log('Current user:', user);
     console.log('User role:', userRole);
     console.log('Generated policy number:', generatedPolicyNumber);
     console.log('Number generation error:', numberGenerationError);
     console.log('Is generating number:', isGeneratingNumber);
 
-    if (!currentUser || !hasEditAccess) {
+    if (!user || !hasEditAccess) {
       console.log('=== ACCESS DENIED ===');
       toast({
         variant: "destructive",
@@ -104,7 +104,7 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id')
-        .eq('id', currentUser.id)
+        .eq('id', user.id)
         .single();
 
       if (profileError) {
@@ -127,7 +127,7 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
         policy_number: generatedPolicyNumber,
         status,
         creator_id: profileData.id,
-        reviewer: currentUser.email, // Keep for backward compatibility
+        reviewer: user.email, // Keep for backward compatibility
       };
       console.log('Policy data to insert:', policyData);
 

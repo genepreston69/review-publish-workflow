@@ -2,7 +2,7 @@
 import { CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trash2, Edit, Eye, RotateCcw } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/components/SafeAuthProvider';
 import { usePolicyDuplication } from '@/hooks/usePolicyDuplication';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -28,7 +28,7 @@ export function PolicyCardActions({
   onDelete,
   onRefresh
 }: PolicyCardActionsProps) {
-  const { userRole, currentUser } = useAuth();
+  const { userRole, user } = useAuth();
   const isSuperAdmin = userRole === 'super-admin';
   const isEditor = userRole === 'edit';
   const { duplicatePolicyForUpdate, archiveByPolicyNumber, isLoading: isDuplicating } = usePolicyDuplication();
@@ -54,7 +54,7 @@ export function PolicyCardActions({
 
       if (currentPolicy) {
         // Check maker/checker rule before attempting publish
-        if (currentPolicy.creator_id === currentUser?.id && !isSuperAdmin) {
+        if (currentPolicy.creator_id === user?.id && !isSuperAdmin) {
           toast({
             variant: "destructive",
             title: "Publishing Not Allowed",
@@ -169,7 +169,11 @@ export function PolicyCardActions({
           </Button>
 
           {/* Edit button or placeholder */}
-          {showEditButton ? (
+          {onEdit && (
+            isSuperAdmin ||
+            (isEditor && policyStatus === 'draft') ||
+            (canPublish && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review'))
+          ) ? (
             <Button
               size="sm"
               variant="outline"
@@ -184,7 +188,7 @@ export function PolicyCardActions({
           )}
 
           {/* Submit button or placeholder */}
-          {showSubmitButton ? (
+          {(policyStatus === 'draft' && (isSuperAdmin || isEditor || canPublish)) ? (
             <Button
               size="sm"
               variant="outline"
@@ -201,7 +205,13 @@ export function PolicyCardActions({
         {/* Second row - Publish, Archive, Delete */}
         <div className="grid grid-cols-3 gap-2 w-full">
           {/* Publish button or placeholder */}
-          {showPublishButton ? (
+          {(canPublish && (
+            policyStatus === 'draft' || 
+            policyStatus === 'under-review' || 
+            policyStatus === 'under review' ||
+            policyStatus === 'awaiting-changes' ||
+            policyStatus === 'awaiting changes'
+          )) ? (
             <Button
               size="sm"
               onClick={handlePublish}
@@ -215,7 +225,13 @@ export function PolicyCardActions({
           )}
 
           {/* Archive button or placeholder */}
-          {showArchiveButton ? (
+          {((isSuperAdmin || canPublish) && (
+            policyStatus === 'draft' || 
+            policyStatus === 'under-review' || 
+            policyStatus === 'under review' ||
+            policyStatus === 'awaiting-changes' ||
+            policyStatus === 'awaiting changes'
+          )) ? (
             <Button
               size="sm"
               variant="outline"
@@ -230,7 +246,7 @@ export function PolicyCardActions({
           )}
 
           {/* Delete button or placeholder */}
-          {showDeleteButton ? (
+          {(isSuperAdmin && onDelete) ? (
             <Button
               size="sm"
               variant="destructive"

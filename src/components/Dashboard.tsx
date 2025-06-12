@@ -15,12 +15,12 @@ import { DashboardHeader } from './dashboard/DashboardHeader';
 import { ContentGrid } from './dashboard/ContentGrid';
 
 export const Dashboard = () => {
-  const { currentUser, userRole } = useAuth();
+  const { user, userRole } = useAuth();
   const { activeSection } = useAppNavigation();
   const canCreate = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
   // Use custom hooks for data management
-  const { contents, isLoading, handlePublish } = useContentManagement(currentUser, userRole);
+  const { contents, isLoading, handlePublish } = useContentManagement(user, userRole);
   const { hrPolicies, facilityPolicies, isLoadingPolicies } = useAllUserPolicies();
   
   // Use action handlers

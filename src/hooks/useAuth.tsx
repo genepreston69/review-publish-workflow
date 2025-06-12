@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/user';
 
 interface AuthContextType {
-  currentUser: User | null;
+  user: User | null;
   session: Session | null;
   userRole: UserRole | null;
   isLoading: boolean;
@@ -16,8 +16,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  if (context === undefined) {
+    console.warn('⚠️ useAuth called outside AuthProvider - using fallback state');
+    
+    // Return safe fallback values to prevent crashes
+    return {
+      user: null,
+      session: null,
+      userRole: null,
+      isLoading: false,
+      error: 'Auth provider not found',
+      signOut: async () => console.warn('signOut called outside provider'),
+      refetch: async () => console.warn('refetch called outside provider')
+    };
   }
   return context;
 };
@@ -28,7 +39,7 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -37,11 +48,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.log('=== FETCHING ROLE FOR USER ===', userId);
       
       const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .order('role', { ascending: false })
-        .limit(1);
+        .from('profiles')
+        .select('user_role')
+        .eq('id', userId)
+        .single();
 
       if (error) {
         console.error('=== ERROR FETCHING USER ROLE ===', error);
@@ -49,10 +59,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return 'read-only';
       }
 
-      console.log('=== USER ROLES DATA ===', data);
+      console.log('=== USER PROFILE DATA ===', data);
 
-      if (data && data.length > 0) {
-        const role = data[0].role as UserRole;
+      if (data && data.user_role) {
+        const role = data.user_role as UserRole;
         console.log('=== FOUND ROLE ===', role);
         return role;
       }
@@ -76,14 +86,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (event === 'SIGNED_OUT' || !session) {
           console.log('=== USER SIGNED OUT OR NO SESSION ===');
           setSession(null);
-          setCurrentUser(null);
+          setUser(null);
           setUserRole(null);
           setIsLoading(false);
           return;
         }
         
         setSession(session);
-        setCurrentUser(session?.user ?? null);
+        setUser(session?.user ?? null);
         
         if (session?.user) {
           console.log('=== USER FOUND, FETCHING ROLE ===');
@@ -123,7 +133,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         console.log('=== INITIAL SESSION ===', session?.user?.email);
         setSession(session);
-        setCurrentUser(session?.user ?? null);
+        setUser(session?.user ?? null);
         
         if (session?.user) {
           try {
@@ -161,7 +171,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       // Clear local state first to provide immediate feedback
       setSession(null);
-      setCurrentUser(null);
+      setUser(null);
       setUserRole(null);
       
       // Then sign out from Supabase
@@ -177,16 +187,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.error('=== UNEXPECTED SIGN OUT ERROR ===', error);
       // Clear local state even on unexpected errors
       setSession(null);
-      setCurrentUser(null);
+      setUser(null);
       setUserRole(null);
     }
   };
 
-  console.log('=== AUTH PROVIDER RENDER ===', { currentUser: !!currentUser, userRole, isLoading });
+  console.log('=== AUTH PROVIDER RENDER ===', { user: !!user, userRole, isLoading });
 
   return (
     <AuthContext.Provider value={{ 
-      currentUser, 
+      user, 
       session, 
       userRole, 
       isLoading, 
@@ -196,3 +206,5 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     </AuthContext.Provider>
   );
 };
+
+export default AuthProvider;

@@ -4,61 +4,25 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { MsalProvider } from '@azure/msal-react';
-import { msalInstance } from '@/config/azureConfig';
-import { AuthProvider } from '@/hooks/useAuth';
-import { AzureAuthProvider } from '@/hooks/useAzureAuth';
+import { SafeAuthProvider } from '@/components/SafeAuthProvider';
+import { AuthDebugger } from '@/components/AuthDebugger';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { RenderLoopProtection } from '@/components/RenderLoopProtection';
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import AzureAuth from "./pages/AzureAuth";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Configuration flag - set to 'azure' to use Azure authentication
-const AUTH_PROVIDER = 'supabase' as const; // Change to 'azure' when ready to migrate
-
-const App = () => {
-  if (AUTH_PROVIDER === 'azure') {
-    return (
-      <MsalProvider instance={msalInstance}>
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <AzureAuthProvider>
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/auth" element={<AzureAuth />} />
-                  <Route path="/" element={
-                    <ProtectedRoute>
-                      <Index />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/admin" element={
-                    <ProtectedRoute>
-                      <Admin />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
-            </AzureAuthProvider>
-          </TooltipProvider>
-        </QueryClientProvider>
-      </MsalProvider>
-    );
-  }
-
-  // Default Supabase authentication
-  return (
+const App = () => (
+  <RenderLoopProtection maxRenders={50} timeWindow={3000}>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <AuthProvider>
+        <SafeAuthProvider>
+          <AuthDebugger />
           <BrowserRouter>
             <Routes>
               <Route path="/auth" element={<Auth />} />
@@ -75,10 +39,10 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-        </AuthProvider>
+        </SafeAuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
-  );
-};
+  </RenderLoopProtection>
+);
 
 export default App;
