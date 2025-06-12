@@ -308,6 +308,7 @@ export type Database = {
           created_at: string | null
           email: string
           id: string
+          initials: string | null
           name: string
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string | null
@@ -317,6 +318,7 @@ export type Database = {
           created_at?: string | null
           email: string
           id: string
+          initials?: string | null
           name: string
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string | null
@@ -326,6 +328,7 @@ export type Database = {
           created_at?: string | null
           email?: string
           id?: string
+          initials?: string | null
           name?: string
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string | null
