@@ -18,7 +18,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 // Configuration flag - set to 'azure' to use Azure authentication
-const AUTH_PROVIDER: 'supabase' | 'azure' = 'supabase'; // Change to 'azure' when ready to migrate
+const AUTH_PROVIDER = 'supabase' as const; // Change to 'azure' when ready to migrate
 
 const App = () => {
   if (AUTH_PROVIDER === 'azure') {
