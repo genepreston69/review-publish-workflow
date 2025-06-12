@@ -1,5 +1,6 @@
 
 import { useAuth } from '@/hooks/useAuth';
+import { useAzureAuth } from '@/hooks/useAzureAuth';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
@@ -8,7 +9,22 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { currentUser, userRole, isLoading } = useAuth();
+  // Try to get auth from both providers
+  let currentUser, userRole, isLoading;
+  
+  try {
+    const azureAuth = useAzureAuth();
+    currentUser = azureAuth.currentUser;
+    userRole = azureAuth.userRole;
+    isLoading = azureAuth.isLoading;
+  } catch {
+    // Fallback to Supabase auth if Azure is not available
+    const supabaseAuth = useAuth();
+    currentUser = supabaseAuth.currentUser;
+    userRole = supabaseAuth.userRole;
+    isLoading = supabaseAuth.isLoading;
+  }
+
   const location = useLocation();
 
   if (isLoading) {
