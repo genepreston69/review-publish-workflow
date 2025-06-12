@@ -310,7 +310,6 @@ export type Database = {
           id: string
           name: string
           updated_at: string | null
-          user_role: string
         }
         Insert: {
           avatar_url?: string | null
@@ -319,7 +318,6 @@ export type Database = {
           id: string
           name: string
           updated_at?: string | null
-          user_role?: string
         }
         Update: {
           avatar_url?: string | null
@@ -328,9 +326,37 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string | null
-          user_role?: string
         }
         Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

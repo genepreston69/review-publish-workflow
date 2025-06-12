@@ -1,3 +1,4 @@
+
 import {
   Sidebar,
   SidebarContent,
@@ -11,7 +12,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Users, Link, BarChart3, Settings, Plus, FileText, FileClock, FileCheck } from 'lucide-react';
-import { useAuth } from '@/components/SafeAuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 
 const adminItems = [
   {

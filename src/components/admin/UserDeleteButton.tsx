@@ -23,7 +23,18 @@ export const UserDeleteButton = ({ userId, userName, userEmail, onUserDeleted }:
       console.log('=== DELETE USER ATTEMPT ===');
       console.log('Target user ID:', userId);
 
-      // Delete profile (roles are stored in profiles table now)
+      // First delete user roles
+      const { error: rolesError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (rolesError) {
+        console.error('Error deleting user roles:', rolesError);
+        throw rolesError;
+      }
+
+      // Then delete profile
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()

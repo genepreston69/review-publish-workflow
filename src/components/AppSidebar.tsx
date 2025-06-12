@@ -1,4 +1,3 @@
-
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +14,7 @@ import {
   Users, FileText, FileClock, FileCheck, Plus, BookOpen, 
   Building, Eye, CheckCircle, BarChart3, Settings, ClipboardList, Archive 
 } from 'lucide-react';
-import { useAuth } from '@/components/SafeAuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
 
 export function AppSidebar() {

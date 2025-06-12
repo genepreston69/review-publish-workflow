@@ -6,15 +6,15 @@ import { User, LogOut, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Header = () => {
-  const { user, userRole, signOut } = useAuth();
+  const { currentUser, userRole, signOut } = useAuth();
 
   const handleLogout = async () => {
     await signOut();
   };
 
   // Get user name from metadata or email
-  const userName = user?.user_metadata?.name || 
-                  user?.email?.split('@')[0] || 
+  const userName = currentUser?.user_metadata?.name || 
+                  currentUser?.email?.split('@')[0] || 
                   'User';
 
   return (
@@ -30,7 +30,7 @@ export const Header = () => {
               />
             </Link>
           </div>
-          {user && userRole && (
+          {currentUser && userRole && (
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-gray-500" />

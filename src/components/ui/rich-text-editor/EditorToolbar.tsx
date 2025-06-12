@@ -6,6 +6,7 @@ import { ListButtons } from './toolbar/ListButtons';
 import { ColorButtons } from './toolbar/ColorButtons';
 import { UndoRedoButtons } from './toolbar/UndoRedoButtons';
 import { TrackingButton } from './toolbar/TrackingButton';
+import { AIIntegratedToolbar } from './AIIntegratedToolbar';
 import { ToolbarDivider } from './toolbar/ToolbarDivider';
 
 interface EditorToolbarProps {
@@ -17,6 +18,8 @@ interface EditorToolbarProps {
   content: string;
   onContentChange: (content: string) => void;
   showTrackingToggle?: boolean;
+  onAISuggestion?: (changeId: string, operation: string, originalText: string, suggestedText: string) => void;
+  context?: string;
 }
 
 export function EditorToolbar({
@@ -26,6 +29,8 @@ export function EditorToolbar({
   onToggleTracking,
   position,
   showTrackingToggle = false,
+  onAISuggestion,
+  context
 }: EditorToolbarProps) {
   if (!editor) {
     return null;
@@ -54,6 +59,14 @@ export function EditorToolbar({
           />
         </>
       )}
+      
+      <ToolbarDivider />
+      <AIIntegratedToolbar
+        editor={editor}
+        userInitials={userInitials}
+        onAISuggestion={onAISuggestion}
+        context={context}
+      />
     </div>
   );
 }
