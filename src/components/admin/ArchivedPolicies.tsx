@@ -6,8 +6,16 @@ import { PolicyViewModal } from './policy/PolicyViewModal';
 import { usePolicies } from './policy/usePolicies';
 import { useQuery } from '@tanstack/react-query';
 import { fetchArchivedPolicies } from './policy/policyFetcher';
+import { useInfiniteLoopProtection } from '@/hooks/useInfiniteLoopProtection';
+import { useSafeCallback } from '@/hooks/useSafeCallback';
 
 export function ArchivedPolicies() {
+  // Add infinite loop protection
+  useInfiniteLoopProtection({
+    componentName: 'ArchivedPolicies',
+    maxRenders: 15
+  });
+
   const { userRole } = useAuth();
   const { updatePolicyStatus, deletePolicy } = usePolicies();
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
@@ -15,6 +23,8 @@ export function ArchivedPolicies() {
   const { data: archivedPolicies = [], isLoading, refetch } = useQuery({
     queryKey: ['archived-policies'],
     queryFn: fetchArchivedPolicies,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false, // Prevent excessive refetching
   });
 
   const isSuperAdmin = userRole === 'super-admin';
@@ -24,29 +34,40 @@ export function ArchivedPolicies() {
   console.log('Is loading:', isLoading);
   console.log('User role:', userRole);
 
-  const handleViewPolicy = (policyId: string) => {
+  const handleViewPolicy = useSafeCallback((policyId: string) => {
     console.log('View archived policy:', policyId);
     setViewingPolicyId(policyId);
-  };
+  }, [], {
+    name: 'handleViewPolicy',
+    maxCalls: 10
+  });
 
-  const handleCloseView = () => {
+  const handleCloseView = useSafeCallback(() => {
     setViewingPolicyId(null);
-  };
+  }, [], {
+    name: 'handleCloseView'
+  });
 
-  const handleRestorePolicy = async (policyId: string) => {
+  const handleRestorePolicy = useSafeCallback(async (policyId: string) => {
     console.log('=== RESTORING ARCHIVED POLICY ===', policyId);
     // Restore by setting archived_at to null and status to draft
     await updatePolicyStatus(policyId, 'draft');
     // Refresh the archived policies list
     await refetch();
-  };
+  }, [updatePolicyStatus, refetch], {
+    name: 'handleRestorePolicy',
+    maxCalls: 5
+  });
 
-  const handleDeletePolicy = async (policyId: string) => {
+  const handleDeletePolicy = useSafeCallback(async (policyId: string) => {
     console.log('=== DELETING ARCHIVED POLICY ===', policyId);
     await deletePolicy(policyId);
     // Refresh the archived policies list
     await refetch();
-  };
+  }, [deletePolicy, refetch], {
+    name: 'handleDeletePolicy',
+    maxCalls: 5
+  });
 
   if (!isSuperAdmin) {
     return (

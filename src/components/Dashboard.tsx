@@ -6,6 +6,8 @@ import { FacilityPoliciesEmptyState } from './admin/policy/FacilityPoliciesEmpty
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
+import { useInfiniteLoopProtection } from '@/hooks/useInfiniteLoopProtection';
+import { useSafeCallback } from '@/hooks/useSafeCallback';
 
 // New imports for refactored components
 import { useContentManagement } from '@/hooks/useContentManagement';
@@ -15,6 +17,12 @@ import { DashboardHeader } from './dashboard/DashboardHeader';
 import { ContentGrid } from './dashboard/ContentGrid';
 
 export const Dashboard = () => {
+  // Add infinite loop protection
+  useInfiniteLoopProtection({
+    componentName: 'Dashboard',
+    maxRenders: 15
+  });
+
   const { currentUser, userRole } = useAuth();
   const { activeSection } = useAppNavigation();
   const canCreate = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
@@ -23,7 +31,7 @@ export const Dashboard = () => {
   const { contents, isLoading, handlePublish } = useContentManagement(currentUser, userRole);
   const { hrPolicies, facilityPolicies, isLoadingPolicies } = useAllUserPolicies();
   
-  // Use action handlers
+  // Use action handlers with safe callbacks
   const {
     handleCreateNew,
     handleEdit,
@@ -53,7 +61,7 @@ export const Dashboard = () => {
   const reviewContents = contents.filter(c => c.status === 'under-review');
   const publishedContents = contents.filter(c => c.status === 'published');
 
-  const renderContent = () => {
+  const renderContent = useSafeCallback(() => {
     console.log('=== RENDER CONTENT ===');
     console.log('Rendering for activeSection:', activeSection);
     
@@ -148,7 +156,26 @@ export const Dashboard = () => {
           </div>
         );
     }
-  };
+  }, [
+    activeSection,
+    contents,
+    draftContents,
+    reviewContents,
+    publishedContents,
+    hrPolicies,
+    facilityPolicies,
+    userRole,
+    canCreate,
+    handleEdit,
+    handleView,
+    handlePublish,
+    handlePolicyView,
+    handlePolicyUpdateStatus,
+    handlePolicyDelete
+  ], {
+    name: 'renderContent',
+    maxCalls: 10
+  });
 
   return (
     <div className="p-6 space-y-6">

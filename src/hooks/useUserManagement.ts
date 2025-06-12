@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { UserRole } from '@/types/user';
+import { useInfiniteLoopProtection } from '@/hooks/useInfiniteLoopProtection';
+import { useSafeCallback } from '@/hooks/useSafeCallback';
 
 interface UserWithRole {
   id: string;
@@ -13,11 +15,17 @@ interface UserWithRole {
 }
 
 export const useUserManagement = () => {
+  // Add infinite loop protection
+  useInfiniteLoopProtection({
+    componentName: 'useUserManagement',
+    maxRenders: 10
+  });
+
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchUsers = async () => {
+  const fetchUsers = useSafeCallback(async () => {
     try {
       setIsLoading(true);
       console.log('=== FETCHING USERS FROM PROFILES TABLE ===');
@@ -66,11 +74,14 @@ export const useUserManagement = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [], {
+    name: 'fetchUsers',
+    maxCalls: 5
+  });
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   return {
     users,

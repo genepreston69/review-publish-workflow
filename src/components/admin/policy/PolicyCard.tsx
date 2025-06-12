@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Policy } from './types';
 import { PolicyCardListView } from './PolicyCardListView';
 import { PolicyCardGridView } from './PolicyCardGridView';
+import { useInfiniteLoopProtection } from '@/hooks/useInfiniteLoopProtection';
 
 interface PolicyCardProps {
   policy: Policy;
@@ -29,6 +30,12 @@ export function PolicyCard({
   compact = false,
   listView = false,
 }: PolicyCardProps) {
+  // Add infinite loop protection
+  useInfiniteLoopProtection({
+    componentName: `PolicyCard-${policy.id}`,
+    maxRenders: 20
+  });
+
   const { currentUser, userRole } = useAuth();
 
   const canEdit = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
