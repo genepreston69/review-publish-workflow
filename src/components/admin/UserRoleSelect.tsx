@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { UserRole } from '@/types/user';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/components/SafeAuthProvider';
 
 interface UserRoleSelectProps {
   userId: string;
@@ -15,36 +15,26 @@ interface UserRoleSelectProps {
 export const UserRoleSelect = ({ userId, currentRole, onRoleUpdated }: UserRoleSelectProps) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
-  const { currentUser, userRole } = useAuth();
+  const { user, userRole } = useAuth();
 
   const updateUserRole = async (newRole: UserRole) => {
     try {
       setIsUpdating(true);
       console.log('=== ROLE UPDATE ATTEMPT ===');
-      console.log('Current user ID:', currentUser?.id);
+      console.log('Current user ID:', user?.id);
       console.log('Current user role:', userRole);
       console.log('Target user ID:', userId);
       console.log('New role:', newRole);
       
-      // First, delete ALL existing roles for this user to ensure clean state
-      const { error: deleteError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
+      // Update the role in the profiles table
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ user_role: newRole })
+        .eq('id', userId);
 
-      if (deleteError) {
-        console.error('Error deleting existing roles:', deleteError);
-        throw deleteError;
-      }
-
-      // Then insert the new role
-      const { error: insertError } = await supabase
-        .from('user_roles')
-        .insert({ user_id: userId, role: newRole });
-
-      if (insertError) {
-        console.error('Error inserting new role:', insertError);
-        throw insertError;
+      if (updateError) {
+        console.error('Error updating role:', updateError);
+        throw updateError;
       }
 
       console.log('=== ROLE UPDATE SUCCESS ===');
