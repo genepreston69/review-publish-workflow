@@ -44,14 +44,14 @@ export function AIWritingAssistant({ text, onChange, context, className }: AIWri
   const [pendingSuggestion, setPendingSuggestion] = useState<PendingSuggestion | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
-  const { currentUser, userRole, isLoading: authLoading } = useAuth();
+  const { user, userRole, isLoading: authLoading } = useAuth();
 
   // Check if user has edit permissions
   const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
   const callAIAssistant = async (operation: string, operationName: string, operationDescription: string) => {
     // Check authentication first
-    if (!currentUser) {
+    if (!user) {
       toast({
         variant: "destructive",
         title: "Authentication Required",
@@ -212,14 +212,14 @@ export function AIWritingAssistant({ text, onChange, context, className }: AIWri
   }
 
   // Show locked state if no authentication or insufficient permissions
-  if (!currentUser || !hasEditAccess) {
+  if (!user || !hasEditAccess) {
     return (
       <Button
         variant="outline"
         size="sm"
         disabled
         className={className}
-        title={!currentUser ? "Sign in required" : "Edit access required"}
+        title={!user ? "Sign in required" : "Edit access required"}
       >
         <Lock className="w-4 h-4 mr-2" />
         AI Assistant

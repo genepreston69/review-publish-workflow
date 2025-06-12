@@ -32,7 +32,7 @@ interface UsePolicyChangeTrackingProps {
 }
 
 export function usePolicyChangeTracking({ policyId, fieldName }: UsePolicyChangeTrackingProps) {
-  const { currentUser, userRole } = useAuth();
+  const { user, userRole } = useAuth();
   const { toast } = useToast();
   const [changes, setChanges] = useState<PolicyChange[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -54,18 +54,18 @@ export function usePolicyChangeTracking({ policyId, fieldName }: UsePolicyChange
     positionEnd: number;
     metadata?: Record<string, any>;
   }) => {
-    if (!currentUser) return;
+    if (!user) return;
 
     try {
-      // Get user name from currentUser, using email as fallback
-      const userName = (currentUser as any).name || currentUser.email;
-      const userInitials = getUserInitials(userName, currentUser.email);
-      const userColor = getUserColor(currentUser.id);
+      // Get user name from user, using email as fallback
+      const userName = (user as any).name || user.email;
+      const userInitials = getUserInitials(userName, user.email);
+      const userColor = getUserColor(user.id);
 
       // For now, just log the change since the table might not be fully set up
       console.log('Recording change:', {
         policyId,
-        userId: currentUser.id,
+        userId: user.id,
         userName,
         userInitials,
         userColor,
@@ -83,7 +83,7 @@ export function usePolicyChangeTracking({ policyId, fieldName }: UsePolicyChange
       const mockChange: PolicyChange = {
         id: generateChangeId(),
         policy_id: policyId,
-        user_id: currentUser.id,
+        user_id: user.id,
         user_name: userName,
         user_initials: userInitials,
         user_color: userColor,
@@ -111,7 +111,7 @@ export function usePolicyChangeTracking({ policyId, fieldName }: UsePolicyChange
         description: "Failed to record change.",
       });
     }
-  }, [currentUser, policyId, fieldName, sessionId, getUserColor, toast]);
+  }, [user, policyId, fieldName, sessionId, getUserColor, toast]);
 
   // Load changes - for now return empty array
   const loadChanges = useCallback(async () => {
@@ -129,7 +129,7 @@ export function usePolicyChangeTracking({ policyId, fieldName }: UsePolicyChange
 
   // Accept/reject a change
   const updateChangeStatus = useCallback(async (changeId: string, isAccepted: boolean) => {
-    if (!currentUser) return;
+    if (!user) return;
 
     try {
       console.log('Updating change status:', changeId, isAccepted);
@@ -140,7 +140,7 @@ export function usePolicyChangeTracking({ policyId, fieldName }: UsePolicyChange
           ? { 
               ...change, 
               is_accepted: isAccepted,
-              accepted_by: currentUser.id,
+              accepted_by: user.id,
               accepted_at: new Date().toISOString()
             }
           : change
@@ -158,7 +158,7 @@ export function usePolicyChangeTracking({ policyId, fieldName }: UsePolicyChange
         description: "Failed to update change status.",
       });
     }
-  }, [currentUser, toast]);
+  }, [user, toast]);
 
   const canReviewChanges = userRole === 'publish' || userRole === 'super-admin';
 

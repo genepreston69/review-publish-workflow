@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,7 +21,7 @@ interface PolicyEditFormProps {
 }
 
 export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEditFormProps) {
-  const { currentUser, userRole } = useAuth();
+  const { user, userRole } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -103,7 +104,7 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
     console.log('Form data:', data);
     console.log('Policy ID:', policyId);
 
-    if (!currentUser || !hasEditAccess || !policy) {
+    if (!user || !hasEditAccess || !policy) {
       console.log('=== ACCESS DENIED OR NO POLICY ===');
       toast({
         variant: "destructive",

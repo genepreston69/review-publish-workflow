@@ -7,10 +7,10 @@ import { useAuth } from '@/hooks/useAuth';
 export function usePolicyDuplication() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
 
   const duplicatePolicyForUpdate = async (originalPolicyId: string): Promise<string | null> => {
-    if (!currentUser) {
+    if (!user) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -73,13 +73,10 @@ export function usePolicyDuplication() {
         purpose: originalPolicy.purpose,
         policy_text: originalPolicy.policy_text,
         procedure: originalPolicy.procedure,
-        creator_id: currentUser.id, // Set current user as creator
+        creator_id: user.id, // Set current user as creator
         status: 'draft', // Always set to draft for updates
         parent_policy_id: originalPolicy.parent_policy_id || originalPolicyId, // Link to the original or its parent
-        reviewer: null, // Reset reviewer
-        reviewer_comment: null, // Reset reviewer comment
-        publisher_id: null, // Reset publisher
-        published_at: null, // Reset published date
+        reviewer: user.email,
       };
 
       const { data: newPolicy, error: createError } = await supabase
@@ -89,7 +86,7 @@ export function usePolicyDuplication() {
         .single();
 
       if (createError || !newPolicy) {
-        console.error('Error creating new policy version:', createError);
+        console.error('Error creating new policy:', createError);
         toast({
           variant: "destructive",
           title: "Error",
@@ -98,11 +95,11 @@ export function usePolicyDuplication() {
         return null;
       }
 
-      console.log('=== NEW POLICY VERSION CREATED ===', newPolicy);
+      console.log('=== NEW POLICY CREATED ===', newPolicy);
 
       toast({
         title: "Success",
-        description: "New draft version created for editing. The previous published version has been archived.",
+        description: `New draft created for policy ${originalPolicy.policy_number}. You can now edit this version.`,
       });
 
       return newPolicy.id;
@@ -111,7 +108,7 @@ export function usePolicyDuplication() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred while creating the policy version.",
+        description: "An unexpected error occurred while creating the policy update.",
       });
       return null;
     } finally {
@@ -119,52 +116,29 @@ export function usePolicyDuplication() {
     }
   };
 
-  const archiveOldVersions = async (parentPolicyId: string, excludePolicyId: string) => {
+  const archiveByPolicyNumber = async (policyNumber: string, excludeId?: string) => {
     try {
-      console.log('=== ARCHIVING OLD VERSIONS BY PARENT ===', { parentPolicyId, excludePolicyId });
-
-      const { error } = await supabase
-        .from('Policies')
-        .update({ 
-          archived_at: new Date().toISOString(),
-          status: 'archived'
-        })
-        .or(`id.eq.${parentPolicyId},parent_policy_id.eq.${parentPolicyId}`)
-        .neq('id', excludePolicyId)
-        .is('archived_at', null);
-
-      if (error) {
-        console.error('Error archiving old versions by parent:', error);
-        throw error;
-      }
-
-      console.log('=== OLD VERSIONS ARCHIVED SUCCESSFULLY BY PARENT ===');
-    } catch (error) {
-      console.error('Error in archiveOldVersions:', error);
-      throw error;
-    }
-  };
-
-  const archiveByPolicyNumber = async (policyNumber: string, excludePolicyId: string) => {
-    try {
-      console.log('=== ARCHIVING BY POLICY NUMBER ===', { policyNumber, excludePolicyId });
-
-      const { error } = await supabase
+      let query = supabase
         .from('Policies')
         .update({ 
           archived_at: new Date().toISOString(),
           status: 'archived'
         })
         .eq('policy_number', policyNumber)
-        .neq('id', excludePolicyId)
-        .is('archived_at', null);
+        .neq('status', 'archived');
+
+      if (excludeId) {
+        query = query.neq('id', excludeId);
+      }
+
+      const { error } = await query;
 
       if (error) {
-        console.error('Error archiving by policy number:', error);
+        console.error('Error archiving policies by number:', error);
         throw error;
       }
 
-      console.log('=== POLICIES ARCHIVED SUCCESSFULLY BY POLICY NUMBER ===');
+      console.log('=== ARCHIVED OLD VERSIONS OF POLICY ===', policyNumber);
     } catch (error) {
       console.error('Error in archiveByPolicyNumber:', error);
       throw error;
@@ -173,8 +147,7 @@ export function usePolicyDuplication() {
 
   return {
     duplicatePolicyForUpdate,
-    archiveOldVersions,
     archiveByPolicyNumber,
-    isLoading,
+    isLoading
   };
 }
