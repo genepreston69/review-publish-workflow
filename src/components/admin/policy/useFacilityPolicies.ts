@@ -20,7 +20,7 @@ export function useFacilityPolicies() {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { archiveOldVersions } = usePolicyDuplication();
+  const { archiveByPolicyNumber } = usePolicyDuplication();
 
   const fetchPolicies = async () => {
     try {
