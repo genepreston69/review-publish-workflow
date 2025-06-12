@@ -10,31 +10,31 @@ export function useUserProfile() {
 
   useEffect(() => {
     const loadUserInitials = async () => {
-      if (!auth?.user?.id) return;
+      if (!auth?.currentUser?.id) return;
 
       try {
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('name, email')
-          .eq('id', auth.user.id)
+          .eq('id', auth.currentUser.id)
           .single();
 
         if (error) {
           console.error('Error loading profile:', error);
-          setUserInitials(getUserInitials(undefined, auth.user.email));
+          setUserInitials(getUserInitials(undefined, auth.currentUser.email));
           return;
         }
 
-        const initials = getUserInitials(profile?.name, profile?.email || auth.user.email);
+        const initials = getUserInitials(profile?.name, profile?.email || auth.currentUser.email);
         setUserInitials(initials);
       } catch (error) {
         console.error('Error loading user initials:', error);
-        setUserInitials(getUserInitials(undefined, auth.user.email));
+        setUserInitials(getUserInitials(undefined, auth.currentUser.email));
       }
     };
 
     loadUserInitials();
-  }, [auth?.user]);
+  }, [auth?.currentUser]);
 
   return userInitials;
 }

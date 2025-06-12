@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -29,7 +30,7 @@ export function PolicyViewActions({
   onRefresh,
   onArchive
 }: PolicyViewActionsProps) {
-  const { userRole, user } = useAuth();
+  const { userRole, currentUser } = useAuth();
   const [reviewerComment, setReviewerComment] = useState('');
   const [showCommentSection, setShowCommentSection] = useState(false);
   const [actionType, setActionType] = useState<'request-changes' | 'publish' | null>(null);
@@ -40,7 +41,7 @@ export function PolicyViewActions({
   const { duplicatePolicyForUpdate, archiveByPolicyNumber, isLoading: isDuplicating } = usePolicyDuplication();
 
   // Check if current user is the creator (maker/checker enforcement)
-  const isCreator = user?.id === policy.creator_id;
+  const isCreator = currentUser?.id === policy.creator_id;
   // Super admins can approve/publish any policy, regular publishers can't approve their own
   const canApproveOrPublish = isSuperAdmin || (canPublish && !isCreator);
 

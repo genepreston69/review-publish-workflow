@@ -64,14 +64,20 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         // Wait a moment for the profile to be created by the trigger
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Update the role in the profiles table if different from default
+        // The trigger will create a default 'read-only' role, so we only need to update if different
         if (formData.role !== 'read-only') {
           console.log('Updating user role to:', formData.role);
           
+          // Delete the default role first
+          await supabase
+            .from('user_roles')
+            .delete()
+            .eq('user_id', authData.user.id);
+          
+          // Insert the new role
           const { error: roleError } = await supabase
-            .from('profiles')
-            .update({ user_role: formData.role })
-            .eq('id', authData.user.id);
+            .from('user_roles')
+            .insert({ user_id: authData.user.id, role: formData.role });
 
           if (roleError) {
             console.error('Role update error:', roleError);

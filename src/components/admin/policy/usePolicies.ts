@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/components/SafeAuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { stripColorsFromPolicyFields } from '@/utils/colorUtils';
 import { notifyPolicyStatusChange, notifyPolicyComment } from '@/utils/notificationHelpers';
 import { Policy } from './types';
@@ -10,7 +10,7 @@ export const usePolicies = () => {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
   const { toast } = useToast();
-  const { userRole, user } = useAuth();
+  const { userRole, currentUser } = useAuth();
 
   const isSuperAdmin = userRole === 'super-admin';
 
@@ -56,7 +56,7 @@ export const usePolicies = () => {
     try {
       console.log('=== UPDATING POLICY STATUS ===', { policyId, newStatus, reviewerComment });
       
-      if (!user) {
+      if (!currentUser) {
         toast({
           variant: "destructive",
           title: "Error",
@@ -85,7 +85,7 @@ export const usePolicies = () => {
       console.log('=== CURRENT POLICY DATA ===', currentPolicy);
 
       // Check maker/checker rule for non-super admins only
-      if (newStatus === 'published' && currentPolicy.creator_id === user.id && !isSuperAdmin) {
+      if (newStatus === 'published' && currentPolicy.creator_id === currentUser.id && !isSuperAdmin) {
         console.log('=== MAKER/CHECKER RULE VIOLATION FOR NON-SUPER-ADMIN ===');
         toast({
           variant: "destructive",
@@ -146,7 +146,7 @@ export const usePolicies = () => {
         }
 
         // For super admins, if they are the creator, set a different publisher to bypass constraint
-        if (isSuperAdmin && currentPolicy.creator_id === user.id) {
+        if (isSuperAdmin && currentPolicy.creator_id === currentUser.id) {
           console.log('=== SUPER ADMIN PUBLISHING OWN POLICY - BYPASSING CONSTRAINT ===');
           // Use a system publisher ID or leave publisher_id null for super admin override
           updateData.publisher_id = null; // This will bypass the constraint
@@ -155,7 +155,7 @@ export const usePolicies = () => {
           const { data: publisherProfile, error: profileError } = await supabase
             .from('profiles')
             .select('id')
-            .eq('id', user.id)
+            .eq('id', currentUser.id)
             .single();
 
           if (profileError) {
@@ -199,7 +199,7 @@ export const usePolicies = () => {
 
       // Set reviewer when assigning for review
       if (newStatus === 'under-review' && !currentPolicy.reviewer) {
-        updateData.reviewer = user.email;
+        updateData.reviewer = currentUser.email;
       }
 
       console.log('=== UPDATING POLICY WITH DATA ===', updateData);
@@ -244,14 +244,14 @@ export const usePolicies = () => {
         oldStatus: currentPolicy.status,
         newStatus,
         creatorId: currentPolicy.creator_id,
-        reviewerId: newStatus === 'under-review' ? user.id : currentPolicy.reviewer ? 
+        reviewerId: newStatus === 'under-review' ? currentUser.id : currentPolicy.reviewer ? 
           (await supabase.from('profiles').select('id').eq('email', currentPolicy.reviewer).single())?.data?.id : undefined,
         reviewerComment,
-        publisherId: newStatus === 'published' ? user.id : undefined,
+        publisherId: newStatus === 'published' ? currentUser.id : undefined,
       });
 
       // Send comment notification if reviewer comment is added
-      if (reviewerComment && currentPolicy.creator_id && currentPolicy.creator_id !== user.id) {
+      if (reviewerComment && currentPolicy.creator_id && currentPolicy.creator_id !== currentUser.id) {
         await notifyPolicyComment(
           policyId,
           currentPolicy.name || 'Untitled Policy',
@@ -263,7 +263,7 @@ export const usePolicies = () => {
       let statusMessage = '';
       switch (newStatus) {
         case 'published':
-          statusMessage = isSuperAdmin && currentPolicy.creator_id === user.id
+          statusMessage = isSuperAdmin && currentPolicy.creator_id === currentUser.id
             ? "Policy published successfully with super admin override. All colors have been removed from the content and old versions archived."
             : "Policy published successfully. All colors have been removed from the content and old versions archived.";
           break;

@@ -26,7 +26,7 @@ interface PolicyViewModalProps {
 
 export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onRefresh }: PolicyViewModalProps) {
   const { toast } = useToast();
-  const { archiveByPolicyNumber } = usePolicyDuplication();
+  const { archiveOldVersions } = usePolicyDuplication();
   const [isLoading, setIsLoading] = useState(true);
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [viewingVersionId, setViewingVersionId] = useState<string>(policyId);
@@ -155,9 +155,8 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
     console.log('=== PUBLISHING POLICY WITH VERSIONING ===', policy.id);
     try {
       // Archive old versions before publishing
-      if (policy.policy_number) {
-        await archiveByPolicyNumber(policy.policy_number, policy.id);
-      }
+      const parentPolicyId = policy.parent_policy_id || policy.id;
+      await archiveOldVersions(parentPolicyId, policy.id);
       
       await onUpdateStatus(policy.id, 'published');
       toast({

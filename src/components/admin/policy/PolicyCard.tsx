@@ -1,5 +1,5 @@
 
-import { useAuth } from '@/components/SafeAuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { Policy } from './types';
 import { PolicyCardListView } from './PolicyCardListView';
 import { PolicyCardGridView } from './PolicyCardGridView';
@@ -29,13 +29,13 @@ export function PolicyCard({
   compact = false,
   listView = false,
 }: PolicyCardProps) {
-  const { user, userRole } = useAuth();
+  const { currentUser, userRole } = useAuth();
 
   const canEdit = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
   const canDelete = userRole === 'super-admin';
   const canArchive = userRole === 'super-admin' || userRole === 'publish';
   const isSuperAdmin = userRole === 'super-admin';
-  const isCreator = policy.creator_id === user?.id;
+  const isCreator = policy.creator_id === currentUser?.id;
 
   // Super admins can publish any policy regardless of status or creator
   const canPublishPolicy = isSuperAdmin || (

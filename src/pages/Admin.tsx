@@ -1,5 +1,6 @@
+
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { useAuth } from '@/components/SafeAuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { AssignmentManagement } from '@/components/admin/AssignmentManagement';

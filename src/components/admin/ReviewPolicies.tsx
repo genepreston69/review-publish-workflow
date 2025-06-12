@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { PolicyList } from './policy/PolicyList';
@@ -7,7 +8,7 @@ import { usePolicies } from './policy/usePolicies';
 import { Policy } from './policy/types';
 
 export function ReviewPolicies() {
-  const { user, userRole } = useAuth();
+  const { currentUser, userRole } = useAuth();
   const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, archivePolicy, isSuperAdmin, fetchPolicies } = usePolicies();
   const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
@@ -32,12 +33,12 @@ export function ReviewPolicies() {
     // Publishers can see policies assigned to them or that they can review
     if (userRole === 'publish') {
       // Don't show policies they created (maker/checker rule)
-      if (policy.creator_id === user?.id) {
+      if (policy.creator_id === currentUser?.id) {
         return false;
       }
       
       // Show if assigned as reviewer or if no specific reviewer assigned
-      const canReview = policy.reviewer === user?.email || !policy.reviewer;
+      const canReview = policy.reviewer === currentUser?.email || !policy.reviewer;
       return canReview;
     }
     

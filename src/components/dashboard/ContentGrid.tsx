@@ -71,16 +71,11 @@ export const ContentGrid = ({
           {contents.map((content) => (
             <ContentCard
               key={content.id}
-              id={content.id}
-              title={content.title}
-              body={content.body}
-              status={content.status}
-              authorId={content.authorId}
-              assignedPublisherId={content.assignedPublisherId}
-              createdAt={content.createdAt.toISOString()}
-              onEdit={(id) => onEdit(content)}
-              onView={(id) => onView(content)}
-              onPublish={(id) => onPublish(content)}
+              content={content}
+              onEdit={onEdit}
+              onView={onView}
+              onPublish={onPublish}
+              listView={true}
             />
           ))}
         </div>
@@ -93,16 +88,11 @@ export const ContentGrid = ({
           {contents.map((content) => (
             <ContentCard
               key={content.id}
-              id={content.id}
-              title={content.title}
-              body={content.body}
-              status={content.status}
-              authorId={content.authorId}
-              assignedPublisherId={content.assignedPublisherId}
-              createdAt={content.createdAt.toISOString()}
-              onEdit={(id) => onEdit(content)}
-              onView={(id) => onView(content)}
-              onPublish={(id) => onPublish(content)}
+              content={content}
+              onEdit={onEdit}
+              onView={onView}
+              onPublish={onPublish}
+              compact={viewMode === 'compact'}
             />
           ))}
         </div>

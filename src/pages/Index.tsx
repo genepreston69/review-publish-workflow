@@ -1,26 +1,25 @@
 
 import { Button } from '@/components/ui/button';
 import { RoleBadge } from '@/components/RoleBadge';
-import { useAuth } from '@/components/SafeAuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { User, LogOut, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Dashboard } from '@/components/Dashboard';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
-import { UserRole } from '@/types/user';
 
 const Index = () => {
   console.log('=== INDEX PAGE RENDERING ===');
   
-  const { user, userRole, signOut } = useAuth();
+  const { currentUser, userRole, signOut } = useAuth();
 
   const handleLogout = async () => {
     await signOut();
   };
 
   // Get user name from metadata or email
-  const userName = user?.user_metadata?.name || 
-                  user?.email?.split('@')[0] || 
+  const userName = currentUser?.user_metadata?.name || 
+                  currentUser?.email?.split('@')[0] || 
                   'User';
 
   return (
@@ -36,12 +35,12 @@ const Index = () => {
                     <h1 className="text-3xl font-bold text-gray-900">Content Dashboard</h1>
                   </div>
                   
-                  {user && userRole && (
+                  {currentUser && userRole && (
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-gray-500" />
                         <span className="text-sm font-medium">{userName}</span>
-                        <RoleBadge role={userRole as UserRole} />
+                        <RoleBadge role={userRole} />
                       </div>
                       <div className="flex items-center gap-2">
                         {userRole === 'super-admin' && (
