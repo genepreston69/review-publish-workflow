@@ -4,11 +4,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { PolicyViewModal } from './policy/PolicyViewModal';
 import { FacilityPoliciesGrid } from './policy/FacilityPoliciesGrid';
 import { useAllUserPolicies } from '@/hooks/useAllUserPolicies';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export function HRPolicies() {
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
   const { userRole } = useAuth();
   const { hrPolicies, isLoadingPolicies, refetchPolicies } = useAllUserPolicies();
+  const { toast } = useToast();
 
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
   const isSuperAdmin = userRole === 'super-admin';
@@ -23,15 +26,79 @@ export function HRPolicies() {
   };
 
   const handleUpdateStatus = async (policyId: string, newStatus: string) => {
-    // This would typically update the policy status in the database
-    // For now, just refetch the policies
-    await refetchPolicies();
+    try {
+      console.log('=== UPDATING HR POLICY STATUS ===', { policyId, newStatus });
+      
+      const { error } = await supabase
+        .from('Policies')
+        .update({ status: newStatus })
+        .eq('id', policyId);
+
+      if (error) {
+        console.error('Error updating policy status:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to update policy status.",
+        });
+        return;
+      }
+
+      const statusMessage = newStatus === 'archived' 
+        ? 'Policy archived successfully'
+        : `Policy status updated to ${newStatus}`;
+
+      toast({
+        title: "Success",
+        description: statusMessage,
+      });
+
+      // Refresh the policies list
+      await refetchPolicies();
+    } catch (error) {
+      console.error('Error updating policy status:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred while updating the policy.",
+      });
+    }
   };
 
   const handleDeletePolicy = async (policyId: string) => {
-    // This would typically delete the policy from the database
-    // For now, just refetch the policies
-    await refetchPolicies();
+    try {
+      console.log('=== DELETING HR POLICY ===', policyId);
+      
+      const { error } = await supabase
+        .from('Policies')
+        .delete()
+        .eq('id', policyId);
+
+      if (error) {
+        console.error('Error deleting policy:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to delete policy.",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Policy deleted successfully.",
+      });
+
+      // Refresh the policies list
+      await refetchPolicies();
+    } catch (error) {
+      console.error('Error deleting policy:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred while deleting the policy.",
+      });
+    }
   };
 
   console.log('=== ADMIN HR POLICIES COMPONENT ===');

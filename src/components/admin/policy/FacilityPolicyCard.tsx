@@ -10,11 +10,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { PolicyNumberDisplay } from './PolicyNumberDisplay';
 import { stripHtml } from './policyUtils';
 import { Policy } from './types';
 import { useAuth } from '@/hooks/useAuth';
 import { usePolicyDuplication } from '@/hooks/usePolicyDuplication';
+import { useToast } from '@/hooks/use-toast';
 
 interface FacilityPolicyCardProps {
   policy: Policy;
@@ -43,6 +55,8 @@ export function FacilityPolicyCard({
 }: FacilityPolicyCardProps) {
   const { userRole } = useAuth();
   const { duplicatePolicyForUpdate, isLoading: isDuplicating } = usePolicyDuplication();
+  const { toast } = useToast();
+  const [isArchiving, setIsArchiving] = useState(false);
 
   const getStatusColor = (status: string | null) => {
     const cleanStatus = stripHtml(status);
@@ -66,9 +80,36 @@ export function FacilityPolicyCard({
   };
 
   const handleUpdatePolicy = async () => {
-    const newPolicyId = await duplicatePolicyForUpdate(policy.id);
-    if (newPolicyId && onRefresh) {
-      onRefresh();
+    try {
+      console.log('=== STARTING POLICY UPDATE PROCESS ===', policy.id);
+      const newPolicyId = await duplicatePolicyForUpdate(policy.id);
+      if (newPolicyId) {
+        toast({
+          title: "Success",
+          description: "New draft version created for editing. You can find it in Draft Policies.",
+        });
+        if (onRefresh) {
+          onRefresh();
+        }
+      }
+    } catch (error) {
+      console.error('Error updating policy:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create new version for editing.",
+      });
+    }
+  };
+
+  const handleArchivePolicy = async () => {
+    setIsArchiving(true);
+    try {
+      await onUpdateStatus(policy.id, 'archived');
+    } catch (error) {
+      console.error('Error archiving policy:', error);
+    } finally {
+      setIsArchiving(false);
     }
   };
 
@@ -124,16 +165,37 @@ export function FacilityPolicyCard({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {policy.status === 'published' && (
-                <DropdownMenuItem onClick={() => onUpdateStatus(policy.id, 'archived')}>
+                <DropdownMenuItem onClick={handleArchivePolicy} disabled={isArchiving}>
                   <Archive className="mr-2 h-4 w-4" />
-                  Archive
+                  {isArchiving ? 'Archiving...' : 'Archive'}
                 </DropdownMenuItem>
               )}
               {isSuperAdmin && (
-                <DropdownMenuItem onClick={() => onDelete(policy.id)} className="text-red-600">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Policy</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete "{stripHtml(policy.name) || 'this policy'}"? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => onDelete(policy.id)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -181,16 +243,37 @@ export function FacilityPolicyCard({
                 </DropdownMenuItem>
               )}
               {policy.status === 'published' && (
-                <DropdownMenuItem onClick={() => onUpdateStatus(policy.id, 'archived')}>
+                <DropdownMenuItem onClick={handleArchivePolicy} disabled={isArchiving}>
                   <Archive className="mr-2 h-4 w-4" />
-                  Archive
+                  {isArchiving ? 'Archiving...' : 'Archive'}
                 </DropdownMenuItem>
               )}
               {isSuperAdmin && (
-                <DropdownMenuItem onClick={() => onDelete(policy.id)} className="text-red-600">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Policy</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete "{stripHtml(policy.name) || 'this policy'}"? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => onDelete(policy.id)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
