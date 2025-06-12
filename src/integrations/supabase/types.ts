@@ -374,6 +374,14 @@ export type Database = {
         Args: { p_policy_type: string }
         Returns: string
       }
+      get_initials_from_email: {
+        Args: { email_address: string }
+        Returns: string
+      }
+      get_initials_from_name: {
+        Args: { full_name: string }
+        Returns: string
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
