@@ -42,13 +42,15 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
     try {
       console.log('=== CREATING USER WITH PROFILES ROLE ===', formData.email);
       
-      // Create the user using regular signup
+      // Create the user using regular signup with proper metadata structure
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
-            name: formData.name
+            name: formData.name,
+            full_name: formData.name, // Also include as full_name for compatibility
+            display_name: formData.name // And as display_name
           }
         }
       });
@@ -60,6 +62,7 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
 
       if (authData.user) {
         console.log('User created successfully:', authData.user.id);
+        console.log('User metadata:', authData.user.user_metadata);
         
         // Wait a moment for the profile to be created by the trigger
         await new Promise(resolve => setTimeout(resolve, 1000));
