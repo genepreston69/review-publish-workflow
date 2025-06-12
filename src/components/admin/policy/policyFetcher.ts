@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Policy } from './types';
 
@@ -138,6 +139,8 @@ export const fetchPoliciesByStatus = async (status: string): Promise<Policy[]> =
 };
 
 export const fetchArchivedPolicies = async (): Promise<Policy[]> => {
+  console.log('=== FETCHING ARCHIVED POLICIES ===');
+  
   const { data, error } = await supabase
     .from('Policies')
     .select(`
@@ -152,6 +155,9 @@ export const fetchArchivedPolicies = async (): Promise<Policy[]> => {
     console.error('Error fetching archived policies:', error);
     throw error;
   }
+
+  console.log('=== ARCHIVED POLICIES FETCHED ===', data?.length || 0);
+  console.log('=== ARCHIVED POLICIES DATA ===', data);
 
   return data || [];
 };
