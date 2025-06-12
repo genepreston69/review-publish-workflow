@@ -1,5 +1,3 @@
-
-
 // SafeAuthProvider.tsx - Clean implementation with enhanced debugging
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,7 +30,7 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const retryCount = useRef(0);
   const maxRetries = 3;
 
-  // Safe role fetcher with comprehensive error handling
+  // Safe role fetcher - now fetching from profiles table
   const fetchUserRole = useCallback(async (userId: string): Promise<UserRole> => {
     console.log('🔍 Fetching role for user:', userId);
     console.log('🔍 Starting role fetch at:', new Date().toISOString());
@@ -44,15 +42,14 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         controller.abort();
       }, 10000);
 
-      console.log('🔍 Making Supabase query to user_roles table...');
+      console.log('🔍 Making Supabase query to profiles table for role...');
       const startTime = Date.now();
       
       const { data, error } = await supabase
-        .from('user_roles')
+        .from('profiles')
         .select('role')
-        .eq('user_id', userId)
-        .order('role', { ascending: false })
-        .limit(1);
+        .eq('id', userId)
+        .single();
 
       const endTime = Date.now();
       console.log(`🔍 Supabase query completed in ${endTime - startTime}ms`);
@@ -71,8 +68,8 @@ export const SafeAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       console.log('🔍 Raw role data from Supabase:', data);
 
-      if (data && data.length > 0) {
-        const role = data[0].role as UserRole;
+      if (data && data.role) {
+        const role = data.role as UserRole;
         console.log('✅ Role fetched successfully:', role);
         return role;
       }
@@ -321,4 +318,3 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
-
