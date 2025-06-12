@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +39,7 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
     setIsLoading(true);
 
     try {
-      console.log('=== CREATING USER ===', formData.email);
+      console.log('=== CREATING USER WITH PROFILES ROLE ===', formData.email);
       
       // Create the user using regular signup
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -64,30 +63,25 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         // Wait a moment for the profile to be created by the trigger
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // The trigger will create a default 'read-only' role, so we only need to update if different
+        // The trigger will create the profile with default 'read-only' role
+        // Update the role if it's different from default
         if (formData.role !== 'read-only') {
-          console.log('Updating user role to:', formData.role);
+          console.log('Updating user role in profiles to:', formData.role);
           
-          // Delete the default role first
-          await supabase
-            .from('user_roles')
-            .delete()
-            .eq('user_id', authData.user.id);
-          
-          // Insert the new role
           const { error: roleError } = await supabase
-            .from('user_roles')
-            .insert({ user_id: authData.user.id, role: formData.role });
+            .from('profiles')
+            .update({ role: formData.role })
+            .eq('id', authData.user.id);
 
           if (roleError) {
-            console.error('Role update error:', roleError);
+            console.error('Role update error in profiles:', roleError);
             toast({
               variant: "destructive",
               title: "Warning",
               description: "User created but role assignment failed. Please update manually.",
             });
           } else {
-            console.log('Role updated successfully');
+            console.log('Role updated successfully in profiles');
           }
         }
 

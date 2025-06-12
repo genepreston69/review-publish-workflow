@@ -20,34 +20,24 @@ export const UserRoleSelect = ({ userId, currentRole, onRoleUpdated }: UserRoleS
   const updateUserRole = async (newRole: UserRole) => {
     try {
       setIsUpdating(true);
-      console.log('=== ROLE UPDATE ATTEMPT ===');
+      console.log('=== ROLE UPDATE ATTEMPT IN PROFILES ===');
       console.log('Current user ID:', currentUser?.id);
       console.log('Current user role:', userRole);
       console.log('Target user ID:', userId);
       console.log('New role:', newRole);
       
-      // First, delete ALL existing roles for this user to ensure clean state
-      const { error: deleteError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
+      // Update role directly in profiles table
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', userId);
 
-      if (deleteError) {
-        console.error('Error deleting existing roles:', deleteError);
-        throw deleteError;
+      if (updateError) {
+        console.error('Error updating role in profiles:', updateError);
+        throw updateError;
       }
 
-      // Then insert the new role
-      const { error: insertError } = await supabase
-        .from('user_roles')
-        .insert({ user_id: userId, role: newRole });
-
-      if (insertError) {
-        console.error('Error inserting new role:', insertError);
-        throw insertError;
-      }
-
-      console.log('=== ROLE UPDATE SUCCESS ===');
+      console.log('=== ROLE UPDATE SUCCESS IN PROFILES ===');
       
       toast({
         title: "Success",
@@ -56,7 +46,7 @@ export const UserRoleSelect = ({ userId, currentRole, onRoleUpdated }: UserRoleS
 
       onRoleUpdated();
     } catch (error) {
-      console.error('=== ROLE UPDATE FAILED ===', error);
+      console.error('=== ROLE UPDATE FAILED IN PROFILES ===', error);
       toast({
         variant: "destructive",
         title: "Error",
