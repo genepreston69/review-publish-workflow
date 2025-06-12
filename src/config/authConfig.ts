@@ -10,8 +10,8 @@ export interface AuthConfig {
 }
 
 export const authConfig: AuthConfig = {
-  // Set to true to use mock authentication, false for real Supabase auth
-  useMockAuth: process.env.NODE_ENV === 'development' || false,
+  // Set to false to use real Supabase auth by default
+  useMockAuth: false,
   mockUser: {
     id: 'mock-user-12345',
     name: 'Mock User',
