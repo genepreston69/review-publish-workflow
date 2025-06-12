@@ -84,6 +84,11 @@ export function ReviewPolicies() {
     await updatePolicyStatus(policyId, newStatus);
   };
 
+  const handleDeletePolicy = async (policyId: string) => {
+    console.log('=== HANDLE DELETE POLICY ===', policyId);
+    await deletePolicy(policyId);
+  };
+
   // Force refresh function to reload policies from database
   const handleRefresh = () => {
     console.log('=== FORCE REFRESHING POLICIES ===');
@@ -162,7 +167,7 @@ export function ReviewPolicies() {
         onUpdateStatus={handleUpdateStatus}
         onEdit={handleEditPolicy}
         onView={handleViewPolicy}
-        onDelete={isSuperAdmin ? deletePolicy : undefined}
+        onDelete={isSuperAdmin ? handleDeletePolicy : undefined}
         onArchive={canArchive ? handleArchivePolicy : undefined}
       />
 
