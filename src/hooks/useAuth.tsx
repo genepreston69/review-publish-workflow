@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -110,14 +111,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (session?.user) {
           console.log('=== USER FOUND, FETCHING ROLE FROM PROFILES ===');
+          setIsLoading(true);
           try {
-            const rolePromise = fetchUserRole(session.user.id);
-            const timeoutPromise = new Promise<UserRole>((_, reject) => {
-              setTimeout(() => reject(new Error('Role fetch timeout')), 10000);
-            });
-
-            const role = await Promise.race([rolePromise, timeoutPromise]);
-            console.log('=== ROLE FETCHED FROM PROFILES ===', role);
+            const role = await fetchUserRole(session.user.id);
+            console.log('=== ROLE FETCHED FROM PROFILES, SETTING STATE ===', role);
             setUserRole(role);
           } catch (error) {
             console.error('=== ROLE FETCH FROM PROFILES FAILED ===', error);
@@ -125,6 +122,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           } finally {
             setIsLoading(false);
           }
+        } else {
+          setIsLoading(false);
         }
       }
     );
@@ -148,13 +147,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (session?.user) {
           try {
-            const rolePromise = fetchUserRole(session.user.id);
-            const timeoutPromise = new Promise<UserRole>((_, reject) => {
-              setTimeout(() => reject(new Error('Initial role fetch timeout')), 10000);
-            });
-
-            const role = await Promise.race([rolePromise, timeoutPromise]);
-            console.log('=== INITIAL ROLE FETCHED FROM PROFILES ===', role);
+            const role = await fetchUserRole(session.user.id);
+            console.log('=== INITIAL ROLE FETCHED FROM PROFILES, SETTING STATE ===', role);
             setUserRole(role);
           } catch (error) {
             console.error('=== INITIAL ROLE FETCH FROM PROFILES FAILED ===', error);
