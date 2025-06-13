@@ -41,16 +41,24 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
 
     try {
       console.log('=== CREATING USER WITH PROFILES ROLE ===', formData.email);
+      console.log('=== SIGNUP METADATA ===', {
+        name: formData.name,
+        full_name: formData.name,
+        display_name: formData.name
+      });
       
-      // Create the user using regular signup with proper metadata structure
+      // Create the user using regular signup with comprehensive metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
             name: formData.name,
-            full_name: formData.name, // Also include as full_name for compatibility
-            display_name: formData.name // And as display_name
+            full_name: formData.name,
+            display_name: formData.name,
+            // Add additional metadata formats that Supabase might expect
+            user_name: formData.name,
+            username: formData.name
           }
         }
       });
@@ -62,10 +70,19 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
 
       if (authData.user) {
         console.log('User created successfully:', authData.user.id);
-        console.log('User metadata:', authData.user.user_metadata);
+        console.log('User metadata from signup:', authData.user.user_metadata);
+        console.log('Raw user metadata:', authData.user.raw_user_meta_data);
         
         // Wait a moment for the profile to be created by the trigger
         await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Verify the user data was stored properly
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userData.user) {
+          console.log('=== VERIFICATION: User data after creation ===');
+          console.log('User metadata after creation:', userData.user.user_metadata);
+          console.log('Raw user metadata after creation:', userData.user.raw_user_meta_data);
+        }
         
         // The trigger will create the profile with default 'read-only' role
         // Update the role if it's different from default
