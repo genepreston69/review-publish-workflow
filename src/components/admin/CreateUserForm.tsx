@@ -71,7 +71,6 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
       if (authData.user) {
         console.log('User created successfully:', authData.user.id);
         console.log('User metadata from signup:', authData.user.user_metadata);
-        console.log('Raw user metadata:', authData.user.raw_user_meta_data);
         
         // Wait a moment for the profile to be created by the trigger
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -81,7 +80,6 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         if (userData.user) {
           console.log('=== VERIFICATION: User data after creation ===');
           console.log('User metadata after creation:', userData.user.user_metadata);
-          console.log('Raw user metadata after creation:', userData.user.raw_user_meta_data);
         }
         
         // The trigger will create the profile with default 'read-only' role
