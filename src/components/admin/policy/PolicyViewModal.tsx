@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -12,6 +13,7 @@ import { PolicyViewMetadata } from './PolicyViewMetadata';
 import { PolicyViewContent } from './PolicyViewContent';
 import { PolicyViewActions } from './PolicyViewActions';
 import { PolicyVersionHistory } from './PolicyVersionHistory';
+import { PolicyCommentSection } from './PolicyCommentSection';
 import { generatePolicyPrintTemplate } from './policyPrintUtils';
 import { Policy } from './types';
 import { Printer } from 'lucide-react';
@@ -188,7 +190,7 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden [&>button]:hidden">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden [&>button]:hidden">
         <div className="flex items-center justify-between mb-4">
           <PolicyViewHeader policy={policy} onClose={onClose} />
           <Button
@@ -203,23 +205,32 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
         </div>
         
         <Tabs defaultValue="content" className="flex-1 overflow-hidden">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="content">Policy Content</TabsTrigger>
+            <TabsTrigger value="comments">Discussion</TabsTrigger>
             <TabsTrigger value="versions">Version History</TabsTrigger>
+            <TabsTrigger value="metadata">Metadata</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="content" className="overflow-y-auto max-h-[60vh]">
+          <TabsContent value="content" className="overflow-y-auto max-h-[55vh]">
             <div className="space-y-4">
-              <PolicyViewMetadata policy={policy} />
               <PolicyViewContent policy={policy} />
             </div>
           </TabsContent>
+
+          <TabsContent value="comments" className="overflow-y-auto max-h-[55vh]">
+            <PolicyCommentSection policyId={policy.id} />
+          </TabsContent>
           
-          <TabsContent value="versions" className="overflow-y-auto max-h-[60vh]">
+          <TabsContent value="versions" className="overflow-y-auto max-h-[55vh]">
             <PolicyVersionHistory 
               policyId={policyId} 
               onViewVersion={handleViewVersion}
             />
+          </TabsContent>
+
+          <TabsContent value="metadata" className="overflow-y-auto max-h-[55vh]">
+            <PolicyViewMetadata policy={policy} />
           </TabsContent>
         </Tabs>
 

@@ -12,6 +12,8 @@ import { Policy } from './types';
 import { PolicyFormValidation } from './PolicyFormValidation';
 import { PolicyFormHeader } from './PolicyFormHeader';
 import { PolicyFormContent } from './PolicyFormContent';
+import { PolicyCommentSection } from './PolicyCommentSection';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface CreatePolicyFormProps {
   onPolicyCreated: (policy: Policy) => void;
@@ -21,6 +23,7 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
   const { currentUser, userRole } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createdPolicyId, setCreatedPolicyId] = useState<string | null>(null);
 
   const form = useForm<PolicyFormValues>({
     resolver: zodResolver(policyFormSchema),
@@ -152,9 +155,9 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
         description: statusMessage,
       });
 
-      // Reset the form and notify parent
-      form.reset();
+      // Set the created policy ID to show the comment section
       if (insertedData && insertedData[0]) {
+        setCreatedPolicyId(insertedData[0].id);
         onPolicyCreated(insertedData[0]);
       }
     } catch (error) {
@@ -169,9 +172,48 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
     }
   };
 
+  const handleStartOver = () => {
+    setCreatedPolicyId(null);
+    form.reset();
+  };
+
   // Show access denied component if user doesn't have permission
   if (!hasEditAccess) {
     return <PolicyFormValidation hasEditAccess={hasEditAccess} />;
+  }
+
+  // If policy was created successfully, show tabs with comment section
+  if (createdPolicyId) {
+    return (
+      <Card>
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Policy Created Successfully</h2>
+              <p className="text-muted-foreground">
+                You can now add comments or notes about this policy.
+              </p>
+            </div>
+            <button
+              onClick={handleStartOver}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Create Another Policy
+            </button>
+          </div>
+
+          <Tabs defaultValue="comments" className="w-full">
+            <TabsList className="grid w-full grid-cols-1">
+              <TabsTrigger value="comments">Add Comments & Notes</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="comments" className="mt-6">
+              <PolicyCommentSection policyId={createdPolicyId} />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </Card>
+    );
   }
 
   return (
