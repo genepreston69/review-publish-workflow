@@ -3,8 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { UserRole } from '@/types/user';
-import { useInfiniteLoopProtection } from '@/hooks/useInfiniteLoopProtection';
-import { useSafeCallback } from '@/hooks/useSafeCallback';
 
 interface UserWithRole {
   id: string;
@@ -15,77 +13,63 @@ interface UserWithRole {
 }
 
 export const useUserManagement = () => {
-  // Add infinite loop protection
-  useInfiniteLoopProtection({
-    componentName: 'useUserManagement',
-    maxRenders: 10
-  });
-
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchUsers = useSafeCallback(async () => {
+  const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      console.log('=== FETCHING USERS FROM PROFILES TABLE ===');
+      console.log('=== FETCHING USERS FROM PROFILES ===');
       
-      // Fetch profiles with roles directly from profiles table
-      const { data: profiles, error: profilesError } = await supabase
+      const { data: profilesData, error } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          name,
-          email,
-          created_at,
-          role
-        `);
+        .select('id, name, email, created_at, role')
+        .order('created_at', { ascending: false });
 
-      if (profilesError) {
-        console.error('=== PROFILES ERROR ===', profilesError);
-        throw profilesError;
+      if (error) {
+        console.error('Error fetching profiles:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load users.",
+        });
+        setUsers([]);
+        return;
       }
 
-      console.log('=== PROFILES WITH ROLES FETCHED ===', profiles);
+      console.log('=== PROFILES WITH ROLES FETCHED ===', profilesData);
 
-      const usersWithRoles: UserWithRole[] = profiles.map(profile => ({
+      const usersWithRoles: UserWithRole[] = (profilesData || []).map(profile => ({
         id: profile.id,
-        name: profile.name,
+        name: profile.name || 'Unknown',
         email: profile.email,
-        created_at: profile.created_at,
+        created_at: profile.created_at || new Date().toISOString(),
         role: profile.role as UserRole
       }));
 
       console.log('=== FINAL USERS WITH ROLES ===', usersWithRoles);
       setUsers(usersWithRoles);
-
-      toast({
-        title: "Success",
-        description: `Loaded ${usersWithRoles.length} users successfully.`,
-      });
     } catch (error) {
-      console.error('=== ERROR FETCHING USERS ===', error);
+      console.error('Error in fetchUsers:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to load users. Please check your permissions.",
+        description: "An unexpected error occurred while loading users.",
       });
       setUsers([]);
     } finally {
       setIsLoading(false);
     }
-  }, [], {
-    name: 'fetchUsers',
-    maxCalls: 5
-  });
+  };
 
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+  }, []);
 
   return {
     users,
     isLoading,
-    fetchUsers
+    fetchUsers,
   };
 };
