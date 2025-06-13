@@ -7,7 +7,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
 import { useInfiniteLoopProtection } from '@/hooks/useInfiniteLoopProtection';
-import { useSafeCallback } from '@/hooks/useSafeCallback';
 
 // New imports for refactored components
 import { useContentManagement } from '@/hooks/useContentManagement';
@@ -31,7 +30,7 @@ export const Dashboard = () => {
   const { contents, isLoading, handlePublish } = useContentManagement(currentUser, userRole);
   const { hrPolicies, facilityPolicies, isLoadingPolicies } = useAllUserPolicies();
   
-  // Use action handlers with safe callbacks
+  // Use action handlers
   const {
     handleCreateNew,
     handleEdit,
@@ -61,7 +60,7 @@ export const Dashboard = () => {
   const reviewContents = contents.filter(c => c.status === 'under-review');
   const publishedContents = contents.filter(c => c.status === 'published');
 
-  const renderContent = useSafeCallback(() => {
+  const renderContent = () => {
     console.log('=== RENDER CONTENT ===');
     console.log('Rendering for activeSection:', activeSection);
     
@@ -156,26 +155,7 @@ export const Dashboard = () => {
           </div>
         );
     }
-  }, [
-    activeSection,
-    contents,
-    draftContents,
-    reviewContents,
-    publishedContents,
-    hrPolicies,
-    facilityPolicies,
-    userRole,
-    canCreate,
-    handleEdit,
-    handleView,
-    handlePublish,
-    handlePolicyView,
-    handlePolicyUpdateStatus,
-    handlePolicyDelete
-  ], {
-    name: 'renderContent',
-    maxCalls: 10
-  });
+  };
 
   return (
     <div className="p-6 space-y-6">
