@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,16 +38,42 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       const { data, error } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, name, email')
         .eq('id', userId)
         .single();
 
       if (error) {
         console.error('=== ERROR FETCHING USER ROLE FROM PROFILES ===', error);
+        
+        // If no profile exists, create one with default role
+        if (error.code === 'PGRST116') {
+          console.log('=== NO PROFILE FOUND, CREATING DEFAULT PROFILE ===');
+          
+          // Get user info from auth
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData.user) {
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: userId,
+                name: userData.user.user_metadata?.name || userData.user.email || 'Unknown User',
+                email: userData.user.email || '',
+                role: 'read-only'
+              });
+            
+            if (insertError) {
+              console.error('=== ERROR CREATING PROFILE ===', insertError);
+            } else {
+              console.log('=== PROFILE CREATED WITH READ-ONLY ROLE ===');
+              return 'read-only';
+            }
+          }
+        }
+        
         return 'read-only';
       }
 
-      console.log('=== USER ROLE FROM PROFILES ===', data);
+      console.log('=== USER PROFILE DATA FROM PROFILES ===', data);
 
       if (data && data.role) {
         const role = data.role as UserRole;
