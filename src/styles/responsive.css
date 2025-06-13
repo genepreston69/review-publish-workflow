@@ -1,0 +1,29 @@
+
+/* Responsive full width */
+@media (min-width: 640px) {
+  .ProseMirror {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .ProseMirror {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .ProseMirror {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  .ProseMirror {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
