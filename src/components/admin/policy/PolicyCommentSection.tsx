@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -44,8 +43,16 @@ export function PolicyCommentSection({ policyId }: PolicyCommentSectionProps) {
   // Check if user can comment (edit access or higher)
   const canComment = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
+  console.log('=== POLICY COMMENT SECTION RENDER ===');
+  console.log('Policy ID:', policyId);
+  console.log('Current User:', currentUser);
+  console.log('User Role:', userRole);
+  console.log('Can Comment:', canComment);
+
   useEffect(() => {
-    loadComments();
+    if (policyId) {
+      loadComments();
+    }
   }, [policyId]);
 
   const loadComments = async () => {
@@ -87,7 +94,13 @@ export function PolicyCommentSection({ policyId }: PolicyCommentSectionProps) {
   };
 
   const handleSubmitComment = async () => {
-    if (!currentUser || !canComment || !newComment.trim()) return;
+    if (!currentUser || !canComment || !newComment.trim()) {
+      console.log('=== CANNOT SUBMIT COMMENT ===');
+      console.log('Current User:', !!currentUser);
+      console.log('Can Comment:', canComment);
+      console.log('Has Comment Text:', !!newComment.trim());
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -219,6 +232,18 @@ export function PolicyCommentSection({ policyId }: PolicyCommentSectionProps) {
     }
   };
 
+  if (!policyId) {
+    return (
+      <Card>
+        <CardContent className="py-8">
+          <div className="text-center text-gray-500">
+            <p>No policy ID provided for comments.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (isLoading) {
     return (
       <Card>
@@ -232,6 +257,16 @@ export function PolicyCommentSection({ policyId }: PolicyCommentSectionProps) {
 
   return (
     <div className="space-y-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p className="text-blue-800 text-sm">
+          <strong>Comment Section Debug:</strong><br />
+          Policy ID: {policyId}<br />
+          User Role: {userRole}<br />
+          Can Comment: {canComment ? 'Yes' : 'No'}<br />
+          Comments Count: {comments.length}
+        </p>
+      </div>
+
       {/* Add new comment section */}
       {canComment && (
         <Card>
@@ -259,6 +294,17 @@ export function PolicyCommentSection({ policyId }: PolicyCommentSectionProps) {
                   'Add Comment'
                 )}
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!canComment && (
+        <Card>
+          <CardContent className="py-8">
+            <div className="text-center text-gray-500">
+              <p>You need edit access or higher to add comments.</p>
+              <p className="text-sm mt-1">Current role: {userRole}</p>
             </div>
           </CardContent>
         </Card>

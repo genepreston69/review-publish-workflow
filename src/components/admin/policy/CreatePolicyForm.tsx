@@ -145,6 +145,7 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
       }
 
       console.log('=== POLICY CREATED SUCCESSFULLY ===', insertedData);
+      console.log('=== SETTING CREATED POLICY ID ===', insertedData[0]?.id);
 
       const statusMessage = status === 'draft' 
         ? `Policy created as draft with number ${generatedPolicyNumber}.`
@@ -173,6 +174,7 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
   };
 
   const handleStartOver = () => {
+    console.log('=== STARTING OVER ===');
     setCreatedPolicyId(null);
     form.reset();
   };
@@ -182,8 +184,14 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
     return <PolicyFormValidation hasEditAccess={hasEditAccess} />;
   }
 
+  console.log('=== RENDER STATE ===');
+  console.log('Created Policy ID:', createdPolicyId);
+  console.log('User Role:', userRole);
+  console.log('Has Edit Access:', hasEditAccess);
+
   // If policy was created successfully, show tabs with comment section
   if (createdPolicyId) {
+    console.log('=== RENDERING COMMENT SECTION ===', createdPolicyId);
     return (
       <Card>
         <div className="p-6">
@@ -200,6 +208,12 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
             >
               Create Another Policy
             </button>
+          </div>
+
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-800 font-medium">
+              Policy created successfully! You can now add comments and notes below.
+            </p>
           </div>
 
           <Tabs defaultValue="comments" className="w-full">
