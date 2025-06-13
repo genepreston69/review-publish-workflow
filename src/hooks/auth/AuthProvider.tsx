@@ -16,6 +16,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     console.log('=== AUTH PROVIDER USEEFFECT STARTING ===');
     
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('=== AUTH STATE CHANGED ===', event, session?.user?.email);
@@ -33,30 +34,41 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setCurrentUser(session?.user ?? null);
         
         if (session?.user) {
-          console.log('=== USER FOUND, FETCHING ROLE FROM PROFILES ===');
-          setIsLoading(true);
-          try {
-            const role = await fetchUserRole(session.user.id);
-            console.log('=== ROLE FETCHED FROM PROFILES, SETTING STATE ===', role);
-            setUserRole(role);
-          } catch (error) {
-            console.error('=== ROLE FETCH FROM PROFILES FAILED ===', error);
-            setUserRole('read-only');
-          } finally {
-            setIsLoading(false);
-          }
+          console.log('=== USER FOUND, FETCHING ROLE ===');
+          // Use setTimeout to prevent blocking the auth state change
+          setTimeout(async () => {
+            try {
+              const role = await fetchUserRole(session.user.id);
+              console.log('=== ROLE FETCHED, SETTING STATE ===', role);
+              setUserRole(role);
+            } catch (error) {
+              console.error('=== ROLE FETCH FAILED ===', error);
+              setUserRole('read-only');
+            } finally {
+              setIsLoading(false);
+            }
+          }, 0);
         } else {
           setIsLoading(false);
         }
       }
     );
 
-    // Get initial session
+    // Get initial session with timeout
     const initAuth = async () => {
       try {
         console.log('=== GETTING INITIAL SESSION ===');
         
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Add timeout to prevent hanging
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
+        );
+        
+        const { data: { session }, error } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any;
         
         if (error) {
           console.error('=== INITIAL SESSION ERROR ===', error);
@@ -71,15 +83,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (session?.user) {
           try {
             const role = await fetchUserRole(session.user.id);
-            console.log('=== INITIAL ROLE FETCHED FROM PROFILES, SETTING STATE ===', role);
+            console.log('=== INITIAL ROLE FETCHED, SETTING STATE ===', role);
             setUserRole(role);
           } catch (error) {
-            console.error('=== INITIAL ROLE FETCH FROM PROFILES FAILED ===', error);
+            console.error('=== INITIAL ROLE FETCH FAILED ===', error);
             setUserRole('read-only');
           }
         }
       } catch (error) {
         console.error('=== INITIAL AUTH ERROR ===', error);
+        // Set defaults on timeout/error
+        setSession(null);
+        setCurrentUser(null);
+        setUserRole(null);
       } finally {
         setIsLoading(false);
       }

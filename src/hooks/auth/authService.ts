@@ -4,11 +4,18 @@ import { UserRole } from '@/types/user';
 
 export const fetchUserRole = async (userId: string): Promise<UserRole> => {
   try {
-    console.log('=== FETCHING ROLE FOR USER FROM PROFILES ===', userId);
+    console.log('=== FETCHING ROLE FOR USER ===', userId);
     
-    // Use the new security definer function to get user role
-    const { data, error } = await supabase
-      .rpc('get_current_user_role');
+    // Add timeout to the RPC call
+    const rolePromise = supabase.rpc('get_current_user_role');
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Role fetch timeout')), 3000)
+    );
+
+    const { data, error } = await Promise.race([
+      rolePromise,
+      timeoutPromise
+    ]) as any;
 
     if (error) {
       console.error('=== ERROR FETCHING USER ROLE FROM RPC ===', error);
@@ -16,38 +23,12 @@ export const fetchUserRole = async (userId: string): Promise<UserRole> => {
       // Fallback to direct query if RPC fails
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('role, name, email')
+        .select('role')
         .eq('id', userId)
         .single();
 
       if (profileError) {
         console.error('=== ERROR FETCHING USER ROLE FROM PROFILES ===', profileError);
-        
-        // If no profile exists, create one with default role
-        if (profileError.code === 'PGRST116') {
-          console.log('=== NO PROFILE FOUND, CREATING DEFAULT PROFILE ===');
-          
-          // Get user info from auth
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData.user) {
-            const { error: insertError } = await supabase
-              .from('profiles')
-              .insert({
-                id: userId,
-                name: userData.user.user_metadata?.name || userData.user.email || 'Unknown User',
-                email: userData.user.email || '',
-                role: 'read-only'
-              });
-            
-            if (insertError) {
-              console.error('=== ERROR CREATING PROFILE ===', insertError);
-            } else {
-              console.log('=== PROFILE CREATED WITH READ-ONLY ROLE ===');
-              return 'read-only';
-            }
-          }
-        }
-        
         return 'read-only';
       }
 
