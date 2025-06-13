@@ -1,181 +1,31 @@
+
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Card } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { usePolicyNumberGeneration } from './usePolicyNumberGeneration';
-import { policyFormSchema, PolicyFormValues } from './PolicyFormSchema';
 import { Policy } from './types';
 import { PolicyFormValidation } from './PolicyFormValidation';
-import { PolicyFormHeader } from './PolicyFormHeader';
-import { PolicyFormContent } from './PolicyFormContent';
-import { PolicyCommentSection } from './PolicyCommentSection';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PolicyCreationSuccess } from './PolicyCreationSuccess';
+import { PolicyCreationForm } from './PolicyCreationForm';
 
 interface CreatePolicyFormProps {
   onPolicyCreated: (policy: Policy) => void;
 }
 
 export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
-  const { currentUser, userRole } = useAuth();
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { userRole } = useAuth();
   const [createdPolicyId, setCreatedPolicyId] = useState<string | null>(null);
-
-  const form = useForm<PolicyFormValues>({
-    resolver: zodResolver(policyFormSchema),
-    defaultValues: {
-      name: '',
-      policy_type: '',
-      purpose: '',
-      procedure: '',
-      policy_text: '',
-    },
-  });
 
   // Check if user has edit access
   const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
 
-  // Watch policy type changes to generate policy number
-  const selectedPolicyType = form.watch('policy_type');
-  console.log('=== WATCHED POLICY TYPE ===', selectedPolicyType);
-  
-  const { generatedPolicyNumber, isLoading: isGeneratingNumber, error: numberGenerationError } = usePolicyNumberGeneration(selectedPolicyType);
-
-  console.log('=== FORM STATE DEBUG ===');
-  console.log('Selected policy type from form:', selectedPolicyType);
-  console.log('Generated policy number:', generatedPolicyNumber);
-  console.log('Is generating number:', isGeneratingNumber);
-  console.log('Number generation error:', numberGenerationError);
-
-  const onSubmit = async (data: PolicyFormValues) => {
-    console.log('=== FORM SUBMISSION STARTED ===');
-    console.log('Form data:', data);
-    console.log('Current user:', currentUser);
-    console.log('User role:', userRole);
-    console.log('Generated policy number:', generatedPolicyNumber);
-    console.log('Number generation error:', numberGenerationError);
-    console.log('Is generating number:', isGeneratingNumber);
-
-    if (!currentUser || !hasEditAccess) {
-      console.log('=== ACCESS DENIED ===');
-      toast({
-        variant: "destructive",
-        title: "Access Denied",
-        description: "You don't have permission to create policies.",
-      });
-      return;
-    }
-
-    if (numberGenerationError) {
-      console.log('=== POLICY NUMBER GENERATION ERROR ===', numberGenerationError);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: numberGenerationError,
-      });
-      return;
-    }
-
-    if (isGeneratingNumber) {
-      console.log('=== STILL GENERATING POLICY NUMBER ===');
-      toast({
-        variant: "destructive",
-        title: "Please Wait",
-        description: "Policy number is still being generated. Please wait a moment and try again.",
-      });
-      return;
-    }
-
-    if (!generatedPolicyNumber) {
-      console.log('=== NO POLICY NUMBER AVAILABLE ===');
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Policy number could not be generated. Please select a policy type and try again.",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      // Get creator profile to store creator_id
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', currentUser.id)
-        .single();
-
-      if (profileError) {
-        console.error('=== ERROR FETCHING PROFILE ===', profileError);
-        throw new Error('Could not fetch user profile');
-      }
-
-      // Set status based on user role:
-      // - edit users: create as draft
-      // - publish/super-admin users: create as under-review
-      const status = userRole === 'edit' ? 'draft' : 'under-review';
-
-      console.log('=== INSERTING POLICY ===');
-      const policyData = {
-        name: data.name,
-        policy_type: data.policy_type,
-        purpose: data.purpose,
-        procedure: data.procedure,
-        policy_text: data.policy_text,
-        policy_number: generatedPolicyNumber,
-        status,
-        creator_id: profileData.id,
-        reviewer: currentUser.email, // Keep for backward compatibility
-      };
-      console.log('Policy data to insert:', policyData);
-
-      const { data: insertedData, error } = await supabase
-        .from('Policies')
-        .insert(policyData)
-        .select();
-
-      if (error) {
-        console.error('=== SUPABASE ERROR ===', error);
-        throw error;
-      }
-
-      console.log('=== POLICY CREATED SUCCESSFULLY ===', insertedData);
-      console.log('=== SETTING CREATED POLICY ID ===', insertedData[0]?.id);
-
-      const statusMessage = status === 'draft' 
-        ? `Policy created as draft with number ${generatedPolicyNumber}.`
-        : `Policy created and submitted for review with number ${generatedPolicyNumber}.`;
-
-      toast({
-        title: "Success",
-        description: statusMessage,
-      });
-
-      // Set the created policy ID to show the comment section
-      if (insertedData && insertedData[0]) {
-        setCreatedPolicyId(insertedData[0].id);
-        onPolicyCreated(insertedData[0]);
-      }
-    } catch (error) {
-      console.error('=== ERROR CREATING POLICY ===', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create policy. Please try again.",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handlePolicyCreated = (policy: Policy) => {
+    console.log('=== SETTING CREATED POLICY ID ===', policy.id);
+    setCreatedPolicyId(policy.id);
+    onPolicyCreated(policy);
   };
 
   const handleStartOver = () => {
     console.log('=== STARTING OVER ===');
     setCreatedPolicyId(null);
-    form.reset();
   };
 
   // Show access denied component if user doesn't have permission
@@ -188,59 +38,22 @@ export function CreatePolicyForm({ onPolicyCreated }: CreatePolicyFormProps) {
   console.log('User Role:', userRole);
   console.log('Has Edit Access:', hasEditAccess);
 
-  // If policy was created successfully, show tabs with comment section
+  // If policy was created successfully, show success state with comment section
   if (createdPolicyId) {
-    console.log('=== RENDERING COMMENT SECTION ===', createdPolicyId);
     return (
-      <Card>
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight">Policy Created Successfully</h2>
-              <p className="text-muted-foreground">
-                You can now add comments or notes about this policy.
-              </p>
-            </div>
-            <button
-              onClick={handleStartOver}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Create Another Policy
-            </button>
-          </div>
-
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-800 font-medium">
-              Policy created successfully! You can now add comments and notes below.
-            </p>
-          </div>
-
-          <Tabs defaultValue="comments" className="w-full">
-            <TabsList className="grid w-full grid-cols-1">
-              <TabsTrigger value="comments">Add Comments & Notes</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="comments" className="mt-6">
-              <PolicyCommentSection policyId={createdPolicyId} />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </Card>
+      <PolicyCreationSuccess 
+        policyId={createdPolicyId}
+        onStartOver={handleStartOver}
+      />
     );
   }
 
+  // Show the creation form
   return (
-    <Card>
-      <PolicyFormHeader userRole={userRole} />
-      <PolicyFormContent 
-        onSubmit={onSubmit}
-        isSubmitting={isSubmitting}
-        generatedPolicyNumber={generatedPolicyNumber}
-        isGeneratingNumber={isGeneratingNumber}
-        numberGenerationError={numberGenerationError}
-        form={form}
-        isNewPolicy={true}
-      />
-    </Card>
+    <PolicyCreationForm
+      userRole={userRole || ''}
+      hasEditAccess={hasEditAccess}
+      onPolicyCreated={handlePolicyCreated}
+    />
   );
 }
