@@ -22,27 +22,10 @@ export const useUserManagement = () => {
       setIsLoading(true);
       console.log('=== FETCHING USERS FROM PROFILES ===');
       
-      // First, let's check if we can access the profiles table at all
-      const { data: profilesData, error, count } = await supabase
+      const { data: profilesData, error } = await supabase
         .from('profiles')
-        .select('id, name, email, created_at, role', { count: 'exact' })
+        .select('id, name, email, created_at, role')
         .order('created_at', { ascending: false });
-
-      console.log('=== PROFILES QUERY DETAILS ===');
-      console.log('Data:', profilesData);
-      console.log('Error:', error);
-      console.log('Count:', count);
-      console.log('Current user:', await supabase.auth.getUser());
-      
-      // Let's also check if there are any RLS issues by trying a simpler query
-      const { data: simpleQuery, error: simpleError } = await supabase
-        .from('profiles')
-        .select('*')
-        .limit(1);
-        
-      console.log('=== SIMPLE PROFILES QUERY ===');
-      console.log('Simple data:', simpleQuery);
-      console.log('Simple error:', simpleError);
 
       if (error) {
         console.error('Error fetching profiles:', error);
@@ -55,16 +38,10 @@ export const useUserManagement = () => {
         return;
       }
 
-      console.log('=== PROFILES WITH ROLES FETCHED ===', profilesData);
+      console.log('=== PROFILES FETCHED ===', profilesData);
 
       if (!profilesData || profilesData.length === 0) {
-        console.log('=== NO PROFILES FOUND - CHECKING AUTH.USERS ===');
-        
-        // Let's see if there are users in auth but no profiles
-        const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
-        console.log('Auth users:', authUsers);
-        console.log('Auth error:', authError);
-        
+        console.log('=== NO PROFILES FOUND ===');
         toast({
           title: "No Users Found",
           description: "No user profiles found in the database.",
@@ -73,7 +50,7 @@ export const useUserManagement = () => {
         return;
       }
 
-      const usersWithRoles: UserWithRole[] = (profilesData || []).map(profile => ({
+      const usersWithRoles: UserWithRole[] = profilesData.map(profile => ({
         id: profile.id,
         name: profile.name || 'Unknown',
         email: profile.email,
