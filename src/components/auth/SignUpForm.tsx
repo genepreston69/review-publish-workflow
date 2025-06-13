@@ -17,6 +17,7 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
   const [signUpName, setSignUpName] = useState('');
+  const [signUpPhone, setSignUpPhone] = useState('');
   const { toast } = useToast();
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -26,7 +27,7 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
       toast({
         variant: "destructive",
         title: "Missing information",
-        description: "Please fill in all fields.",
+        description: "Please fill in all required fields.",
       });
       return;
     }
@@ -49,6 +50,7 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
         options: {
           data: {
             name: signUpName,
+            phone_number: signUpPhone,
           },
         },
       });
@@ -68,6 +70,7 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
         setSignUpPassword('');
         setSignUpConfirmPassword('');
         setSignUpName('');
+        setSignUpPhone('');
       }
     } catch (error) {
       toast({
@@ -84,7 +87,7 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
     <form onSubmit={handleSignUp} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="signup-name" className="text-sm font-medium text-slate-700">
-          Full Name
+          Full Name *
         </Label>
         <Input
           id="signup-name"
@@ -100,7 +103,7 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
       
       <div className="space-y-2">
         <Label htmlFor="signup-email" className="text-sm font-medium text-slate-700">
-          Email
+          Email *
         </Label>
         <Input
           id="signup-email"
@@ -113,10 +116,25 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
           autoComplete="email"
         />
       </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="signup-phone" className="text-sm font-medium text-slate-700">
+          Phone Number
+        </Label>
+        <Input
+          id="signup-phone"
+          type="tel"
+          placeholder="Enter your phone number"
+          value={signUpPhone}
+          onChange={(e) => setSignUpPhone(e.target.value)}
+          className="h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+          autoComplete="tel"
+        />
+      </div>
       
       <div className="space-y-2">
         <Label htmlFor="signup-password" className="text-sm font-medium text-slate-700">
-          Password
+          Password *
         </Label>
         <Input
           id="signup-password"
@@ -133,7 +151,7 @@ export const SignUpForm = ({ isLoading, setIsLoading }: SignUpFormProps) => {
       
       <div className="space-y-2">
         <Label htmlFor="signup-confirm" className="text-sm font-medium text-slate-700">
-          Confirm Password
+          Confirm Password *
         </Label>
         <Input
           id="signup-confirm"

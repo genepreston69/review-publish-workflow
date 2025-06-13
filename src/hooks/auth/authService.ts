@@ -66,3 +66,26 @@ export const signOutUser = async () => {
     console.error('=== UNEXPECTED SIGN OUT ERROR ===', error);
   }
 };
+
+export const updateUserProfile = async (userId: string, updates: {
+  name?: string;
+  phone_number?: string;
+  email?: string;
+}) => {
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', userId);
+    
+    if (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+    
+    console.log('Profile updated successfully');
+  } catch (error) {
+    console.error('Error in updateUserProfile:', error);
+    throw error;
+  }
+};
