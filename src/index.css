@@ -99,7 +99,7 @@
   /* Force the main editor container to full width */
   .ProseMirror {
     width: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
     min-width: 100% !important;
     box-sizing: border-box !important;
     margin: 0 !important;
@@ -116,7 +116,7 @@
   .ProseMirror.prose-lg,
   .ProseMirror.prose-xl,
   .ProseMirror.prose-2xl {
-    max-width: none !important;
+    max-width: 100% !important;
     width: 100% !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
@@ -127,14 +127,15 @@
   .tiptap-editor,
   .editor-content {
     width: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
     display: block !important;
   }
 
   /* Force the EditorContent wrapper to full width */
-  div[class*="ProseMirror"] {
+  div[class*="ProseMirror"],
+  .ProseMirror-focused {
     width: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
   }
 
   /* Target the form field containers specifically */
@@ -142,7 +143,7 @@
   .editor-field,
   .rich-text-field {
     width: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
   }
 
   /* Force any container that might be limiting the editor width */
@@ -150,7 +151,7 @@
   .form-container,
   .editor-container {
     width: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
   }
 
   /* Make sure the toolbar and editor wrapper take full width */
@@ -158,14 +159,14 @@
   .editor-wrapper,
   .tiptap-wrapper {
     width: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
   }
 
   /* Target any grid or flex containers */
   .form-grid,
   .editor-grid {
     width: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
     grid-template-columns: 1fr !important;
   }
 
@@ -173,7 +174,7 @@
   form,
   .new-policy-form {
     width: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
   }
 
   /* Override any Tailwind width classes that might be limiting */
@@ -187,15 +188,39 @@
   .max-w-5xl,
   .max-w-6xl,
   .max-w-7xl {
-    max-width: none !important;
+    max-width: 100% !important;
     width: 100% !important;
+  }
+
+  /* Target form items specifically */
+  .form-item,
+  [data-slot="content"] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Target the rich text editor components specifically */
+  .rich-text-editor,
+  .rich-text-editor > div,
+  .rich-text-editor .editor-container {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Ensure flex containers don't constrain width */
+  .flex > .rich-text-editor,
+  .flex > .editor-container {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   /* If using specific component classes, target them */
   .purpose-editor .ProseMirror,
-  .policy-content-editor .ProseMirror {
+  .policy-content-editor .ProseMirror,
+  .procedure-editor .ProseMirror {
     width: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
   }
 }
 
@@ -203,27 +228,27 @@
 @media (min-width: 640px) {
   .ProseMirror {
     width: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
   }
 }
 
 @media (min-width: 768px) {
   .ProseMirror {
     width: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
   }
 }
 
 @media (min-width: 1024px) {
   .ProseMirror {
     width: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
   }
 }
 
 @media (min-width: 1280px) {
   .ProseMirror {
     width: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
   }
 }
