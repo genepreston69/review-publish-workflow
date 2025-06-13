@@ -377,6 +377,10 @@ export type Database = {
         Args: { p_policy_type: string }
         Returns: string
       }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       get_initials_from_email: {
         Args: { email_address: string }
         Returns: string

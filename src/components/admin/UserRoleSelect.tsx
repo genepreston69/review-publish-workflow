@@ -26,6 +26,19 @@ export const UserRoleSelect = ({ userId, currentRole, onRoleUpdated }: UserRoleS
       console.log('Target user ID:', userId);
       console.log('New role:', newRole);
       
+      // Check if current user is super admin using the new RPC function
+      const { data: isSuperAdmin, error: checkError } = await supabase
+        .rpc('is_current_user_super_admin');
+
+      if (checkError) {
+        console.error('Error checking super admin status:', checkError);
+        throw new Error('Unable to verify permissions');
+      }
+
+      if (!isSuperAdmin) {
+        throw new Error('Insufficient privileges to update user roles');
+      }
+      
       // Update role directly in profiles table
       const { error: updateError } = await supabase
         .from('profiles')
@@ -50,7 +63,7 @@ export const UserRoleSelect = ({ userId, currentRole, onRoleUpdated }: UserRoleS
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to update user role. You may not have sufficient privileges.",
+        description: error instanceof Error ? error.message : "Failed to update user role.",
       });
     } finally {
       setIsUpdating(false);
