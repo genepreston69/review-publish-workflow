@@ -32,14 +32,15 @@ export function ReviewPolicies() {
     
     // Publishers can see policies assigned to them or that they can review
     if (userRole === 'publish') {
-      // Don't show policies they created (maker/checker rule)
-      if (policy.creator_id === currentUser?.id) {
-        return false;
-      }
-      
       // Show if assigned as reviewer or if no specific reviewer assigned
       const canReview = policy.reviewer === currentUser?.email || !policy.reviewer;
       return canReview;
+    }
+    
+    // Editors can see their own draft policies and policies awaiting changes
+    if (userRole === 'edit') {
+      return policy.creator_id === currentUser?.id && 
+             (policy.status === 'draft' || policy.status === 'awaiting-changes' || policy.status === 'awaiting changes');
     }
     
     return false;
@@ -81,7 +82,11 @@ export function ReviewPolicies() {
 
   const handleUpdateStatus = async (policyId: string, newStatus: string) => {
     console.log('=== HANDLE UPDATE STATUS ===', { policyId, newStatus });
-    await updatePolicyStatus(policyId, newStatus);
+    try {
+      await updatePolicyStatus(policyId, newStatus);
+    } catch (error) {
+      console.error('Error updating policy status:', error);
+    }
   };
 
   const handleDeletePolicy = async (policyId: string) => {
@@ -95,13 +100,13 @@ export function ReviewPolicies() {
     fetchPolicies();
   };
 
-  if (!canPublish) {
+  if (!canPublish && userRole !== 'edit') {
     return (
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Review Policies</h2>
           <p className="text-muted-foreground">
-            You need publish access or higher to review policies.
+            You need edit, publish access or higher to review policies.
           </p>
         </div>
       </div>
@@ -136,7 +141,7 @@ export function ReviewPolicies() {
             <h2 className="text-2xl font-bold tracking-tight">Review Policies</h2>
             <p className="text-muted-foreground">
               Review and approve policies for publication. This includes draft policies ready for review and policies awaiting changes.
-              {!isSuperAdmin && " (You cannot review policies you created due to maker/checker controls)"}
+              {!isSuperAdmin && userRole === 'publish' && " (You cannot review policies you created due to maker/checker controls)"}
             </p>
             {reviewPolicies.length > 0 && (
               <div className="text-sm text-gray-600 mt-1">
@@ -161,8 +166,8 @@ export function ReviewPolicies() {
       <PolicyList
         policies={reviewPolicies}
         isLoading={isLoadingPolicies}
-        isEditor={false}
-        canPublish={true}
+        isEditor={userRole === 'edit'}
+        canPublish={canPublish}
         editingPolicyId={editingPolicyId}
         onUpdateStatus={handleUpdateStatus}
         onEdit={handleEditPolicy}

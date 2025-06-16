@@ -1,7 +1,7 @@
 
 import { CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Trash2, Edit, Eye, RotateCcw } from 'lucide-react';
+import { CheckCircle, XCircle, Trash2, Edit, Eye, RotateCcw, Send } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePolicyDuplication } from '@/hooks/usePolicyDuplication';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,6 +41,11 @@ export function PolicyCardActions({
     }
   };
 
+  const handleSubmitForReview = async () => {
+    console.log('=== SUBMITTING POLICY FOR REVIEW ===', policyId);
+    await onUpdateStatus(policyId, 'under-review');
+  };
+
   const handlePublish = async () => {
     try {
       console.log('=== PUBLISHING POLICY WITH ARCHIVING ===', policyId);
@@ -53,7 +58,7 @@ export function PolicyCardActions({
         .single();
 
       if (currentPolicy) {
-        // Check maker/checker rule before attempting publish
+        // Check maker/checker rule before attempting publish (except for super admins)
         if (currentPolicy.creator_id === currentUser?.id && !isSuperAdmin) {
           toast({
             variant: "destructive",
@@ -127,10 +132,11 @@ export function PolicyCardActions({
   // Determine which buttons to show in each row
   const showEditButton = onEdit && (
     isSuperAdmin ||
-    (isEditor && policyStatus === 'draft') ||
-    (canPublish && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review'))
+    (isEditor && (policyStatus === 'draft' || policyStatus === 'awaiting-changes')) ||
+    (canPublish && (policyStatus === 'draft' || policyStatus === 'under-review' || policyStatus === 'under review' || policyStatus === 'awaiting-changes'))
   );
 
+  // More permissive submit button logic
   const showSubmitButton = policyStatus === 'draft' && (isSuperAdmin || isEditor || canPublish);
 
   // Enhanced publish button logic - ensure it shows for review policies
@@ -188,9 +194,10 @@ export function PolicyCardActions({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onUpdateStatus(policyId, 'under-review')}
+              onClick={handleSubmitForReview}
               className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
             >
+              <Send className="w-3 h-3 mr-1" />
               Submit
             </Button>
           ) : (

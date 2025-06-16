@@ -84,7 +84,30 @@ export const usePolicies = () => {
 
       console.log('=== CURRENT POLICY DATA ===', currentPolicy);
 
-      // Check maker/checker rule for non-super admins only
+      // Check permissions for status changes
+      const canPublish = userRole === 'publish' || userRole === 'super-admin';
+      const canEdit = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
+
+      // Validate permissions based on status change
+      if (newStatus === 'under-review' && !canEdit) {
+        toast({
+          variant: "destructive",
+          title: "Access Denied",
+          description: "You don't have permission to submit policies for review.",
+        });
+        return;
+      }
+
+      if (newStatus === 'published' && !canPublish) {
+        toast({
+          variant: "destructive",
+          title: "Access Denied",
+          description: "You don't have permission to publish policies.",
+        });
+        return;
+      }
+
+      // Relaxed maker/checker rule - only apply for non-super admins when publishing
       if (newStatus === 'published' && currentPolicy.creator_id === currentUser.id && !isSuperAdmin) {
         console.log('=== MAKER/CHECKER RULE VIOLATION FOR NON-SUPER-ADMIN ===');
         toast({
@@ -95,20 +118,10 @@ export const usePolicies = () => {
         return;
       }
 
-      // Check permissions for status changes (super admins bypass these checks)
-      const canPublish = userRole === 'publish' || userRole === 'super-admin';
-      if ((newStatus === 'published' || newStatus === 'under-review') && !canPublish) {
-        toast({
-          variant: "destructive",
-          title: "Access Denied",
-          description: "You don't have permission to perform this action.",
-        });
-        return;
-      }
-
       let updateData: any = { 
         status: newStatus,
-        reviewer_comment: reviewerComment || null
+        reviewer_comment: reviewerComment || null,
+        updated_at: new Date().toISOString()
       };
       
       // Handle restoration from archive
@@ -145,30 +158,13 @@ export const usePolicies = () => {
           }
         }
 
-        // For super admins, if they are the creator, set a different publisher to bypass constraint
+        // For super admins publishing their own policy, set publisher_id to null to bypass constraint
         if (isSuperAdmin && currentPolicy.creator_id === currentUser.id) {
           console.log('=== SUPER ADMIN PUBLISHING OWN POLICY - BYPASSING CONSTRAINT ===');
-          // Use a system publisher ID or leave publisher_id null for super admin override
-          updateData.publisher_id = null; // This will bypass the constraint
+          updateData.publisher_id = null;
         } else {
-          // Get publisher profile for regular flow
-          const { data: publisherProfile, error: profileError } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('id', currentUser.id)
-            .single();
-
-          if (profileError) {
-            console.error('Error fetching publisher profile:', profileError);
-            toast({
-              variant: "destructive",
-              title: "Error", 
-              description: "Could not fetch publisher profile.",
-            });
-            return;
-          }
-
-          updateData.publisher_id = publisherProfile.id;
+          // For regular publishing flow, set the publisher
+          updateData.publisher_id = currentUser.id;
         }
         
         updateData.published_at = new Date().toISOString();
@@ -273,7 +269,7 @@ export const usePolicies = () => {
             : "Policy returned to draft status for editing.";
           break;
         case 'under-review':
-          statusMessage = "Policy submitted for review.";
+          statusMessage = "Policy submitted for review successfully.";
           break;
         case 'awaiting-changes':
           statusMessage = "Policy returned for changes. Creator has been notified.";
