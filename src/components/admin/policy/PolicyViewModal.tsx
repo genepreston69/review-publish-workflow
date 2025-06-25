@@ -1,23 +1,11 @@
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { usePolicyDuplication } from '@/hooks/usePolicyDuplication';
-import { useAuth } from '@/hooks/useAuth';
 import { PolicyViewLoading } from './PolicyViewLoading';
-import { PolicyNotFound } from './PolicyNotFound';
-import { PolicyViewHeader } from './PolicyViewHeader';
-import { PolicyViewMetadata } from './PolicyViewMetadata';
-import { PolicyViewContent } from './PolicyViewContent';
+import { PolicyViewNotFound } from './PolicyNotFound';
+import { PolicyViewModalHeader } from './PolicyViewModalHeader';
+import { PolicyViewModalTabs } from './PolicyViewModalTabs';
 import { PolicyViewActions } from './PolicyViewActions';
-import { PolicyVersionHistory } from './PolicyVersionHistory';
-import { PolicyCommentSection } from './PolicyCommentSection';
-import { generatePolicyPrintTemplate } from './policyPrintUtils';
-import { Policy } from './types';
-import { Printer, CheckCircle } from 'lucide-react';
+import { usePolicyViewModalLogic } from './PolicyViewModalLogic';
 
 interface PolicyViewModalProps {
   policyId: string;
@@ -28,334 +16,53 @@ interface PolicyViewModalProps {
 }
 
 export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onRefresh }: PolicyViewModalProps) {
-  const { toast } = useToast();
-  const { userRole, currentUser } = useAuth();
-  const { archiveOldVersions } = usePolicyDuplication();
-  const [isLoading, setIsLoading] = useState(true);
-  const [policy, setPolicy] = useState<Policy | null>(null);
-  const [viewingVersionId, setViewingVersionId] = useState<string>(policyId);
-
-  const canPublish = userRole === 'publish' || userRole === 'super-admin';
-  const isSuperAdmin = userRole === 'super-admin';
-  const isCreator = currentUser?.id === policy?.creator_id;
-  const canApproveOrPublish = isSuperAdmin || (canPublish && !isCreator);
-
-  const loadPolicy = async () => {
-    try {
-      setIsLoading(true);
-      console.log('=== LOADING POLICY FOR VIEW ===', viewingVersionId);
-
-      const { data, error } = await supabase
-        .from('Policies')
-        .select(`
-          *,
-          creator:creator_id(id, name, email),
-          publisher:publisher_id(id, name, email)
-        `)
-        .eq('id', viewingVersionId)
-        .single();
-
-      if (error) {
-        console.error('Error loading policy:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load policy for viewing.",
-        });
-        onClose();
-        return;
-      }
-
-      console.log('=== POLICY LOADED FOR VIEW ===', data);
-      setPolicy(data);
-    } catch (error) {
-      console.error('Error loading policy:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load policy for viewing.",
-      });
-      onClose();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (viewingVersionId) {
-      loadPolicy();
-    }
-  }, [viewingVersionId, toast, onClose]);
-
-  const handlePrintPolicy = () => {
-    if (!policy) return;
-
-    try {
-      const printHtml = generatePolicyPrintTemplate(
-        policy.name || 'Untitled Policy',
-        policy.policy_number || 'N/A',
-        policy.policy_type || 'N/A',
-        policy.policy_text || '',
-        policy.reviewer || 'Unknown',
-        policy.created_at,
-        policy.status || 'Unknown'
-      );
-
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(printHtml);
-        printWindow.document.close();
-        
-        printWindow.onload = () => {
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
-        };
-
-        toast({
-          title: "Success",
-          description: "Policy print dialog opened.",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Unable to open print window. Please check your browser's popup settings.",
-        });
-      }
-    } catch (error) {
-      console.error('Error printing policy:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to print policy.",
-      });
-    }
-  };
-
-  const handleTopPublish = async () => {
-    if (!policy || !onUpdateStatus) return;
-
-    console.log('=== TOP PUBLISH BUTTON CLICKED ===', policy.id);
-    try {
-      // Archive old versions before publishing
-      const parentPolicyId = policy.parent_policy_id || policy.id;
-      await archiveOldVersions(parentPolicyId, policy.id);
-      
-      await onUpdateStatus(policy.id, 'published');
-      toast({
-        title: "Success",
-        description: "Policy published successfully. Previous versions have been archived.",
-      });
-      
-      // Refresh the policy in the modal and the parent list
-      await loadPolicy();
-      if (onRefresh) {
-        onRefresh();
-      }
-    } catch (error) {
-      console.error('Error publishing policy:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to publish policy.",
-      });
-    }
-  };
-
-  const handleReturnToDraft = async () => {
-    if (!policy || !onUpdateStatus) return;
-
-    console.log('=== RETURNING POLICY TO DRAFT ===', policy.id);
-    try {
-      await onUpdateStatus(policy.id, 'draft');
-      const message = policy.status === 'published' 
-        ? 'Policy returned to draft status for editing'
-        : 'Policy returned to draft status';
-      
-      toast({
-        title: "Success",
-        description: message,
-      });
-      
-      // Refresh the policy in the modal and the parent list
-      await loadPolicy();
-      if (onRefresh) {
-        onRefresh();
-      }
-    } catch (error) {
-      console.error('Error returning policy to draft:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to return policy to draft status.",
-      });
-    }
-  };
-
-  const handlePublish = async () => {
-    if (!policy || !onUpdateStatus) return;
-
-    console.log('=== PUBLISHING POLICY WITH VERSIONING ===', policy.id);
-    try {
-      // Archive old versions before publishing
-      const parentPolicyId = policy.parent_policy_id || policy.id;
-      await archiveOldVersions(parentPolicyId, policy.id);
-      
-      await onUpdateStatus(policy.id, 'published');
-      toast({
-        title: "Success",
-        description: "Policy published successfully. Previous versions have been archived.",
-      });
-      
-      // Refresh the policy in the modal and the parent list
-      await loadPolicy();
-      if (onRefresh) {
-        onRefresh();
-      }
-    } catch (error) {
-      console.error('Error publishing policy:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to publish policy.",
-      });
-    }
-  };
-
-  const handleUpdateStatusWithRefresh = async (policyId: string, newStatus: string, comment?: string) => {
-    if (onUpdateStatus) {
-      console.log('=== UPDATING STATUS WITH REFRESH ===', { policyId, newStatus, comment });
-      await onUpdateStatus(policyId, newStatus, comment);
-      
-      // Refresh the policy in the modal to show updated status
-      await loadPolicy();
-      
-      if (onRefresh) {
-        onRefresh();
-      }
-    }
-  };
-
-  const handleViewVersion = (versionId: string) => {
-    setViewingVersionId(versionId);
-  };
-
-  const handleViewReplacement = (replacementPolicyId: string) => {
-    setViewingVersionId(replacementPolicyId);
-  };
-
-  const handleArchivePolicy = async (policyId: string) => {
-    try {
-      console.log('=== ARCHIVING POLICY ===', policyId);
-      
-      const { error } = await supabase
-        .from('Policies')
-        .update({ 
-          archived_at: new Date().toISOString(),
-          status: 'archived'
-        })
-        .eq('id', policyId);
-
-      if (error) {
-        console.error('Error archiving policy:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to archive policy.",
-        });
-        return;
-      }
-
-      toast({
-        title: "Success",
-        description: "Policy archived successfully.",
-      });
-      
-      if (onRefresh) {
-        onRefresh();
-      }
-      onClose();
-    } catch (error) {
-      console.error('Error archiving policy:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "An unexpected error occurred.",
-      });
-    }
-  };
+  const {
+    isLoading,
+    policy,
+    viewingVersionId,
+    showTopPublishButton,
+    handlePrintPolicy,
+    handleTopPublish,
+    handleReturnToDraft,
+    handlePublish,
+    handleUpdateStatusWithRefresh,
+    handleViewVersion,
+    handleViewReplacement,
+    handleArchivePolicy,
+    loadPolicy
+  } = usePolicyViewModalLogic({
+    policyId,
+    onClose,
+    onEdit,
+    onUpdateStatus,
+    onRefresh
+  });
 
   if (isLoading) {
     return <PolicyViewLoading onClose={onClose} />;
   }
 
   if (!policy) {
-    return <PolicyNotFound onClose={onClose} />;
+    return <PolicyViewNotFound onClose={onClose} />;
   }
-
-  const showTopPublishButton = canApproveOrPublish && 
-    (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review');
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden [&>button]:hidden">
-        <div className="flex items-center justify-between mb-4">
-          <PolicyViewHeader policy={policy} onClose={onClose} />
-          <div className="flex items-center gap-2">
-            {showTopPublishButton && (
-              <Button
-                onClick={handleTopPublish}
-                className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
-              >
-                <CheckCircle className="h-4 w-4" />
-                Publish Policy
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePrintPolicy}
-              className="flex items-center gap-2"
-            >
-              <Printer className="h-4 w-4" />
-              Print Policy
-            </Button>
-          </div>
-        </div>
+        <PolicyViewModalHeader
+          policy={policy}
+          onClose={onClose}
+          onPrint={handlePrintPolicy}
+          onTopPublish={handleTopPublish}
+          showTopPublishButton={showTopPublishButton}
+        />
         
-        <Tabs defaultValue="content" className="flex-1 overflow-hidden">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="content">Policy Content</TabsTrigger>
-            <TabsTrigger value="comments">Discussion</TabsTrigger>
-            <TabsTrigger value="versions">Version History</TabsTrigger>
-            <TabsTrigger value="metadata">Metadata</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="content" className="overflow-y-auto max-h-[55vh]">
-            <div className="space-y-4">
-              <PolicyViewContent 
-                policy={policy} 
-                onViewReplacement={handleViewReplacement}
-              />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="comments" className="overflow-y-auto max-h-[55vh]">
-            <PolicyCommentSection policyId={policy.id} />
-          </TabsContent>
-          
-          <TabsContent value="versions" className="overflow-y-auto max-h-[55vh]">
-            <PolicyVersionHistory 
-              policyId={policyId} 
-              onViewVersion={handleViewVersion}
-            />
-          </TabsContent>
-
-          <TabsContent value="metadata" className="overflow-y-auto max-h-[55vh]">
-            <PolicyViewMetadata policy={policy} />
-          </TabsContent>
-        </Tabs>
+        <PolicyViewModalTabs
+          policy={policy}
+          policyId={policyId}
+          onViewVersion={handleViewVersion}
+          onViewReplacement={handleViewReplacement}
+        />
 
         <PolicyViewActions
           policy={policy}
