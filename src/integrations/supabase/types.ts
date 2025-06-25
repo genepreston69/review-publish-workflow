@@ -344,6 +344,79 @@ export type Database = {
           },
         ]
       }
+      policy_revisions: {
+        Row: {
+          change_metadata: Json | null
+          change_type: string
+          created_at: string
+          created_by: string
+          field_name: string
+          id: string
+          modified_content: string
+          original_content: string | null
+          policy_id: string
+          review_comment: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          revision_number: number
+          status: string
+        }
+        Insert: {
+          change_metadata?: Json | null
+          change_type: string
+          created_at?: string
+          created_by: string
+          field_name: string
+          id?: string
+          modified_content: string
+          original_content?: string | null
+          policy_id: string
+          review_comment?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          revision_number: number
+          status?: string
+        }
+        Update: {
+          change_metadata?: Json | null
+          change_type?: string
+          created_at?: string
+          created_by?: string
+          field_name?: string
+          id?: string
+          modified_content?: string
+          original_content?: string | null
+          policy_id?: string
+          review_comment?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          revision_number?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "policy_revisions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "policy_revisions_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "Policies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "policy_revisions_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -433,6 +506,10 @@ export type Database = {
       get_initials_from_name: {
         Args: { full_name: string }
         Returns: string
+      }
+      get_next_revision_number: {
+        Args: { p_policy_id: string }
+        Returns: number
       }
       get_user_role: {
         Args: { user_id: string }
