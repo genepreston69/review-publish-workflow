@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,6 +34,7 @@ export function PolicyViewActions({
   const [reviewerComment, setReviewerComment] = useState('');
   const [showCommentSection, setShowCommentSection] = useState(false);
   const [actionType, setActionType] = useState<'request-changes' | 'publish' | 'submit-review' | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
   const isEditor = userRole === 'edit';
@@ -99,38 +101,48 @@ export function PolicyViewActions({
   };
 
   const handleCommentAction = async () => {
-    if (!actionType || !onUpdateStatus) return;
+    if (!actionType || !onUpdateStatus || isProcessing) return;
 
+    setIsProcessing(true);
     console.log('=== HANDLING COMMENT ACTION ===', { actionType, comment: reviewerComment });
 
-    if (actionType === 'request-changes') {
-      await onUpdateStatus(policy.id, 'awaiting-changes', reviewerComment);
-    } else if (actionType === 'publish') {
-      // Check maker/checker rule before publishing
-      if (isCreator && !isSuperAdmin) {
-        console.log('=== MAKER/CHECKER RULE VIOLATION PREVENTED ===');
-        return;
-      }
-      
-      // When publishing, archive old versions first using policy number
-      try {
-        if (policy.policy_number) {
-          await archiveByPolicyNumber(policy.policy_number, policy.id);
+    try {
+      if (actionType === 'request-changes') {
+        await onUpdateStatus(policy.id, 'awaiting-changes', reviewerComment);
+      } else if (actionType === 'publish') {
+        // Check maker/checker rule before publishing
+        if (isCreator && !isSuperAdmin) {
+          console.log('=== MAKER/CHECKER RULE VIOLATION PREVENTED ===');
+          setIsProcessing(false);
+          return;
         }
-        await onUpdateStatus(policy.id, 'published', reviewerComment);
-      } catch (error) {
-        console.error('Error during publish with versioning:', error);
-        // Still try to publish even if archiving fails
-        await onUpdateStatus(policy.id, 'published', reviewerComment);
+        
+        // When publishing, archive old versions first using policy number
+        try {
+          if (policy.policy_number) {
+            await archiveByPolicyNumber(policy.policy_number, policy.id);
+          }
+          await onUpdateStatus(policy.id, 'published', reviewerComment);
+        } catch (error) {
+          console.error('Error during publish with versioning:', error);
+          // Still try to publish even if archiving fails
+          await onUpdateStatus(policy.id, 'published', reviewerComment);
+        }
+      } else if (actionType === 'submit-review') {
+        await onUpdateStatus(policy.id, 'under-review', reviewerComment);
       }
-    } else if (actionType === 'submit-review') {
-      await onUpdateStatus(policy.id, 'under-review', reviewerComment);
-    }
 
-    setReviewerComment('');
-    setShowCommentSection(false);
-    setActionType(null);
-    onClose();
+      setReviewerComment('');
+      setShowCommentSection(false);
+      setActionType(null);
+      
+      // Don't close the modal immediately - let the user see the updated status
+      // The policy will be refreshed in the modal via onUpdateStatus -> handleUpdateStatusWithRefresh
+    } catch (error) {
+      console.error('Error in comment action:', error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleSubmitForReview = () => {
@@ -177,8 +189,14 @@ export function PolicyViewActions({
     if (onUpdateStatus) {
       console.log('=== DIRECT SUBMIT FOR REVIEW ===', policy.id);
       await onUpdateStatus(policy.id, 'under-review');
-      onClose();
+      // Don't close modal - let user see the updated status
     }
+  };
+
+  const cancelCommentAction = () => {
+    setShowCommentSection(false);
+    setActionType(null);
+    setReviewerComment('');
   };
 
   if (showCommentSection) {
@@ -201,33 +219,42 @@ export function PolicyViewActions({
                 : 'Add any review notes...'
             }
             className="min-h-[100px]"
+            disabled={isProcessing}
           />
         </div>
         <div className="flex justify-between">
           <Button 
             variant="outline" 
-            onClick={() => {
-              setShowCommentSection(false);
-              setActionType(null);
-              setReviewerComment('');
-            }}
+            onClick={cancelCommentAction}
+            disabled={isProcessing}
           >
             Cancel
           </Button>
           <Button 
             onClick={handleCommentAction}
-            disabled={actionType === 'request-changes' && !reviewerComment.trim()}
+            disabled={(actionType === 'request-changes' && !reviewerComment.trim()) || isProcessing}
             className={
               actionType === 'request-changes' ? 'bg-yellow-600 hover:bg-yellow-700' : 
               actionType === 'submit-review' ? 'bg-blue-600 hover:bg-blue-700' :
               'bg-green-600 hover:bg-green-700'
             }
           >
-            {actionType === 'request-changes' ? 'Request Changes' : 
+            {isProcessing ? 'Processing...' : 
+             actionType === 'request-changes' ? 'Request Changes' : 
              actionType === 'submit-review' ? 'Submit for Review' :
              'Publish Policy'}
           </Button>
         </div>
+        
+        {/* Show status update message after processing */}
+        {actionType === 'publish' && (
+          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+            <p className="text-green-800 text-sm">
+              <strong>Next Steps:</strong> After publishing, the policy status will update and you'll see the new published version. 
+              The modal will refresh to show the current status.
+            </p>
+          </div>
+        )}
       </div>
     );
   }
@@ -365,6 +392,18 @@ export function PolicyViewActions({
           <div className="w-full mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
             <p className="text-amber-800 text-sm">
               <strong>Note:</strong> You cannot publish this policy since you created it. Another reviewer must approve it.
+            </p>
+          </div>
+        )}
+
+        {/* Show success message for published policies */}
+        {policy.status === 'published' && (
+          <div className="w-full mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+            <p className="text-green-800 text-sm">
+              <strong>✓ Policy Published:</strong> This policy is now published and active. 
+              {policy.reviewer_comment && (
+                <><br /><strong>Final Comment:</strong> {policy.reviewer_comment}</>
+              )}
             </p>
           </div>
         )}

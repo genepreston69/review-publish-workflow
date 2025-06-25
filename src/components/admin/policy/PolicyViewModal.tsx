@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -32,36 +33,22 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [viewingVersionId, setViewingVersionId] = useState<string>(policyId);
 
-  useEffect(() => {
-    const loadPolicy = async () => {
-      try {
-        setIsLoading(true);
-        console.log('=== LOADING POLICY FOR VIEW ===', viewingVersionId);
+  const loadPolicy = async () => {
+    try {
+      setIsLoading(true);
+      console.log('=== LOADING POLICY FOR VIEW ===', viewingVersionId);
 
-        const { data, error } = await supabase
-          .from('Policies')
-          .select(`
-            *,
-            creator:creator_id(id, name, email),
-            publisher:publisher_id(id, name, email)
-          `)
-          .eq('id', viewingVersionId)
-          .single();
+      const { data, error } = await supabase
+        .from('Policies')
+        .select(`
+          *,
+          creator:creator_id(id, name, email),
+          publisher:publisher_id(id, name, email)
+        `)
+        .eq('id', viewingVersionId)
+        .single();
 
-        if (error) {
-          console.error('Error loading policy:', error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to load policy for viewing.",
-          });
-          onClose();
-          return;
-        }
-
-        console.log('=== POLICY LOADED FOR VIEW ===', data);
-        setPolicy(data);
-      } catch (error) {
+      if (error) {
         console.error('Error loading policy:', error);
         toast({
           variant: "destructive",
@@ -69,11 +56,25 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
           description: "Failed to load policy for viewing.",
         });
         onClose();
-      } finally {
-        setIsLoading(false);
+        return;
       }
-    };
 
+      console.log('=== POLICY LOADED FOR VIEW ===', data);
+      setPolicy(data);
+    } catch (error) {
+      console.error('Error loading policy:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load policy for viewing.",
+      });
+      onClose();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (viewingVersionId) {
       loadPolicy();
     }
@@ -140,10 +141,11 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
         description: message,
       });
       
+      // Refresh the policy in the modal and the parent list
+      await loadPolicy();
       if (onRefresh) {
         onRefresh();
       }
-      onClose();
     } catch (error) {
       console.error('Error returning policy to draft:', error);
       toast({
@@ -169,10 +171,11 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
         description: "Policy published successfully. Previous versions have been archived.",
       });
       
+      // Refresh the policy in the modal and the parent list
+      await loadPolicy();
       if (onRefresh) {
         onRefresh();
       }
-      onClose();
     } catch (error) {
       console.error('Error publishing policy:', error);
       toast({
@@ -187,6 +190,9 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
     if (onUpdateStatus) {
       console.log('=== UPDATING STATUS WITH REFRESH ===', { policyId, newStatus, comment });
       await onUpdateStatus(policyId, newStatus, comment);
+      
+      // Refresh the policy in the modal to show updated status
+      await loadPolicy();
       
       if (onRefresh) {
         onRefresh();
@@ -300,7 +306,10 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
           onUpdateStatus={handleUpdateStatusWithRefresh}
           onReturnToDraft={handleReturnToDraft}
           onPublish={handlePublish}
-          onRefresh={onRefresh}
+          onRefresh={() => {
+            loadPolicy();
+            if (onRefresh) onRefresh();
+          }}
           onArchive={handleArchivePolicy}
         />
       </DialogContent>
