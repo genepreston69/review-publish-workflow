@@ -1,9 +1,8 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Edit, Archive, Trash2, MoreHorizontal, FileText, RotateCcw } from 'lucide-react';
+import { Eye, Edit, Archive, Trash2, MoreHorizontal, FileText, RotateCcw, Info } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -115,21 +114,37 @@ export function FacilityPolicyCard({
 
   const showUpdateButton = (isSuperAdmin || isEditor || canPublish) && policy.status === 'published';
 
+  // Show archived status banner
+  const isArchived = policy.status === 'archived';
+
   if (listView) {
     return (
       <div className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="flex-shrink-0">
-            <FileText className="h-5 w-5 text-slate-400" />
+            {isArchived ? (
+              <Info className="h-5 w-5 text-gray-400" />
+            ) : (
+              <FileText className="h-5 w-5 text-slate-400" />
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-medium text-slate-800 truncate">{stripHtml(policy.name) || 'Untitled Policy'}</h3>
+              <h3 className={`font-medium truncate ${isArchived ? 'text-gray-600' : 'text-slate-800'}`}>
+                {stripHtml(policy.name) || 'Untitled Policy'}
+              </h3>
               <Badge variant="secondary" className="text-xs px-2 py-0.5 shrink-0">
                 {policy.policy_number}
               </Badge>
             </div>
-            <p className="text-sm text-slate-600 line-clamp-1">{stripHtml(policy.purpose)}</p>
+            {isArchived && (
+              <p className="text-sm text-orange-600 mb-1 font-medium">
+                This policy has been archived and replaced
+              </p>
+            )}
+            <p className={`text-sm line-clamp-1 ${isArchived ? 'text-gray-500' : 'text-slate-600'}`}>
+              {stripHtml(policy.purpose)}
+            </p>
             <div className="flex items-center gap-4 mt-1 text-xs text-slate-500">
               <span>By {stripHtml(policy.reviewer)}</span>
               <span>{formatDate(policy.created_at)}</span>
@@ -205,11 +220,11 @@ export function FacilityPolicyCard({
   }
 
   return (
-    <Card className={`h-full transition-all duration-200 hover:shadow-md border-slate-200 ${compact ? 'p-2' : ''}`}>
+    <Card className={`h-full transition-all duration-200 hover:shadow-md border-slate-200 ${compact ? 'p-2' : ''} ${isArchived ? 'opacity-75' : ''}`}>
       <CardHeader className={compact ? 'pb-2' : 'pb-3'}>
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <CardTitle className={`${compact ? 'text-sm' : 'text-base'} font-semibold text-slate-800 leading-tight`}>
+            <CardTitle className={`${compact ? 'text-sm' : 'text-base'} font-semibold leading-tight ${isArchived ? 'text-gray-600' : 'text-slate-800'}`}>
               {stripHtml(policy.name) || 'Untitled Policy'}
             </CardTitle>
             <div className="flex items-center gap-2 mt-1">
@@ -223,6 +238,12 @@ export function FacilityPolicyCard({
                 {stripHtml(policy.status) || 'Unknown'}
               </Badge>
             </div>
+            {isArchived && (
+              <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-700">
+                <Info className="h-3 w-3 inline mr-1" />
+                This policy has been archived and replaced
+              </div>
+            )}
           </div>
           
           <DropdownMenu>
@@ -285,7 +306,7 @@ export function FacilityPolicyCard({
           {policy.purpose && (
             <div>
               <p className="text-xs font-medium text-slate-600 mb-1">Purpose:</p>
-              <p className={`text-slate-700 ${compact ? 'text-xs' : 'text-sm'} line-clamp-2`}>
+              <p className={`${compact ? 'text-xs' : 'text-sm'} line-clamp-2 ${isArchived ? 'text-gray-500' : 'text-slate-700'}`}>
                 {stripHtml(policy.purpose)}
               </p>
             </div>
@@ -295,12 +316,16 @@ export function FacilityPolicyCard({
             {policy.reviewer && (
               <div className="flex justify-between">
                 <span className="text-slate-500">Reviewer:</span>
-                <span className="text-slate-700 font-medium truncate ml-2">{stripHtml(policy.reviewer)}</span>
+                <span className={`font-medium truncate ml-2 ${isArchived ? 'text-gray-500' : 'text-slate-700'}`}>
+                  {stripHtml(policy.reviewer)}
+                </span>
               </div>
             )}
             <div className="flex justify-between">
               <span className="text-slate-500">Created:</span>
-              <span className="text-slate-700 font-medium">{formatDate(policy.created_at)}</span>
+              <span className={`font-medium ${isArchived ? 'text-gray-500' : 'text-slate-700'}`}>
+                {formatDate(policy.created_at)}
+              </span>
             </div>
           </div>
         </div>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -240,6 +241,10 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
     setViewingVersionId(versionId);
   };
 
+  const handleViewReplacement = (replacementPolicyId: string) => {
+    setViewingVersionId(replacementPolicyId);
+  };
+
   const handleArchivePolicy = async (policyId: string) => {
     try {
       console.log('=== ARCHIVING POLICY ===', policyId);
@@ -290,8 +295,7 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
   }
 
   const showTopPublishButton = canApproveOrPublish && 
-    (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') &&
-    policy.status !== 'published';
+    (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review');
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -330,7 +334,10 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
           
           <TabsContent value="content" className="overflow-y-auto max-h-[55vh]">
             <div className="space-y-4">
-              <PolicyViewContent policy={policy} />
+              <PolicyViewContent 
+                policy={policy} 
+                onViewReplacement={handleViewReplacement}
+              />
             </div>
           </TabsContent>
 
