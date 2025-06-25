@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PolicyNumberDisplay } from './PolicyNumberDisplay';
 import { stripHtml } from './policyUtils';
 import { Policy } from './types';
 import { useAuth } from '@/hooks/useAuth';
