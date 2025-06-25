@@ -1,5 +1,4 @@
 
-import { Form } from '@/components/ui/form';
 import { PolicyFormValues } from './PolicyFormSchema';
 import { PolicyBasicFields } from './PolicyBasicFields';
 import { PolicyContentFields } from './PolicyContentFields';
@@ -23,7 +22,7 @@ export function PolicyFormFields({
   isNewPolicy = false,
 }: PolicyFormFieldsProps) {
   return (
-    <>
+    <div className="space-y-6">
       <PolicyBasicFields control={form.control} />
       <PolicyContentFields 
         control={form.control} 
@@ -32,6 +31,6 @@ export function PolicyFormFields({
         showChangeTracking={showChangeTracking}
         isNewPolicy={isNewPolicy}
       />
-    </>
+    </div>
   );
 }
