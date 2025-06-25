@@ -13,7 +13,7 @@ import { Eye, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 
 export function ReviewDashboard() {
   const { currentUser, userRole } = useAuth();
-  const { policies, isLoadingPolicies, updatePolicyStatus, fetchPolicies } = usePolicies();
+  const { policies, isLoading, updatePolicyStatus, fetchPolicies } = usePolicies();
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
 
   // Filter policies that need review by policy-reviewer role

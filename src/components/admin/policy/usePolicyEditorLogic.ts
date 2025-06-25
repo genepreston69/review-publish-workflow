@@ -6,7 +6,7 @@ import { Policy } from './types';
 
 export function usePolicyEditorLogic() {
   const { currentUser, userRole } = useAuth();
-  const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, fetchPolicies } = usePolicies();
+  const { policies, isLoading, updatePolicyStatus, deletePolicy, fetchPolicies } = usePolicies();
   const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -81,7 +81,7 @@ export function usePolicyEditorLogic() {
   return {
     // State
     editorPolicies,
-    isLoadingPolicies,
+    isLoading,
     editingPolicyId,
     viewingPolicyId,
     showCreateForm,

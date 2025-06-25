@@ -14,7 +14,7 @@ import { Eye, Send, RefreshCw, AlertCircle, Lock } from 'lucide-react';
 export function PublishInterface() {
   const { currentUser, userRole } = useAuth();
   const { toast } = useToast();
-  const { policies, isLoadingPolicies, updatePolicyStatus, fetchPolicies } = usePolicies();
+  const { policies, isLoading, updatePolicyStatus, fetchPolicies } = usePolicies();
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
   const [assignedEditorIds, setAssignedEditorIds] = useState<string[]>([]);
   const [isLoadingAssignments, setIsLoadingAssignments] = useState(true);

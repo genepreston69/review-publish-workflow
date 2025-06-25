@@ -1,12 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { Policy, toPolicyType } from './types';
 
 export const usePolicies = () => {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { userRole } = useAuth();
+
+  const isSuperAdmin = userRole === 'super-admin';
 
   const fetchPolicies = useCallback(async () => {
     try {
@@ -163,6 +167,49 @@ export const usePolicies = () => {
         variant: "destructive",
         title: "Error",
         description: "An unexpected error occurred while deleting the policy.",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const archivePolicy = async (policyId: string) => {
+    try {
+      console.log('=== ARCHIVING POLICY ===', policyId);
+      setIsLoading(true);
+
+      const { error } = await supabase
+        .from('Policies')
+        .update({ 
+          status: 'archived',
+          archived_at: new Date().toISOString()
+        })
+        .eq('id', policyId);
+
+      if (error) {
+        console.error('Error archiving policy:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to archive policy.",
+        });
+        return false;
+      }
+
+      console.log('=== POLICY ARCHIVED SUCCESSFULLY ===');
+      toast({
+        title: "Success",
+        description: "Policy archived successfully.",
+      });
+      await fetchPolicies();
+      return true;
+    } catch (error) {
+      console.error('Error archiving policy:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred while archiving the policy.",
       });
       return false;
     } finally {
@@ -333,10 +380,13 @@ export const usePolicies = () => {
   return {
     policies,
     isLoading,
+    isLoadingPolicies: isLoading, // Provide both names for compatibility
+    isSuperAdmin,
     fetchPolicies,
     createPolicy,
     updatePolicyStatus,
     deletePolicy,
+    archivePolicy,
     getDraftPolicies,
     getPublishedPolicies,
     getArchivedPolicies,

@@ -9,7 +9,7 @@ import { Policy } from './policy/types';
 
 export function ReviewPolicies() {
   const { currentUser, userRole } = useAuth();
-  const { policies, isLoadingPolicies, updatePolicyStatus, deletePolicy, archivePolicy, isSuperAdmin, fetchPolicies } = usePolicies();
+  const { policies, isLoading, updatePolicyStatus, deletePolicy, archivePolicy, isSuperAdmin, fetchPolicies } = usePolicies();
   const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
 
@@ -165,7 +165,7 @@ export function ReviewPolicies() {
 
       <PolicyList
         policies={reviewPolicies}
-        isLoading={isLoadingPolicies}
+        isLoading={isLoading}
         isEditor={userRole === 'edit'}
         canPublish={canPublish}
         editingPolicyId={editingPolicyId}
