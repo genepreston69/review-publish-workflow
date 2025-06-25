@@ -1,31 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import { stripColorsFromPolicyFields } from '@/utils/colorUtils';
-import { notifyPolicyStatusChange, notifyPolicyComment } from '@/utils/notificationHelpers';
-import { Policy } from './types';
+import { Policy, toPolicyType } from './types';
 
 export const usePolicies = () => {
   const [policies, setPolicies] = useState<Policy[]>([]);
-  const [isLoadingPolicies, setIsLoadingPolicies] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { userRole, currentUser } = useAuth();
 
-  const isSuperAdmin = userRole === 'super-admin';
-
-  const fetchPolicies = async () => {
+  const fetchPolicies = useCallback(async () => {
     try {
-      setIsLoadingPolicies(true);
-      
+      setIsLoading(true);
+      console.log('=== FETCHING POLICIES ===');
+
       const { data, error } = await supabase
         .from('Policies')
         .select(`
           *,
-          creator:creator_id(id, name, email),
-          publisher:publisher_id(id, name, email)
+          creator:profiles!Policies_creator_id_fkey(id, name, email),
+          publisher:profiles!Policies_publisher_id_fkey(id, name, email)
         `)
-        .is('archived_at', null) // Only show non-archived policies
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -35,240 +29,94 @@ export const usePolicies = () => {
           title: "Error",
           description: "Failed to load policies.",
         });
-        setPolicies([]); // Set empty array on error
-      } else {
-        setPolicies(data || []);
+        setPolicies([]);
+        return;
       }
+
+      console.log('=== POLICIES FETCHED ===', data?.length || 0);
+      // Convert to typed policies
+      const typedPolicies = (data || []).map(toPolicyType);
+      setPolicies(typedPolicies);
     } catch (error) {
-      console.error('Error in fetchPolicies:', error);
+      console.error('Error fetching policies:', error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "An unexpected error occurred while loading policies.",
       });
-      setPolicies([]); // Set empty array on error
+      setPolicies([]);
     } finally {
-      setIsLoadingPolicies(false);
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  const createPolicy = async (newPolicy: Omit<Policy, 'id' | 'created_at'>) => {
+    try {
+      console.log('=== CREATING POLICY ===', newPolicy);
+      setIsLoading(true);
+
+      const { data, error } = await supabase
+        .from('Policies')
+        .insert([newPolicy])
+        .select('*');
+
+      if (error) {
+        console.error('Error creating policy:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to create policy.",
+        });
+        return false;
+      }
+
+      console.log('=== POLICY CREATED SUCCESSFULLY ===', data);
+      toast({
+        title: "Success",
+        description: "Policy created successfully.",
+      });
+      await fetchPolicies();
+      return true;
+    } catch (error) {
+      console.error('Error creating policy:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred while creating the policy.",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const updatePolicyStatus = async (policyId: string, newStatus: string, reviewerComment?: string) => {
+  const updatePolicyStatus = async (policyId: string, newStatus: string, comment?: string) => {
     try {
-      console.log('=== UPDATING POLICY STATUS ===', { policyId, newStatus, reviewerComment });
-      
-      if (!currentUser) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "You must be logged in to update policies.",
-        });
-        return;
-      }
+      console.log('=== UPDATING POLICY STATUS ===', { policyId, newStatus, comment });
+      setIsLoading(true);
 
-      // Get current policy to check creator and parent info
-      const { data: currentPolicy, error: fetchError } = await supabase
+      const { error } = await supabase
         .from('Policies')
-        .select('creator_id, status, parent_policy_id, archived_at, name, reviewer, policy_number')
-        .eq('id', policyId)
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching current policy:', fetchError);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load policy details.",
-        });
-        return;
-      }
-
-      console.log('=== CURRENT POLICY DATA ===', currentPolicy);
-
-      // Check permissions for status changes - using correct UserRole values
-      const canEdit = userRole === 'edit' || userRole === 'super-admin';
-      const canReview = userRole === 'publish' || userRole === 'super-admin'; // Using 'publish' role for review permissions
-      const canPublish = userRole === 'super-admin'; // Will be enhanced with assignment checking
-
-      // Enhanced role-based validation
-      if ((newStatus === 'under-review' || newStatus === 'pending-review') && !canEdit) {
-        toast({
-          variant: "destructive",
-          title: "Access Denied",
-          description: "You don't have permission to submit policies for review.",
-        });
-        return;
-      }
-
-      if ((newStatus === 'approved' || newStatus === 'rejected') && !canReview) {
-        toast({
-          variant: "destructive",
-          title: "Access Denied",
-          description: "You don't have permission to review policies.",
-        });
-        return;
-      }
-
-      if (newStatus === 'published' && !canPublish) {
-        // For publish, we'll need to check assignment relations
-        // This will be validated in the PublishInterface component
-        toast({
-          variant: "destructive",
-          title: "Access Denied", 
-          description: "You don't have permission to publish policies.",
-        });
-        return;
-      }
-
-      let updateData: any = { 
-        status: newStatus,
-        reviewer_comment: reviewerComment || null,
-        updated_at: new Date().toISOString()
-      };
-      
-      // Handle restoration from archive
-      if (newStatus === 'draft' && currentPolicy.archived_at) {
-        updateData.archived_at = null;
-        toast({
-          title: "Success",
-          description: "Policy restored from archive to draft status.",
-        });
-      }
-      
-      // Set publisher_id when publishing
-      if (newStatus === 'published') {
-        console.log('=== PUBLISHING POLICY ===', policyId);
-        
-        // Archive old versions with the same policy number first
-        if (currentPolicy.policy_number) {
-          console.log('=== ARCHIVING OLD VERSIONS ===', currentPolicy.policy_number);
-          const { error: archiveError } = await supabase
-            .from('Policies')
-            .update({ 
-              archived_at: new Date().toISOString(),
-              status: 'archived'
-            })
-            .eq('policy_number', currentPolicy.policy_number)
-            .neq('id', policyId)
-            .is('archived_at', null);
-
-          if (archiveError) {
-            console.error('Error archiving old versions:', archiveError);
-            // Don't fail the publish operation if archiving fails
-          } else {
-            console.log('=== OLD VERSIONS ARCHIVED SUCCESSFULLY ===');
-          }
-        }
-
-        updateData.publisher_id = currentUser.id;
-        updateData.published_at = new Date().toISOString();
-
-        // Strip colors from all content fields when publishing
-        const { data: policyContent, error: contentError } = await supabase
-          .from('Policies')
-          .select('purpose, policy_text, procedure')
-          .eq('id', policyId)
-          .single();
-
-        if (contentError) {
-          console.error('Error fetching policy content:', contentError);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to fetch policy content for cleaning.",
-          });
-          return;
-        }
-
-        const cleanedFields = stripColorsFromPolicyFields(policyContent);
-        updateData = {
-          ...updateData,
-          ...cleanedFields
-        };
-      }
-
-      // Set reviewer when assigning for review or making decisions
-      if ((newStatus === 'under-review' || newStatus === 'pending-review' || 
-           newStatus === 'approved' || newStatus === 'rejected') && !currentPolicy.reviewer) {
-        updateData.reviewer = currentUser.email;
-      }
-
-      console.log('=== UPDATING POLICY WITH DATA ===', updateData);
-
-      const { error: updateError } = await supabase
-        .from('Policies')
-        .update(updateData)
+        .update({ status: newStatus, reviewer_comment: comment })
         .eq('id', policyId);
 
-      if (updateError) {
-        console.error('Error updating policy status:', updateError);
+      if (error) {
+        console.error('Error updating policy status:', error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: `Failed to update policy status: ${updateError.message}`,
+          description: "Failed to update policy status.",
         });
-        return;
+        return false;
       }
-
-      // Send notifications
-      await notifyPolicyStatusChange({
-        policyId,
-        policyName: currentPolicy.name || 'Untitled Policy',
-        oldStatus: currentPolicy.status,
-        newStatus,
-        creatorId: currentPolicy.creator_id,
-        reviewerId: (newStatus === 'approved' || newStatus === 'rejected') ? currentUser.id : 
-          currentPolicy.reviewer ? 
-          (await supabase.from('profiles').select('id').eq('email', currentPolicy.reviewer).single())?.data?.id : undefined,
-        reviewerComment,
-        publisherId: newStatus === 'published' ? currentUser.id : undefined,
-      });
-
-      // Send comment notification if reviewer comment is added
-      if (reviewerComment && currentPolicy.creator_id && currentPolicy.creator_id !== currentUser.id) {
-        await notifyPolicyComment(
-          policyId,
-          currentPolicy.name || 'Untitled Policy',
-          currentPolicy.creator_id,
-          reviewerComment
-        );
-      }
-
-      let statusMessage = '';
-      switch (newStatus) {
-        case 'published':
-          statusMessage = "Policy published successfully. All colors have been removed from the content and old versions archived.";
-          break;
-        case 'approved':
-          statusMessage = "Policy approved and ready for publishing.";
-          break;
-        case 'rejected':
-          statusMessage = "Policy rejected and returned to creator for changes.";
-          break;
-        case 'draft':
-          statusMessage = currentPolicy.archived_at 
-            ? "Policy restored from archive to draft status."
-            : "Policy returned to draft status for editing.";
-          break;
-        case 'under-review':
-        case 'pending-review':
-          statusMessage = "Policy submitted for review successfully.";
-          break;
-        case 'awaiting-changes':
-          statusMessage = "Policy returned for changes. Creator has been notified.";
-          break;
-        default:
-          statusMessage = `Policy status updated to ${newStatus}.`;
-      }
-
-      toast({
-        title: "Success",
-        description: statusMessage,
-      });
 
       console.log('=== POLICY STATUS UPDATED SUCCESSFULLY ===');
-
-      // Refresh the policies list
+      toast({
+        title: "Success",
+        description: "Policy status updated successfully.",
+      });
       await fetchPolicies();
+      return true;
     } catch (error) {
       console.error('Error updating policy status:', error);
       toast({
@@ -276,11 +124,17 @@ export const usePolicies = () => {
         title: "Error",
         description: "An unexpected error occurred while updating policy status.",
       });
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const deletePolicy = async (policyId: string) => {
     try {
+      console.log('=== DELETING POLICY ===', policyId);
+      setIsLoading(true);
+
       const { error } = await supabase
         .from('Policies')
         .delete()
@@ -293,71 +147,199 @@ export const usePolicies = () => {
           title: "Error",
           description: "Failed to delete policy.",
         });
-        return;
+        return false;
       }
 
+      console.log('=== POLICY DELETED SUCCESSFULLY ===');
       toast({
         title: "Success",
         description: "Policy deleted successfully.",
       });
-
-      // Refresh the policies list
-      fetchPolicies();
+      await fetchPolicies();
+      return true;
     } catch (error) {
       console.error('Error deleting policy:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred.",
+        description: "An unexpected error occurred while deleting the policy.",
       });
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const archivePolicy = async (policyId: string) => {
+  const getDraftPolicies = async (): Promise<Policy[]> => {
     try {
-      const { error } = await supabase
+      console.log('=== GETTING DRAFT POLICIES ===');
+      setIsLoading(true);
+
+      const { data, error } = await supabase
         .from('Policies')
-        .update({ archived_at: new Date().toISOString() })
-        .eq('id', policyId);
+        .select(`
+          *,
+          creator:profiles!Policies_creator_id_fkey(id, name, email),
+          publisher:profiles!Policies_publisher_id_fkey(id, name, email)
+        `)
+        .eq('status', 'draft');
 
       if (error) {
-        console.error('Error archiving policy:', error);
+        console.error('Error getting draft policies:', error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to archive policy.",
+          description: "Failed to load draft policies.",
         });
-        return;
+        return [];
       }
 
-      toast({
-        title: "Success",
-        description: "Policy archived successfully.",
-      });
-
-      // Refresh the policies list
-      fetchPolicies();
+      console.log('=== DRAFT POLICIES FETCHED ===', data?.length || 0);
+      return data ? data.map(toPolicyType) : [];
     } catch (error) {
-      console.error('Error archiving policy:', error);
+      console.error('Error getting draft policies:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred.",
+        description: "An unexpected error occurred while loading draft policies.",
       });
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getPublishedPolicies = async (): Promise<Policy[]> => {
+    try {
+      console.log('=== GETTING PUBLISHED POLICIES ===');
+      setIsLoading(true);
+
+      const { data, error } = await supabase
+        .from('Policies')
+        .select(`
+          *,
+          creator:profiles!Policies_creator_id_fkey(id, name, email),
+          publisher:profiles!Policies_publisher_id_fkey(id, name, email)
+        `)
+        .eq('status', 'published');
+
+      if (error) {
+        console.error('Error getting published policies:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load published policies.",
+        });
+        return [];
+      }
+
+      console.log('=== PUBLISHED POLICIES FETCHED ===', data?.length || 0);
+      return data ? data.map(toPolicyType) : [];
+    } catch (error) {
+      console.error('Error getting published policies:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred while loading published policies.",
+      });
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getArchivedPolicies = async (): Promise<Policy[]> => {
+    try {
+      console.log('=== GETTING ARCHIVED POLICIES ===');
+      setIsLoading(true);
+
+      const { data, error } = await supabase
+        .from('Policies')
+        .select(`
+          *,
+          creator:profiles!Policies_creator_id_fkey(id, name, email),
+          publisher:profiles!Policies_publisher_id_fkey(id, name, email)
+        `)
+        .eq('status', 'archived');
+
+      if (error) {
+        console.error('Error getting archived policies:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load archived policies.",
+        });
+        return [];
+      }
+
+      console.log('=== ARCHIVED POLICIES FETCHED ===', data?.length || 0);
+      return data ? data.map(toPolicyType) : [];
+    } catch (error) {
+      console.error('Error getting archived policies:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred while loading archived policies.",
+      });
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getPoliciesUnderReview = async (): Promise<Policy[]> => {
+    try {
+      console.log('=== GETTING POLICIES UNDER REVIEW ===');
+      setIsLoading(true);
+
+      const { data, error } = await supabase
+        .from('Policies')
+        .select(`
+          *,
+          creator:profiles!Policies_creator_id_fkey(id, name, email),
+          publisher:profiles!Policies_publisher_id_fkey(id, name, email)
+        `)
+        .or('status.eq.under review,status.eq.under-review');
+
+      if (error) {
+        console.error('Error getting policies under review:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load policies under review.",
+        });
+        return [];
+      }
+
+      console.log('=== POLICIES UNDER REVIEW FETCHED ===', data?.length || 0);
+      return data ? data.map(toPolicyType) : [];
+    } catch (error) {
+      console.error('Error getting policies under review:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred while loading policies under review.",
+      });
+      return [];
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     fetchPolicies();
-  }, []);
+  }, [fetchPolicies]);
 
   return {
     policies,
-    isLoadingPolicies,
+    isLoading,
+    fetchPolicies,
+    createPolicy,
     updatePolicyStatus,
     deletePolicy,
-    archivePolicy,
-    isSuperAdmin,
-    fetchPolicies,
+    getDraftPolicies,
+    getPublishedPolicies,
+    getArchivedPolicies,
+    getPoliciesUnderReview,
   };
 };

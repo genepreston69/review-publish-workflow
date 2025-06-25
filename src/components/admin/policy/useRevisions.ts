@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { PolicyRevision } from './types';
+import { PolicyRevision, toPolicyRevisionType } from './types';
 
 export const useRevisions = (policyId: string) => {
   const [revisions, setRevisions] = useState<PolicyRevision[]>([]);
@@ -36,7 +36,9 @@ export const useRevisions = (policyId: string) => {
       }
 
       console.log('=== REVISIONS FETCHED ===', data?.length || 0);
-      setRevisions(data || []);
+      // Convert to typed revisions
+      const typedRevisions = (data || []).map(toPolicyRevisionType);
+      setRevisions(typedRevisions);
     } catch (error) {
       console.error('Error fetching revisions:', error);
       toast({

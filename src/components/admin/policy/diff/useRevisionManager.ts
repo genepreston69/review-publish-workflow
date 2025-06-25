@@ -4,7 +4,7 @@ import { diffWords } from 'diff';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { PolicyRevision } from '../types';
+import { PolicyRevision, toPolicyRevisionType } from '../types';
 
 export function useRevisionManager(policyId: string, fieldName: string) {
   const [revisions, setRevisions] = useState<PolicyRevision[]>([]);
@@ -38,16 +38,8 @@ export function useRevisionManager(policyId: string, fieldName: string) {
         return;
       }
 
-      // Type cast the data to match our PolicyRevision interface
-      const typedRevisions: PolicyRevision[] = (data || []).map(item => ({
-        ...item,
-        change_type: item.change_type as 'addition' | 'deletion' | 'modification',
-        status: item.status as 'pending' | 'accepted' | 'rejected',
-        change_metadata: item.change_metadata || {},
-        created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
-        reviewed_by_profile: Array.isArray(item.reviewed_by_profile) ? item.reviewed_by_profile[0] : item.reviewed_by_profile,
-      }));
-
+      // Convert to typed revisions
+      const typedRevisions = (data || []).map(toPolicyRevisionType);
       setRevisions(typedRevisions);
     } catch (error) {
       console.error('Error loading revisions:', error);

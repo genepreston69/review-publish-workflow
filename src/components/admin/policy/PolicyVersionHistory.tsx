@@ -1,22 +1,21 @@
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { History, Eye, Calendar, User } from 'lucide-react';
+import { Clock, User, Eye } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Policy } from './types';
+import { Policy, toPolicyType } from './types';
 
 interface PolicyVersionHistoryProps {
   policyId: string;
-  onViewVersion?: (versionId: string) => void;
+  onViewVersion: (versionId: string) => void;
 }
 
 export function PolicyVersionHistory({ policyId, onViewVersion }: PolicyVersionHistoryProps) {
   const [versions, setVersions] = useState<Policy[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [parentPolicyId, setParentPolicyId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -25,34 +24,34 @@ export function PolicyVersionHistory({ policyId, onViewVersion }: PolicyVersionH
         setIsLoading(true);
         console.log('=== LOADING VERSION HISTORY ===', policyId);
 
-        // First get the current policy to determine the parent
+        // First get the current policy to find its parent_policy_id
         const { data: currentPolicy, error: currentError } = await supabase
           .from('Policies')
-          .select('id, parent_policy_id')
+          .select('parent_policy_id')
           .eq('id', policyId)
           .single();
 
         if (currentError) {
-          console.error('Error fetching current policy:', currentError);
+          console.error('Error loading current policy:', currentError);
           return;
         }
 
-        const effectiveParentId = currentPolicy.parent_policy_id || currentPolicy.id;
-        setParentPolicyId(effectiveParentId);
+        // Use parent_policy_id if it exists, otherwise use current policy id
+        const rootPolicyId = currentPolicy.parent_policy_id || policyId;
 
-        // Get all versions in this policy family
-        const { data: versionData, error: versionError } = await supabase
+        // Get all versions (current policy + all with same parent_policy_id)
+        const { data: versionsData, error: versionsError } = await supabase
           .from('Policies')
           .select(`
             *,
-            creator:creator_id(id, name, email),
-            publisher:publisher_id(id, name, email)
+            creator:profiles!Policies_creator_id_fkey(id, name, email),
+            publisher:profiles!Policies_publisher_id_fkey(id, name, email)
           `)
-          .or(`id.eq.${effectiveParentId},parent_policy_id.eq.${effectiveParentId}`)
+          .or(`id.eq.${rootPolicyId},parent_policy_id.eq.${rootPolicyId}`)
           .order('created_at', { ascending: false });
 
-        if (versionError) {
-          console.error('Error fetching version history:', versionError);
+        if (versionsError) {
+          console.error('Error loading versions:', versionsError);
           toast({
             variant: "destructive",
             title: "Error",
@@ -61,8 +60,11 @@ export function PolicyVersionHistory({ policyId, onViewVersion }: PolicyVersionH
           return;
         }
 
-        console.log('=== VERSION HISTORY LOADED ===', versionData);
-        setVersions(versionData || []);
+        // Convert to typed policies
+        const typedVersions = (versionsData || []).map(toPolicyType);
+        setVersions(typedVersions);
+        
+        console.log('=== VERSION HISTORY LOADED ===', typedVersions.length, 'versions');
       } catch (error) {
         console.error('Error loading version history:', error);
         toast({
@@ -80,28 +82,6 @@ export function PolicyVersionHistory({ policyId, onViewVersion }: PolicyVersionH
     }
   }, [policyId, toast]);
 
-  const getVersionNumber = (policyName: string | null): string => {
-    if (!policyName) return 'Unknown';
-    const match = policyName.match(/v(\d+\.\d+)$/);
-    return match ? match[1] : '1.0';
-  };
-
-  const getStatusColor = (status: string | null) => {
-    switch (status?.toLowerCase()) {
-      case 'published':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'draft':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'under-review':
-      case 'under review':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'archived':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
   if (isLoading) {
     return (
       <Card>
@@ -116,13 +96,12 @@ export function PolicyVersionHistory({ policyId, onViewVersion }: PolicyVersionH
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="h-5 w-5" />
-            Version History
-          </CardTitle>
+          <CardTitle className="text-lg">Version History</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-500">No version history available. This is the original policy.</p>
+          <div className="text-center py-6 text-gray-500">
+            No previous versions available.
+          </div>
         </CardContent>
       </Card>
     );
@@ -131,72 +110,58 @@ export function PolicyVersionHistory({ policyId, onViewVersion }: PolicyVersionH
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <History className="h-5 w-5" />
-          Version History ({versions.length} versions)
-        </CardTitle>
+        <CardTitle className="text-lg">Version History</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {versions.map((version, index) => (
-            <div
-              key={version.id}
-              className={`flex items-center justify-between p-3 border rounded-lg ${
-                version.id === policyId ? 'border-blue-200 bg-blue-50' : 'border-gray-200'
-              }`}
-            >
-              <div className="flex-1">
+      <CardContent className="space-y-4">
+        {versions.map((version, index) => (
+          <div key={version.id} className="border rounded-lg p-4">
+            <div className="flex justify-between items-start mb-3">
+              <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-sm">
-                    Version {getVersionNumber(version.name)}
+                  <span className="font-medium">
+                    {index === 0 ? 'Current Version' : `Version ${versions.length - index}`}
                   </span>
-                  <Badge variant="outline" className={getStatusColor(version.status)}>
-                    {version.status || 'Unknown'}
+                  <Badge variant={version.status === 'published' ? 'default' : 'secondary'}>
+                    {version.status || 'draft'}
                   </Badge>
-                  {index === 0 && (
-                    <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                      Latest
-                    </Badge>
-                  )}
                   {version.id === policyId && (
-                    <Badge variant="outline" className="bg-purple-100 text-purple-800">
-                      Current View
-                    </Badge>
+                    <Badge variant="outline">Viewing</Badge>
                   )}
                 </div>
-                <div className="flex items-center gap-4 text-xs text-gray-500">
+                <div className="flex items-center gap-4 text-sm text-gray-500">
                   <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>{new Date(version.created_at).toLocaleDateString()}</span>
+                    <Clock className="h-4 w-4" />
+                    {new Date(version.created_at).toLocaleDateString()}
                   </div>
-                  {(version as any).creator && (
+                  {version.creator && (
                     <div className="flex items-center gap-1">
-                      <User className="h-3 w-3" />
-                      <span>by {(version as any).creator.name}</span>
-                    </div>
-                  )}
-                  {version.published_at && (
-                    <div className="flex items-center gap-1">
-                      <span>Published: {new Date(version.published_at).toLocaleDateString()}</span>
+                      <User className="h-4 w-4" />
+                      {version.creator.name}
                     </div>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                {onViewVersion && version.id !== policyId && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onViewVersion(version.id)}
-                  >
-                    <Eye className="h-3 w-3 mr-1" />
-                    View
-                  </Button>
-                )}
-              </div>
+              
+              {version.id !== policyId && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onViewVersion(version.id)}
+                  className="flex items-center gap-2"
+                >
+                  <Eye className="h-4 w-4" />
+                  View
+                </Button>
+              )}
             </div>
-          ))}
-        </div>
+            
+            {version.name && (
+              <div className="text-sm">
+                <span className="font-medium">Title:</span> {version.name}
+              </div>
+            )}
+          </div>
+        ))}
       </CardContent>
     </Card>
   );

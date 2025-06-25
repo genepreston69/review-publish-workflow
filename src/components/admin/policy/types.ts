@@ -57,3 +57,24 @@ export interface PolicyRevision {
 }
 
 export type ManualType = 'HR' | 'Facility';
+
+// Helper function to safely convert Supabase query results to Policy
+export function toPolicyType(data: any): Policy {
+  return {
+    ...data,
+    creator: Array.isArray(data.creator) ? data.creator[0] : data.creator,
+    publisher: Array.isArray(data.publisher) ? data.publisher[0] : data.publisher,
+  };
+}
+
+// Helper function to safely convert Supabase query results to PolicyRevision
+export function toPolicyRevisionType(data: any): PolicyRevision {
+  return {
+    ...data,
+    change_type: data.change_type as 'addition' | 'deletion' | 'modification',
+    status: data.status as 'pending' | 'accepted' | 'rejected',
+    change_metadata: data.change_metadata || {},
+    created_by_profile: Array.isArray(data.created_by_profile) ? data.created_by_profile[0] : data.created_by_profile,
+    reviewed_by_profile: Array.isArray(data.reviewed_by_profile) ? data.reviewed_by_profile[0] : data.reviewed_by_profile,
+  };
+}
