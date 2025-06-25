@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -22,7 +21,7 @@ interface PolicyViewModalProps {
   policyId: string;
   onClose: () => void;
   onEdit?: (policyId: string) => void;
-  onUpdateStatus?: (policyId: string, newStatus: string) => void;
+  onUpdateStatus?: (policyId: string, newStatus: string, comment?: string) => void;
   onRefresh?: () => void;
 }
 
@@ -140,6 +139,10 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
         title: "Success",
         description: message,
       });
+      
+      if (onRefresh) {
+        onRefresh();
+      }
       onClose();
     } catch (error) {
       console.error('Error returning policy to draft:', error);
@@ -165,6 +168,10 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
         title: "Success",
         description: "Policy published successfully. Previous versions have been archived.",
       });
+      
+      if (onRefresh) {
+        onRefresh();
+      }
       onClose();
     } catch (error) {
       console.error('Error publishing policy:', error);
@@ -176,8 +183,60 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
     }
   };
 
+  const handleUpdateStatusWithRefresh = async (policyId: string, newStatus: string, comment?: string) => {
+    if (onUpdateStatus) {
+      console.log('=== UPDATING STATUS WITH REFRESH ===', { policyId, newStatus, comment });
+      await onUpdateStatus(policyId, newStatus, comment);
+      
+      if (onRefresh) {
+        onRefresh();
+      }
+    }
+  };
+
   const handleViewVersion = (versionId: string) => {
     setViewingVersionId(versionId);
+  };
+
+  const handleArchivePolicy = async (policyId: string) => {
+    try {
+      console.log('=== ARCHIVING POLICY ===', policyId);
+      
+      const { error } = await supabase
+        .from('Policies')
+        .update({ 
+          archived_at: new Date().toISOString(),
+          status: 'archived'
+        })
+        .eq('id', policyId);
+
+      if (error) {
+        console.error('Error archiving policy:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to archive policy.",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Policy archived successfully.",
+      });
+      
+      if (onRefresh) {
+        onRefresh();
+      }
+      onClose();
+    } catch (error) {
+      console.error('Error archiving policy:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred.",
+      });
+    }
   };
 
   if (isLoading) {
@@ -238,10 +297,11 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
           policy={policy}
           onClose={onClose}
           onEdit={onEdit}
-          onUpdateStatus={onUpdateStatus}
+          onUpdateStatus={handleUpdateStatusWithRefresh}
           onReturnToDraft={handleReturnToDraft}
           onPublish={handlePublish}
           onRefresh={onRefresh}
+          onArchive={handleArchivePolicy}
         />
       </DialogContent>
     </Dialog>

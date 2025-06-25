@@ -1,9 +1,8 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { RotateCcw, Edit, CheckCircle, Printer, MessageSquare, Archive } from 'lucide-react';
+import { RotateCcw, Edit, CheckCircle, Printer, MessageSquare, Archive, Send } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePolicyDuplication } from '@/hooks/usePolicyDuplication';
 import { generatePolicyPrintTemplate } from './policyPrintUtils';
@@ -33,7 +32,7 @@ export function PolicyViewActions({
   const { userRole, currentUser } = useAuth();
   const [reviewerComment, setReviewerComment] = useState('');
   const [showCommentSection, setShowCommentSection] = useState(false);
-  const [actionType, setActionType] = useState<'request-changes' | 'publish' | null>(null);
+  const [actionType, setActionType] = useState<'request-changes' | 'publish' | 'submit-review' | null>(null);
   
   const canPublish = userRole === 'publish' || userRole === 'super-admin';
   const isEditor = userRole === 'edit';
@@ -102,6 +101,8 @@ export function PolicyViewActions({
   const handleCommentAction = async () => {
     if (!actionType || !onUpdateStatus) return;
 
+    console.log('=== HANDLING COMMENT ACTION ===', { actionType, comment: reviewerComment });
+
     if (actionType === 'request-changes') {
       await onUpdateStatus(policy.id, 'awaiting-changes', reviewerComment);
     } else if (actionType === 'publish') {
@@ -122,12 +123,19 @@ export function PolicyViewActions({
         // Still try to publish even if archiving fails
         await onUpdateStatus(policy.id, 'published', reviewerComment);
       }
+    } else if (actionType === 'submit-review') {
+      await onUpdateStatus(policy.id, 'under-review', reviewerComment);
     }
 
     setReviewerComment('');
     setShowCommentSection(false);
     setActionType(null);
     onClose();
+  };
+
+  const handleSubmitForReview = () => {
+    setActionType('submit-review');
+    setShowCommentSection(true);
   };
 
   const handleRequestChanges = () => {
@@ -165,12 +173,21 @@ export function PolicyViewActions({
     }
   };
 
+  const handleDirectSubmitForReview = async () => {
+    if (onUpdateStatus) {
+      console.log('=== DIRECT SUBMIT FOR REVIEW ===', policy.id);
+      await onUpdateStatus(policy.id, 'under-review');
+      onClose();
+    }
+  };
+
   if (showCommentSection) {
     return (
       <div className="space-y-4 mt-6 pt-4 border-t">
         <div className="space-y-2">
           <Label htmlFor="reviewer-comment">
-            {actionType === 'request-changes' ? 'Request Changes (Required)' : 'Review Comment (Optional)'}
+            {actionType === 'request-changes' ? 'Request Changes (Required)' : 
+             actionType === 'submit-review' ? 'Submit Comment (Optional)' : 'Review Comment (Optional)'}
           </Label>
           <Textarea
             id="reviewer-comment"
@@ -179,6 +196,8 @@ export function PolicyViewActions({
             placeholder={
               actionType === 'request-changes' 
                 ? 'Explain what changes are needed...' 
+                : actionType === 'submit-review'
+                ? 'Add any submission notes...'
                 : 'Add any review notes...'
             }
             className="min-h-[100px]"
@@ -198,9 +217,15 @@ export function PolicyViewActions({
           <Button 
             onClick={handleCommentAction}
             disabled={actionType === 'request-changes' && !reviewerComment.trim()}
-            className={actionType === 'request-changes' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-green-600 hover:bg-green-700'}
+            className={
+              actionType === 'request-changes' ? 'bg-yellow-600 hover:bg-yellow-700' : 
+              actionType === 'submit-review' ? 'bg-blue-600 hover:bg-blue-700' :
+              'bg-green-600 hover:bg-green-700'
+            }
           >
-            {actionType === 'request-changes' ? 'Request Changes' : 'Publish Policy'}
+            {actionType === 'request-changes' ? 'Request Changes' : 
+             actionType === 'submit-review' ? 'Submit for Review' :
+             'Publish Policy'}
           </Button>
         </div>
       </div>
@@ -230,6 +255,27 @@ export function PolicyViewActions({
             <Archive className="w-4 h-4 mr-2" />
             Archive
           </Button>
+        )}
+
+        {/* Submit for Review Button - Show for draft policies for creators and editors */}
+        {policy.status === 'draft' && (isCreator || isEditor || isSuperAdmin) && (
+          <>
+            <Button 
+              onClick={handleDirectSubmitForReview}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Submit for Review
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={handleSubmitForReview}
+              className="border-blue-300 text-blue-600 hover:bg-blue-50"
+            >
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Submit with Comment
+            </Button>
+          </>
         )}
 
         {/* Return to Draft Button - Show for reviewers on under-review policies */}
