@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -43,8 +42,8 @@ export function usePolicyViewModalLogic({
         .from('Policies')
         .select(`
           *,
-          creator:creator_id(id, name, email),
-          publisher:publisher_id(id, name, email)
+          creator:profiles!Policies_creator_id_fkey(id, name, email),
+          publisher:profiles!Policies_publisher_id_fkey(id, name, email)
         `)
         .eq('id', viewingVersionId)
         .single();
@@ -61,7 +60,15 @@ export function usePolicyViewModalLogic({
       }
 
       console.log('=== POLICY LOADED FOR VIEW ===', data);
-      setPolicy(data);
+      
+      // Type cast the data to match our Policy interface
+      const typedPolicy: Policy = {
+        ...data,
+        creator: Array.isArray(data.creator) ? data.creator[0] : data.creator,
+        publisher: Array.isArray(data.publisher) ? data.publisher[0] : data.publisher,
+      };
+      
+      setPolicy(typedPolicy);
     } catch (error) {
       console.error('Error loading policy:', error);
       toast({

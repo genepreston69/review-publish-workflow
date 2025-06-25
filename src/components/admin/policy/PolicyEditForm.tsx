@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -51,8 +52,8 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
           .from('Policies')
           .select(`
             *,
-            creator:creator_id(id, name, email),
-            publisher:publisher_id(id, name, email)
+            creator:profiles!Policies_creator_id_fkey(id, name, email),
+            publisher:profiles!Policies_publisher_id_fkey(id, name, email)
           `)
           .eq('id', policyId)
           .single();
@@ -69,15 +70,23 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
         }
 
         console.log('=== POLICY LOADED FOR EDIT ===', data);
-        setPolicy(data);
+        
+        // Type cast the data to match our Policy interface
+        const typedPolicy: Policy = {
+          ...data,
+          creator: Array.isArray(data.creator) ? data.creator[0] : data.creator,
+          publisher: Array.isArray(data.publisher) ? data.publisher[0] : data.publisher,
+        };
+        
+        setPolicy(typedPolicy);
 
         // Reset form with policy data
         const initialData: PolicyFormValues = {
-          name: data.name || '',
-          policy_type: data.policy_type || '',
-          purpose: data.purpose || '',
-          procedure: data.procedure || '',
-          policy_text: data.policy_text || '',
+          name: typedPolicy.name || '',
+          policy_type: typedPolicy.policy_type || '',
+          purpose: typedPolicy.purpose || '',
+          procedure: typedPolicy.procedure || '',
+          policy_text: typedPolicy.policy_text || '',
         };
         form.reset(initialData);
       } catch (error) {
@@ -133,8 +142,8 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
         .eq('id', policyId)
         .select(`
           *,
-          creator:creator_id(id, name, email),
-          publisher:publisher_id(id, name, email)
+          creator:profiles!Policies_creator_id_fkey(id, name, email),
+          publisher:profiles!Policies_publisher_id_fkey(id, name, email)
         `);
 
       if (error) {
@@ -151,7 +160,12 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
 
       // Notify parent component
       if (updatedData && updatedData[0]) {
-        onPolicyUpdated(updatedData[0]);
+        const typedUpdatedPolicy: Policy = {
+          ...updatedData[0],
+          creator: Array.isArray(updatedData[0].creator) ? updatedData[0].creator[0] : updatedData[0].creator,
+          publisher: Array.isArray(updatedData[0].publisher) ? updatedData[0].publisher[0] : updatedData[0].publisher,
+        };
+        onPolicyUpdated(typedUpdatedPolicy);
       }
     } catch (error) {
       console.error('=== ERROR UPDATING POLICY ===', error);

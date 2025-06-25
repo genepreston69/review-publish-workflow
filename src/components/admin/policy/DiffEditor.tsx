@@ -44,8 +44,8 @@ export function DiffEditor({
         .from('policy_revisions')
         .select(`
           *,
-          created_by_profile:created_by(id, name, email),
-          reviewed_by_profile:reviewed_by(id, name, email)
+          created_by_profile:profiles!policy_revisions_created_by_fkey(id, name, email),
+          reviewed_by_profile:profiles!policy_revisions_reviewed_by_fkey(id, name, email)
         `)
         .eq('policy_id', policyId)
         .eq('field_name', fieldName)
@@ -61,7 +61,16 @@ export function DiffEditor({
         return;
       }
 
-      setRevisions(data || []);
+      // Type cast the data to match our PolicyRevision interface
+      const typedRevisions: PolicyRevision[] = (data || []).map(item => ({
+        ...item,
+        change_type: item.change_type as 'addition' | 'deletion' | 'modification',
+        status: item.status as 'pending' | 'accepted' | 'rejected',
+        created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
+        reviewed_by_profile: Array.isArray(item.reviewed_by_profile) ? item.reviewed_by_profile[0] : item.reviewed_by_profile,
+      }));
+
+      setRevisions(typedRevisions);
     } catch (error) {
       console.error('Error loading revisions:', error);
       toast({
@@ -90,6 +99,13 @@ export function DiffEditor({
       const { data: revisionNumber } = await supabase
         .rpc('get_next_revision_number', { p_policy_id: policyId });
 
+      // Convert diff data to JSON-compatible format
+      const diffData = diff.map(part => ({
+        added: part.added || false,
+        removed: part.removed || false,
+        value: part.value
+      }));
+
       const { error } = await supabase
         .from('policy_revisions')
         .insert({
@@ -99,7 +115,7 @@ export function DiffEditor({
           original_content: originalContent,
           modified_content: currentContent,
           change_type: changeType,
-          change_metadata: { diff_data: diff },
+          change_metadata: { diff_data: diffData },
           created_by: currentUser.id,
         });
 

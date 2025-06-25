@@ -44,6 +44,16 @@ export interface PolicyRevision {
   reviewed_by: string | null;
   reviewed_at: string | null;
   review_comment: string | null;
+  created_by_profile?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+  reviewed_by_profile?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
 }
 
 export type ManualType = 'HR' | 'Facility';

@@ -90,8 +90,8 @@ export function PolicyEditFormContent({
           
           <PolicyFormActions
             onCancel={onCancel}
-            isSubmitting={isSubmitting}
-            submitText="Update Policy"
+            isLoading={isSubmitting}
+            submitLabel="Update Policy"
           />
         </CardContent>
       </form>

@@ -9,8 +9,8 @@ export const fetchPoliciesByType = async (policyType: string): Promise<Policy[]>
     .from('Policies')
     .select(`
       *,
-      creator:creator_id(id, name, email),
-      publisher:publisher_id(id, name, email)
+      creator:profiles!Policies_creator_id_fkey(id, name, email),
+      publisher:profiles!Policies_publisher_id_fkey(id, name, email)
     `)
     .eq('status', 'published')
     .is('archived_at', null); // Only show non-archived policies
@@ -38,8 +38,14 @@ export const fetchPoliciesByType = async (policyType: string): Promise<Policy[]>
 
   console.log(`=== ${policyType.toUpperCase()} POLICIES FETCHED ===`, data?.length || 0);
 
-  // Filter to show only the latest version of each policy family
-  const latestVersions = filterLatestVersions(data || []);
+  // Type cast and filter to show only the latest version of each policy family
+  const typedPolicies: Policy[] = (data || []).map(policy => ({
+    ...policy,
+    creator: Array.isArray(policy.creator) ? policy.creator[0] : policy.creator,
+    publisher: Array.isArray(policy.publisher) ? policy.publisher[0] : policy.publisher,
+  }));
+
+  const latestVersions = filterLatestVersions(typedPolicies);
   
   console.log(`=== LATEST VERSIONS FILTERED ===`, latestVersions.length);
   
@@ -83,8 +89,8 @@ export const fetchPoliciesByPrefix = async (prefix: string): Promise<Policy[]> =
     .from('Policies')
     .select(`
       *,
-      creator:creator_id(id, name, email),
-      publisher:publisher_id(id, name, email)
+      creator:profiles!Policies_creator_id_fkey(id, name, email),
+      publisher:profiles!Policies_publisher_id_fkey(id, name, email)
     `)
     .eq('status', 'published')
     .ilike('policy_number', `${prefix}%`)
@@ -96,7 +102,13 @@ export const fetchPoliciesByPrefix = async (prefix: string): Promise<Policy[]> =
     throw error;
   }
 
-  return filterLatestVersions(data || []);
+  const typedPolicies: Policy[] = (data || []).map(policy => ({
+    ...policy,
+    creator: Array.isArray(policy.creator) ? policy.creator[0] : policy.creator,
+    publisher: Array.isArray(policy.publisher) ? policy.publisher[0] : policy.publisher,
+  }));
+
+  return filterLatestVersions(typedPolicies);
 };
 
 export const fetchAllPolicies = async (): Promise<Policy[]> => {
@@ -104,8 +116,8 @@ export const fetchAllPolicies = async (): Promise<Policy[]> => {
     .from('Policies')
     .select(`
       *,
-      creator:creator_id(id, name, email),
-      publisher:publisher_id(id, name, email)
+      creator:profiles!Policies_creator_id_fkey(id, name, email),
+      publisher:profiles!Policies_publisher_id_fkey(id, name, email)
     `)
     .is('archived_at', null) // Only show non-archived policies
     .order('created_at', { ascending: false });
@@ -115,7 +127,11 @@ export const fetchAllPolicies = async (): Promise<Policy[]> => {
     throw error;
   }
 
-  return data || [];
+  return (data || []).map(policy => ({
+    ...policy,
+    creator: Array.isArray(policy.creator) ? policy.creator[0] : policy.creator,
+    publisher: Array.isArray(policy.publisher) ? policy.publisher[0] : policy.publisher,
+  }));
 };
 
 export const fetchPoliciesByStatus = async (status: string): Promise<Policy[]> => {
@@ -123,8 +139,8 @@ export const fetchPoliciesByStatus = async (status: string): Promise<Policy[]> =
     .from('Policies')
     .select(`
       *,
-      creator:creator_id(id, name, email),
-      publisher:publisher_id(id, name, email)
+      creator:profiles!Policies_creator_id_fkey(id, name, email),
+      publisher:profiles!Policies_publisher_id_fkey(id, name, email)
     `)
     .eq('status', status)
     .is('archived_at', null) // Only show non-archived policies
@@ -135,7 +151,11 @@ export const fetchPoliciesByStatus = async (status: string): Promise<Policy[]> =
     throw error;
   }
 
-  return data || [];
+  return (data || []).map(policy => ({
+    ...policy,
+    creator: Array.isArray(policy.creator) ? policy.creator[0] : policy.creator,
+    publisher: Array.isArray(policy.publisher) ? policy.publisher[0] : policy.publisher,
+  }));
 };
 
 export const fetchArchivedPolicies = async (): Promise<Policy[]> => {
@@ -145,8 +165,8 @@ export const fetchArchivedPolicies = async (): Promise<Policy[]> => {
     .from('Policies')
     .select(`
       *,
-      creator:creator_id(id, name, email),
-      publisher:publisher_id(id, name, email)
+      creator:profiles!Policies_creator_id_fkey(id, name, email),
+      publisher:profiles!Policies_publisher_id_fkey(id, name, email)
     `)
     .not('archived_at', 'is', null) // Only show archived policies
     .order('archived_at', { ascending: false });
@@ -159,5 +179,9 @@ export const fetchArchivedPolicies = async (): Promise<Policy[]> => {
   console.log('=== ARCHIVED POLICIES FETCHED ===', data?.length || 0);
   console.log('=== ARCHIVED POLICIES DATA ===', data);
 
-  return data || [];
+  return (data || []).map(policy => ({
+    ...policy,
+    creator: Array.isArray(policy.creator) ? policy.creator[0] : policy.creator,
+    publisher: Array.isArray(policy.publisher) ? policy.publisher[0] : policy.publisher,
+  }));
 };
