@@ -1,7 +1,7 @@
 
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { PolicyViewLoading } from './PolicyViewLoading';
-import { PolicyViewNotFound } from './PolicyNotFound';
+import { PolicyViewNotFound } from './PolicyViewNotFound';
 import { PolicyViewModalHeader } from './PolicyViewModalHeader';
 import { PolicyViewModalTabs } from './PolicyViewModalTabs';
 import { PolicyViewActions } from './PolicyViewActions';
