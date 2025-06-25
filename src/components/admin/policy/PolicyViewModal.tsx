@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -6,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { usePolicyDuplication } from '@/hooks/usePolicyDuplication';
+import { useAuth } from '@/hooks/useAuth';
 import { PolicyViewLoading } from './PolicyViewLoading';
 import { PolicyNotFound } from './PolicyNotFound';
 import { PolicyViewHeader } from './PolicyViewHeader';
@@ -16,7 +16,7 @@ import { PolicyVersionHistory } from './PolicyVersionHistory';
 import { PolicyCommentSection } from './PolicyCommentSection';
 import { generatePolicyPrintTemplate } from './policyPrintUtils';
 import { Policy } from './types';
-import { Printer } from 'lucide-react';
+import { Printer, CheckCircle } from 'lucide-react';
 
 interface PolicyViewModalProps {
   policyId: string;
@@ -28,10 +28,16 @@ interface PolicyViewModalProps {
 
 export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onRefresh }: PolicyViewModalProps) {
   const { toast } = useToast();
+  const { userRole, currentUser } = useAuth();
   const { archiveOldVersions } = usePolicyDuplication();
   const [isLoading, setIsLoading] = useState(true);
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [viewingVersionId, setViewingVersionId] = useState<string>(policyId);
+
+  const canPublish = userRole === 'publish' || userRole === 'super-admin';
+  const isSuperAdmin = userRole === 'super-admin';
+  const isCreator = currentUser?.id === policy?.creator_id;
+  const canApproveOrPublish = isSuperAdmin || (canPublish && !isCreator);
 
   const loadPolicy = async () => {
     try {
@@ -122,6 +128,36 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
         variant: "destructive",
         title: "Error",
         description: "Failed to print policy.",
+      });
+    }
+  };
+
+  const handleTopPublish = async () => {
+    if (!policy || !onUpdateStatus) return;
+
+    console.log('=== TOP PUBLISH BUTTON CLICKED ===', policy.id);
+    try {
+      // Archive old versions before publishing
+      const parentPolicyId = policy.parent_policy_id || policy.id;
+      await archiveOldVersions(parentPolicyId, policy.id);
+      
+      await onUpdateStatus(policy.id, 'published');
+      toast({
+        title: "Success",
+        description: "Policy published successfully. Previous versions have been archived.",
+      });
+      
+      // Refresh the policy in the modal and the parent list
+      await loadPolicy();
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Error publishing policy:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to publish policy.",
       });
     }
   };
@@ -253,20 +289,35 @@ export function PolicyViewModal({ policyId, onClose, onEdit, onUpdateStatus, onR
     return <PolicyNotFound onClose={onClose} />;
   }
 
+  const showTopPublishButton = canApproveOrPublish && 
+    (policy.status === 'draft' || policy.status === 'under-review' || policy.status === 'under review') &&
+    policy.status !== 'published';
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden [&>button]:hidden">
         <div className="flex items-center justify-between mb-4">
           <PolicyViewHeader policy={policy} onClose={onClose} />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePrintPolicy}
-            className="flex items-center gap-2"
-          >
-            <Printer className="h-4 w-4" />
-            Print Policy
-          </Button>
+          <div className="flex items-center gap-2">
+            {showTopPublishButton && (
+              <Button
+                onClick={handleTopPublish}
+                className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Publish Policy
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrintPolicy}
+              className="flex items-center gap-2"
+            >
+              <Printer className="h-4 w-4" />
+              Print Policy
+            </Button>
+          </div>
         </div>
         
         <Tabs defaultValue="content" className="flex-1 overflow-hidden">
