@@ -7,8 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { UserRole } from '@/types/user';
-import { supabase } from '@/integrations/supabase/client';
-import { UserPlus, Loader2 } from 'lucide-react';
+import { UserPlus, Loader2, Eye, EyeOff, Copy } from 'lucide-react';
+import { createUserWithEmailNotification, UserCreationResult } from '@/services/userCreationService';
 
 interface CreateUserFormProps {
   onUserCreated: () => void;
@@ -17,18 +17,19 @@ interface CreateUserFormProps {
 export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [creationResult, setCreationResult] = useState<UserCreationResult | null>(null);
   const [formData, setFormData] = useState({
     email: '',
     name: '',
-    role: 'read-only' as UserRole,
-    password: ''
+    role: 'read-only' as UserRole
   });
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.name || !formData.password) {
+    if (!formData.email || !formData.name) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -40,84 +41,21 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
     setIsLoading(true);
 
     try {
-      console.log('=== CREATING USER WITH PROFILES ROLE ===', formData.email);
-      console.log('=== SIGNUP METADATA ===', {
-        name: formData.name,
-        full_name: formData.name,
-        display_name: formData.name
-      });
+      console.log('=== CREATING USER WITH EMAIL NOTIFICATION ===', formData.email);
       
-      // Create the user using regular signup with comprehensive metadata
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            name: formData.name,
-            full_name: formData.name,
-            display_name: formData.name,
-            // Add additional metadata formats that Supabase might expect
-            user_name: formData.name,
-            username: formData.name
-          }
-        }
-      });
-
-      if (authError) {
-        console.error('Auth signup error:', authError);
-        throw authError;
-      }
-
-      if (authData.user) {
-        console.log('User created successfully:', authData.user.id);
-        console.log('User metadata from signup:', authData.user.user_metadata);
+      const result = await createUserWithEmailNotification(formData);
+      
+      if (result.success) {
+        setCreationResult(result);
         
-        // Wait a moment for the profile to be created by the trigger
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Verify the user data was stored properly
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-        if (userData.user) {
-          console.log('=== VERIFICATION: User data after creation ===');
-          console.log('User metadata after creation:', userData.user.user_metadata);
-        }
-        
-        // The trigger will create the profile with default 'read-only' role
-        // Update the role if it's different from default
-        if (formData.role !== 'read-only') {
-          console.log('Updating user role in profiles to:', formData.role);
-          
-          const { error: roleError } = await supabase
-            .from('profiles')
-            .update({ role: formData.role })
-            .eq('id', authData.user.id);
-
-          if (roleError) {
-            console.error('Role update error in profiles:', roleError);
-            toast({
-              variant: "destructive",
-              title: "Warning",
-              description: "User created but role assignment failed. Please update manually.",
-            });
-          } else {
-            console.log('Role updated successfully in profiles');
-          }
-        }
-
         toast({
           title: "Success",
-          description: `User ${formData.name} created successfully.`,
+          description: `User ${formData.name} created successfully. Welcome email sent with temporary password.`,
         });
 
-        // Reset form and close dialog
-        setFormData({
-          email: '',
-          name: '',
-          role: 'read-only',
-          password: ''
-        });
-        setOpen(false);
         onUserCreated();
+      } else {
+        throw new Error(result.error || 'Failed to create user');
       }
     } catch (error: any) {
       console.error('Error creating user:', error);
@@ -126,8 +64,6 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
       
       if (error.message?.includes('User already registered')) {
         errorMessage = "A user with this email address already exists.";
-      } else if (error.message?.includes('Password')) {
-        errorMessage = "Password must be at least 6 characters long.";
       } else if (error.message?.includes('Email')) {
         errorMessage = "Please provide a valid email address.";
       }
@@ -142,6 +78,25 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
     }
   };
 
+  const handleClose = () => {
+    setOpen(false);
+    setCreationResult(null);
+    setFormData({
+      email: '',
+      name: '',
+      role: 'read-only'
+    });
+    setShowPassword(false);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied",
+      description: "Temporary password copied to clipboard.",
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -150,92 +105,139 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
           Add New User
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Create New User</DialogTitle>
+          <DialogTitle>
+            {creationResult?.success ? 'User Created Successfully' : 'Create New User'}
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Full Name *</Label>
-            <Input
-              id="name"
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Enter full name"
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="email">Email Address *</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="Enter email address"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">Password *</Label>
-            <Input
-              id="password"
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              placeholder="Enter password (min 6 characters)"
-              required
-              minLength={6}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="role">Initial Role</Label>
-            <Select
-              value={formData.role}
-              onValueChange={(value: UserRole) => setFormData({ ...formData, role: value })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="read-only">Read Only</SelectItem>
-                <SelectItem value="edit">Editor</SelectItem>
-                <SelectItem value="publish">Publisher</SelectItem>
-                <SelectItem value="super-admin">Super Admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={() => setOpen(false)}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                'Create User'
-              )}
+        
+        {creationResult?.success ? (
+          <div className="space-y-4">
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-800 mb-2">
+                User <strong>{formData.name}</strong> has been created successfully!
+              </p>
+              <p className="text-sm text-green-700">
+                A welcome email has been sent to <strong>{formData.email}</strong> with their temporary password and role information.
+              </p>
+            </div>
+            
+            {creationResult.temporaryPassword && (
+              <div className="space-y-2">
+                <Label>Temporary Password (for reference)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={creationResult.temporaryPassword}
+                    readOnly
+                    className="font-mono"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => copyToClipboard(creationResult.temporaryPassword!)}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  The user will be required to change this password on first login.
+                </p>
+              </div>
+            )}
+            
+            <Button onClick={handleClose} className="w-full">
+              Close
             </Button>
           </div>
-        </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name *</Label>
+              <Input
+                id="name"
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Enter full name"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="Enter email address"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select
+                value={formData.role}
+                onValueChange={(value: UserRole) => setFormData({ ...formData, role: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="read-only">Read Only</SelectItem>
+                  <SelectItem value="edit">Editor</SelectItem>
+                  <SelectItem value="publish">Publisher</SelectItem>
+                  <SelectItem value="super-admin">Super Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                A temporary password will be generated and sent to the user via email. 
+                They will be required to change it on first login.
+              </p>
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={handleClose}
+                disabled={isLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create User'
+                )}
+              </Button>
+            </div>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
