@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { Form } from './FormSchema';
 
 interface UseFormsOptions {
@@ -10,12 +11,16 @@ interface UseFormsOptions {
 
 export function useForms(options: UseFormsOptions = {}) {
   const { toast } = useToast();
+  const { userRole } = useAuth();
   const queryClient = useQueryClient();
   const { statusFilter } = options;
 
   const { data: forms = [], isLoading: isLoadingForms } = useQuery({
     queryKey: ['forms', statusFilter],
     queryFn: async () => {
+      console.log('=== FETCHING FORMS ===');
+      console.log('Status filter:', statusFilter);
+      
       let query = supabase
         .from('Forms')
         .select('*')
@@ -33,12 +38,16 @@ export function useForms(options: UseFormsOptions = {}) {
         throw error;
       }
 
+      console.log('=== FORMS FETCHED ===', data?.length || 0, 'forms');
+      console.log('Forms data:', data);
       return data as Form[];
     },
   });
 
   const updateFormStatusMutation = useMutation({
     mutationFn: async ({ formId, newStatus }: { formId: string; newStatus: string }) => {
+      console.log('=== UPDATING FORM STATUS ===', { formId, newStatus });
+      
       const { error } = await supabase
         .from('Forms')
         .update({ status: newStatus })
@@ -97,11 +106,14 @@ export function useForms(options: UseFormsOptions = {}) {
     deleteFormMutation.mutate(formId);
   };
 
+  // Check if user is super admin
+  const isSuperAdmin = userRole === 'super-admin';
+
   return {
     forms,
     isLoadingForms,
     updateFormStatus,
     deleteForm,
-    isSuperAdmin: true, // This should be derived from auth context
+    isSuperAdmin,
   };
 }

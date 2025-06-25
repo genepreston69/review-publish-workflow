@@ -20,9 +20,9 @@ interface Form {
 
 export function ReviewForms() {
   const { userRole } = useAuth();
-  // Optimize by filtering at database level
+  // Updated to include 'published' status so published forms are also shown
   const { forms, isLoadingForms, updateFormStatus, deleteForm, isSuperAdmin } = useForms({
-    statusFilter: ['draft', 'under-review', 'under review']
+    statusFilter: ['draft', 'under-review', 'under review', 'published']
   });
   const [editingFormId, setEditingFormId] = useState<string | null>(null);
   const [viewingFormId, setViewingFormId] = useState<string | null>(null);
@@ -96,7 +96,7 @@ export function ReviewForms() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Review Forms</h2>
         <p className="text-muted-foreground">
-          Review and approve forms for publication.
+          Review and approve forms for publication. Showing forms with status: draft, under-review, and published.
         </p>
       </div>
 

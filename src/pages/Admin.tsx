@@ -16,6 +16,7 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
 import { ReviewForms } from '@/components/admin/ReviewForms';
+import { PublishedForms } from '@/components/admin/PublishedForms';
 import { ArchivedPolicies } from '@/components/admin/ArchivedPolicies';
 import { PolicyEditor } from '@/components/admin/PolicyEditor';
 import { ReviewDashboard } from '@/components/admin/ReviewDashboard';
@@ -80,7 +81,7 @@ const Admin = () => {
       case 'review-forms':
         return <ReviewForms />;
       case 'published-forms':
-        return <div>Published Forms - Coming Soon</div>;
+        return <PublishedForms />;
       case 'users':
         return <UserManagement />;
       case 'assignments':
