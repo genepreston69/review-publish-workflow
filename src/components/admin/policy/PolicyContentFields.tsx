@@ -7,7 +7,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
-import { Control, UseFormSetValue } from 'react-hook-form';
+import { Control, UseFormSetValue, useWatch } from 'react-hook-form';
 import { PolicyFormValues } from './PolicyFormSchema';
 
 interface PolicyContentFieldsProps {
@@ -25,6 +25,39 @@ export function PolicyContentFields({
   showChangeTracking = false,
   isNewPolicy = false
 }: PolicyContentFieldsProps) {
+  const isFreeForm = useWatch({
+    control,
+    name: 'is_free_form',
+    defaultValue: false,
+  });
+
+  if (isFreeForm) {
+    return (
+      <FormField
+        control={control}
+        name="free_form_content"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Policy Content</FormLabel>
+            <FormControl>
+              <RichTextEditor
+                content={field.value || ''}
+                onChange={field.onChange}
+                placeholder="Enter your complete policy content here. Include purpose, policy details, and procedures all in one comprehensive document..."
+                policyId={policyId}
+                fieldName="free_form_content"
+                showChangeTracking={showChangeTracking}
+                isNewPolicy={isNewPolicy}
+                className="min-h-[400px]"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    );
+  }
+
   return (
     <>
       <FormField

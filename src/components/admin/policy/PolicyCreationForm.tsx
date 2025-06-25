@@ -28,9 +28,11 @@ export function PolicyCreationForm({ userRole, hasEditAccess, onPolicyCreated }:
     defaultValues: {
       name: '',
       policy_type: '',
+      is_free_form: false,
       purpose: '',
       procedure: '',
       policy_text: '',
+      free_form_content: '',
     },
   });
 
@@ -116,17 +118,37 @@ export function PolicyCreationForm({ userRole, hasEditAccess, onPolicyCreated }:
       const status = userRole === 'edit' ? 'draft' : 'under-review';
 
       console.log('=== INSERTING POLICY ===');
-      const policyData = {
-        name: data.name,
-        policy_type: data.policy_type,
-        purpose: data.purpose,
-        procedure: data.procedure,
-        policy_text: data.policy_text,
-        policy_number: generatedPolicyNumber,
-        status,
-        creator_id: profileData.id,
-        reviewer: currentUser.email, // Keep for backward compatibility
-      };
+      
+      // Handle data based on form mode
+      let policyData;
+      if (data.is_free_form && data.free_form_content) {
+        // Free-form mode: store content in policy_text, leave others empty
+        policyData = {
+          name: data.name,
+          policy_type: data.policy_type,
+          purpose: 'Free-form policy - see policy content',
+          procedure: 'See policy content for procedures',
+          policy_text: data.free_form_content,
+          policy_number: generatedPolicyNumber,
+          status,
+          creator_id: profileData.id,
+          reviewer: currentUser.email, // Keep for backward compatibility
+        };
+      } else {
+        // Structured mode: use separate fields
+        policyData = {
+          name: data.name,
+          policy_type: data.policy_type,
+          purpose: data.purpose,
+          procedure: data.procedure,
+          policy_text: data.policy_text,
+          policy_number: generatedPolicyNumber,
+          status,
+          creator_id: profileData.id,
+          reviewer: currentUser.email, // Keep for backward compatibility
+        };
+      }
+      
       console.log('Policy data to insert:', policyData);
 
       const { data: insertedData, error } = await supabase
@@ -141,9 +163,10 @@ export function PolicyCreationForm({ userRole, hasEditAccess, onPolicyCreated }:
 
       console.log('=== POLICY CREATED SUCCESSFULLY ===', insertedData);
 
+      const modeText = data.is_free_form ? 'free-form' : 'structured';
       const statusMessage = status === 'draft' 
-        ? `Policy created as draft with number ${generatedPolicyNumber}.`
-        : `Policy created and submitted for review with number ${generatedPolicyNumber}.`;
+        ? `${modeText} policy created as draft with number ${generatedPolicyNumber}.`
+        : `${modeText} policy created and submitted for review with number ${generatedPolicyNumber}.`;
 
       toast({
         title: "Success",
