@@ -250,7 +250,7 @@ export function PolicyViewActions({
         {actionType === 'publish' && (
           <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
             <p className="text-green-800 text-sm">
-              <strong>Next Steps:</strong> After publishing, the policy status will update and you'll see the new published version. 
+              <strong>Next Steps:</strong> After clicking "Publish Policy", the policy status will update to published. 
               The modal will refresh to show the current status.
             </p>
           </div>
