@@ -86,7 +86,15 @@ export function PolicyEditFormContent({
             </div>
           )}
 
-          <PolicyFormFields />
+          <PolicyFormFields 
+            onSubmit={onSubmit}
+            isLoading={isSubmitting}
+            submitLabel="Update Policy"
+            onCancel={onCancel}
+            form={form}
+            policyId={policyId}
+            showChangeTracking={showChangeTracking}
+          />
           
           <PolicyFormActions
             onCancel={onCancel}
