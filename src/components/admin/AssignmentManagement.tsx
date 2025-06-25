@@ -1,192 +1,24 @@
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
-import { Link, Plus, Trash2, Loader2 } from 'lucide-react';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
-
-interface Assignment {
-  id: string;
-  edit_user_id: string;
-  publish_user_id: string;
-  created_at: string;
-  editor: {
-    name: string;
-    email: string;
-  };
-  publisher: {
-    name: string;
-    email: string;
-  };
-}
+import { Card, CardContent } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
+import { AssignmentHeader } from './assignment/AssignmentHeader';
+import { AssignmentDialog } from './assignment/AssignmentDialog';
+import { AssignmentTable } from './assignment/AssignmentTable';
+import { useAssignmentData } from './assignment/useAssignmentData';
+import { useAssignmentActions } from './assignment/useAssignmentActions';
 
 export const AssignmentManagement = () => {
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [editors, setEditors] = useState<User[]>([]);
-  const [publishers, setPublishers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedEditor, setSelectedEditor] = useState<string>('');
-  const [selectedPublisher, setSelectedPublisher] = useState<string>('');
-  const { toast } = useToast();
-
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-
-      // Fetch assignments with proper joins to get both editor and publisher details
-      const { data: assignmentData, error: assignmentError } = await supabase
-        .from('assignment_relations')
-        .select(`
-          id,
-          edit_user_id,
-          publish_user_id,
-          created_at,
-          editor:profiles!assignment_relations_edit_user_id_fkey(name, email),
-          publisher:profiles!assignment_relations_publish_user_id_fkey(name, email)
-        `);
-
-      if (assignmentError) {
-        console.error('Assignment fetch error:', assignmentError);
-        throw assignmentError;
-      }
-
-      console.log('Raw assignment data:', assignmentData);
-
-      // Transform the data to ensure proper structure
-      const formattedAssignments = assignmentData?.map(assignment => ({
-        id: assignment.id,
-        edit_user_id: assignment.edit_user_id,
-        publish_user_id: assignment.publish_user_id,
-        created_at: assignment.created_at,
-        editor: {
-          name: assignment.editor?.name || 'Unknown',
-          email: assignment.editor?.email || 'Unknown'
-        },
-        publisher: {
-          name: assignment.publisher?.name || 'Unknown',
-          email: assignment.publisher?.email || 'Unknown'
-        }
-      })) || [];
-
-      console.log('Formatted assignments:', formattedAssignments);
-      setAssignments(formattedAssignments);
-
-      // Fetch users who could be editors (policy-maker role)
-      const { data: editorProfiles, error: editorError } = await supabase
-        .from('profiles')
-        .select('id, name, email')
-        .eq('role', 'edit');
-
-      if (editorError) {
-        console.error('Editor fetch error:', editorError);
-        throw editorError;
-      }
-
-      setEditors(editorProfiles || []);
-
-      // Fetch users who could be publishers (publish role)
-      const { data: publisherProfiles, error: publisherError } = await supabase
-        .from('profiles')
-        .select('id, name, email')
-        .eq('role', 'publish');
-
-      if (publisherError) {
-        console.error('Publisher fetch error:', publisherError);
-        throw publisherError;
-      }
-
-      setPublishers(publisherProfiles || []);
-
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load assignment data.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const createAssignment = async () => {
-    if (!selectedEditor || !selectedPublisher) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please select both an editor and a publisher.",
-      });
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('assignment_relations')
-        .insert({
-          edit_user_id: selectedEditor,
-          publish_user_id: selectedPublisher
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Assignment created successfully.",
-      });
-
-      setIsDialogOpen(false);
-      setSelectedEditor('');
-      setSelectedPublisher('');
-      fetchData();
-    } catch (error) {
-      console.error('Error creating assignment:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to create assignment.",
-      });
-    }
-  };
-
-  const deleteAssignment = async (assignmentId: string) => {
-    try {
-      const { error } = await supabase
-        .from('assignment_relations')
-        .delete()
-        .eq('id', assignmentId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Assignment deleted successfully.",
-      });
-
-      fetchData();
-    } catch (error) {
-      console.error('Error deleting assignment:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete assignment.",
-      });
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const { assignments, editors, publishers, isLoading, fetchData } = useAssignmentData();
+  const {
+    isDialogOpen,
+    setIsDialogOpen,
+    selectedEditor,
+    setSelectedEditor,
+    selectedPublisher,
+    setSelectedPublisher,
+    createAssignment,
+    deleteAssignment
+  } = useAssignmentActions(fetchData);
 
   if (isLoading) {
     return (
@@ -200,113 +32,25 @@ export const AssignmentManagement = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2">
-            <Link className="w-5 h-5" />
-            Editor-Publisher Assignments
-          </CardTitle>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                New Assignment
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New Assignment</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Select Editor</label>
-                  <Select value={selectedEditor} onValueChange={setSelectedEditor}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose an editor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {editors.map(editor => (
-                        <SelectItem key={editor.id} value={editor.id}>
-                          {editor.name} ({editor.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Select Publisher</label>
-                  <Select value={selectedPublisher} onValueChange={setSelectedPublisher}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a publisher" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {publishers.map(publisher => (
-                        <SelectItem key={publisher.id} value={publisher.id}>
-                          {publisher.name} ({publisher.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={createAssignment} className="w-full">
-                  Create Assignment
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </CardHeader>
+      <AssignmentHeader onOpenDialog={() => setIsDialogOpen(true)} />
       <CardContent>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Editor</TableHead>
-                <TableHead>Publisher</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {assignments.map((assignment) => (
-                <TableRow key={assignment.id}>
-                  <TableCell className="font-medium">
-                    <div>
-                      <div className="font-semibold">{assignment.editor.name}</div>
-                      <div className="text-sm text-gray-500">{assignment.editor.email}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-semibold">{assignment.publisher.name}</div>
-                      <div className="text-sm text-gray-500">{assignment.publisher.email}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(assignment.created_at).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deleteAssignment(assignment.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {assignments.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-gray-500 py-8">
-                    No assignments found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+        <AssignmentTable
+          assignments={assignments}
+          onDeleteAssignment={deleteAssignment}
+        />
       </CardContent>
+      
+      <AssignmentDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        editors={editors}
+        publishers={publishers}
+        selectedEditor={selectedEditor}
+        selectedPublisher={selectedPublisher}
+        onEditorChange={setSelectedEditor}
+        onPublisherChange={setSelectedPublisher}
+        onCreateAssignment={createAssignment}
+      />
     </Card>
   );
 };
