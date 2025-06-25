@@ -7,7 +7,7 @@ export const policyFormSchema = z.object({
   is_free_form: z.boolean().default(false),
   purpose: z.string().optional(),
   procedure: z.string().optional(),
-  policy_text: z.string().min(1, 'Policy content is required'),
+  policy_text: z.string().optional(),
   free_form_content: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (data.is_free_form) {
@@ -20,12 +20,19 @@ export const policyFormSchema = z.object({
       });
     }
   } else {
-    // In structured mode, purpose and procedure are required
+    // In structured mode, purpose, policy_text, and procedure are required
     if (!data.purpose || data.purpose.trim().length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Purpose is required',
         path: ['purpose'],
+      });
+    }
+    if (!data.policy_text || data.policy_text.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Policy content is required',
+        path: ['policy_text'],
       });
     }
     if (!data.procedure || data.procedure.trim().length === 0) {
