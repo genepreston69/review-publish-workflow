@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -48,18 +47,15 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
         setIsLoading(true);
         console.log('=== LOADING POLICY FOR EDIT ===', policyId);
 
-        const { data, error } = await supabase
+        // First get the policy
+        const { data: policyData, error: policyError } = await supabase
           .from('Policies')
-          .select(`
-            *,
-            creator:profiles!Policies_creator_id_fkey(id, name, email),
-            publisher:profiles!Policies_publisher_id_fkey(id, name, email)
-          `)
+          .select('*')
           .eq('id', policyId)
           .single();
 
-        if (error) {
-          console.error('Error loading policy:', error);
+        if (policyError) {
+          console.error('Error loading policy:', policyError);
           toast({
             variant: "destructive",
             title: "Error",
@@ -69,13 +65,35 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
           return;
         }
 
-        console.log('=== POLICY LOADED FOR EDIT ===', data);
+        // Then get creator and publisher separately if they exist
+        let creator = null;
+        let publisher = null;
+
+        if (policyData.creator_id) {
+          const { data: creatorData } = await supabase
+            .from('profiles')
+            .select('id, name, email')
+            .eq('id', policyData.creator_id)
+            .single();
+          creator = creatorData;
+        }
+
+        if (policyData.publisher_id) {
+          const { data: publisherData } = await supabase
+            .from('profiles')
+            .select('id, name, email')
+            .eq('id', policyData.publisher_id)
+            .single();
+          publisher = publisherData;
+        }
+
+        console.log('=== POLICY LOADED FOR EDIT ===', policyData);
         
-        // Type cast the data to match our Policy interface
+        // Create Policy object with proper typing
         const typedPolicy: Policy = {
-          ...data,
-          creator: Array.isArray(data.creator) ? data.creator[0] : data.creator,
-          publisher: Array.isArray(data.publisher) ? data.publisher[0] : data.publisher,
+          ...policyData,
+          creator,
+          publisher,
         };
         
         setPolicy(typedPolicy);
@@ -133,18 +151,14 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
         procedure: data.procedure,
         policy_text: data.policy_text,
         updated_at: new Date().toISOString(),
-        // Keep existing policy_number and other fields
       };
 
       const { data: updatedData, error } = await supabase
         .from('Policies')
         .update(updateData)
         .eq('id', policyId)
-        .select(`
-          *,
-          creator:profiles!Policies_creator_id_fkey(id, name, email),
-          publisher:profiles!Policies_publisher_id_fkey(id, name, email)
-        `);
+        .select('*')
+        .single();
 
       if (error) {
         console.error('=== SUPABASE UPDATE ERROR ===', error);
@@ -158,15 +172,14 @@ export function PolicyEditForm({ policyId, onPolicyUpdated, onCancel }: PolicyEd
         description: "Policy updated successfully.",
       });
 
-      // Notify parent component
-      if (updatedData && updatedData[0]) {
-        const typedUpdatedPolicy: Policy = {
-          ...updatedData[0],
-          creator: Array.isArray(updatedData[0].creator) ? updatedData[0].creator[0] : updatedData[0].creator,
-          publisher: Array.isArray(updatedData[0].publisher) ? updatedData[0].publisher[0] : updatedData[0].publisher,
-        };
-        onPolicyUpdated(typedUpdatedPolicy);
-      }
+      // Create updated policy with existing creator/publisher
+      const updatedPolicy: Policy = {
+        ...updatedData,
+        creator: policy.creator,
+        publisher: policy.publisher,
+      };
+      
+      onPolicyUpdated(updatedPolicy);
     } catch (error) {
       console.error('=== ERROR UPDATING POLICY ===', error);
       toast({
