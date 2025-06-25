@@ -81,7 +81,7 @@ export function usePolicyEditorLogic() {
   return {
     // State
     editorPolicies,
-    isLoading,
+    isLoadingPolicies: isLoading, // Return isLoadingPolicies to match PolicyEditor.tsx expectation
     editingPolicyId,
     viewingPolicyId,
     showCreateForm,
