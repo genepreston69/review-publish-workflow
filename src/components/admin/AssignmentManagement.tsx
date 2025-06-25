@@ -20,8 +20,14 @@ interface Assignment {
   edit_user_id: string;
   publish_user_id: string;
   created_at: string;
-  editor_name: string;
-  publisher_name: string;
+  editor: {
+    name: string;
+    email: string;
+  };
+  publisher: {
+    name: string;
+    email: string;
+  };
 }
 
 export const AssignmentManagement = () => {
@@ -38,55 +44,69 @@ export const AssignmentManagement = () => {
     try {
       setIsLoading(true);
 
-      // Fetch assignments with user names
+      // Fetch assignments with proper joins to get both editor and publisher details
       const { data: assignmentData, error: assignmentError } = await supabase
         .from('assignment_relations')
         .select(`
-          *,
-          editor:profiles!assignment_relations_edit_user_id_fkey(name),
-          publisher:profiles!assignment_relations_publish_user_id_fkey(name)
+          id,
+          edit_user_id,
+          publish_user_id,
+          created_at,
+          editor:profiles!assignment_relations_edit_user_id_fkey(name, email),
+          publisher:profiles!assignment_relations_publish_user_id_fkey(name, email)
         `);
 
-      if (assignmentError) throw assignmentError;
+      if (assignmentError) {
+        console.error('Assignment fetch error:', assignmentError);
+        throw assignmentError;
+      }
 
-      const formattedAssignments = assignmentData.map(assignment => ({
+      console.log('Raw assignment data:', assignmentData);
+
+      // Transform the data to ensure proper structure
+      const formattedAssignments = assignmentData?.map(assignment => ({
         id: assignment.id,
         edit_user_id: assignment.edit_user_id,
         publish_user_id: assignment.publish_user_id,
         created_at: assignment.created_at,
-        editor_name: assignment.editor?.name || 'Unknown',
-        publisher_name: assignment.publisher?.name || 'Unknown'
-      }));
+        editor: {
+          name: assignment.editor?.name || 'Unknown',
+          email: assignment.editor?.email || 'Unknown'
+        },
+        publisher: {
+          name: assignment.publisher?.name || 'Unknown',
+          email: assignment.publisher?.email || 'Unknown'
+        }
+      })) || [];
 
+      console.log('Formatted assignments:', formattedAssignments);
       setAssignments(formattedAssignments);
 
-      // Fetch users with editor role
-      const { data: editorRoles, error: editorError } = await supabase
-        .from('user_roles')
-        .select(`
-          user_id,
-          profiles!user_roles_user_id_fkey(id, name, email)
-        `)
+      // Fetch users who could be editors (policy-maker role)
+      const { data: editorProfiles, error: editorError } = await supabase
+        .from('profiles')
+        .select('id, name, email')
         .eq('role', 'edit');
 
-      if (editorError) throw editorError;
+      if (editorError) {
+        console.error('Editor fetch error:', editorError);
+        throw editorError;
+      }
 
-      const editorUsers = editorRoles.map(role => role.profiles).filter(Boolean);
-      setEditors(editorUsers);
+      setEditors(editorProfiles || []);
 
-      // Fetch users with publisher role
-      const { data: publisherRoles, error: publisherError } = await supabase
-        .from('user_roles')
-        .select(`
-          user_id,
-          profiles!user_roles_user_id_fkey(id, name, email)
-        `)
+      // Fetch users who could be publishers (publish role)
+      const { data: publisherProfiles, error: publisherError } = await supabase
+        .from('profiles')
+        .select('id, name, email')
         .eq('role', 'publish');
 
-      if (publisherError) throw publisherError;
+      if (publisherError) {
+        console.error('Publisher fetch error:', publisherError);
+        throw publisherError;
+      }
 
-      const publisherUsers = publisherRoles.map(role => role.profiles).filter(Boolean);
-      setPublishers(publisherUsers);
+      setPublishers(publisherProfiles || []);
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -250,8 +270,18 @@ export const AssignmentManagement = () => {
             <TableBody>
               {assignments.map((assignment) => (
                 <TableRow key={assignment.id}>
-                  <TableCell className="font-medium">{assignment.editor_name}</TableCell>
-                  <TableCell>{assignment.publisher_name}</TableCell>
+                  <TableCell className="font-medium">
+                    <div>
+                      <div className="font-semibold">{assignment.editor.name}</div>
+                      <div className="text-sm text-gray-500">{assignment.editor.email}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="font-semibold">{assignment.publisher.name}</div>
+                      <div className="text-sm text-gray-500">{assignment.publisher.email}</div>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {new Date(assignment.created_at).toLocaleDateString()}
                   </TableCell>
