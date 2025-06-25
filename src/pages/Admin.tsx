@@ -1,4 +1,3 @@
-
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
@@ -18,6 +17,9 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
 import { ReviewForms } from '@/components/admin/ReviewForms';
 import { ArchivedPolicies } from '@/components/admin/ArchivedPolicies';
+import { PolicyEditor } from '@/components/admin/PolicyEditor';
+import { ReviewDashboard } from '@/components/admin/ReviewDashboard';
+import { PublishInterface } from '@/components/admin/PublishInterface';
 
 const Admin = () => {
   const { userRole, isLoading } = useAuth();
@@ -51,6 +53,12 @@ const Admin = () => {
     console.log('Active section:', activeSection);
     
     switch (activeSection) {
+      case 'policy-editor':
+        return <PolicyEditor />;
+      case 'review-dashboard':
+        return <ReviewDashboard />;
+      case 'publish-interface':
+        return <PublishInterface />;
       case 'create-policy':
         return <CreatePolicy />;
       case 'draft-policies':

@@ -85,11 +85,12 @@ export const usePolicies = () => {
       console.log('=== CURRENT POLICY DATA ===', currentPolicy);
 
       // Check permissions for status changes
-      const canPublish = userRole === 'publish' || userRole === 'super-admin';
-      const canEdit = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
+      const canEdit = userRole === 'policy-maker' || userRole === 'super-admin';
+      const canReview = userRole === 'policy-reviewer' || userRole === 'super-admin';
+      const canPublish = userRole === 'super-admin'; // Will be enhanced with assignment checking
 
-      // Validate permissions based on status change
-      if (newStatus === 'under-review' && !canEdit) {
+      // Enhanced role-based validation
+      if ((newStatus === 'under-review' || newStatus === 'pending-review') && !canEdit) {
         toast({
           variant: "destructive",
           title: "Access Denied",
@@ -98,22 +99,22 @@ export const usePolicies = () => {
         return;
       }
 
-      if (newStatus === 'published' && !canPublish) {
+      if ((newStatus === 'approved' || newStatus === 'rejected') && !canReview) {
         toast({
           variant: "destructive",
           title: "Access Denied",
-          description: "You don't have permission to publish policies.",
+          description: "You don't have permission to review policies.",
         });
         return;
       }
 
-      // Relaxed maker/checker rule - only apply for non-super admins when publishing
-      if (newStatus === 'published' && currentPolicy.creator_id === currentUser.id && !isSuperAdmin) {
-        console.log('=== MAKER/CHECKER RULE VIOLATION FOR NON-SUPER-ADMIN ===');
+      if (newStatus === 'published' && !canPublish) {
+        // For publish, we'll need to check assignment relations
+        // This will be validated in the PublishInterface component
         toast({
           variant: "destructive",
-          title: "Publishing Not Allowed",
-          description: "You cannot publish a policy you created. Another reviewer must publish it due to maker/checker controls.",
+          title: "Access Denied", 
+          description: "You don't have permission to publish policies.",
         });
         return;
       }
@@ -158,15 +159,7 @@ export const usePolicies = () => {
           }
         }
 
-        // For super admins publishing their own policy, set publisher_id to null to bypass constraint
-        if (isSuperAdmin && currentPolicy.creator_id === currentUser.id) {
-          console.log('=== SUPER ADMIN PUBLISHING OWN POLICY - BYPASSING CONSTRAINT ===');
-          updateData.publisher_id = null;
-        } else {
-          // For regular publishing flow, set the publisher
-          updateData.publisher_id = currentUser.id;
-        }
-        
+        updateData.publisher_id = currentUser.id;
         updateData.published_at = new Date().toISOString();
 
         // Strip colors from all content fields when publishing
@@ -193,8 +186,9 @@ export const usePolicies = () => {
         };
       }
 
-      // Set reviewer when assigning for review
-      if (newStatus === 'under-review' && !currentPolicy.reviewer) {
+      // Set reviewer when assigning for review or making decisions
+      if ((newStatus === 'under-review' || newStatus === 'pending-review' || 
+           newStatus === 'approved' || newStatus === 'rejected') && !currentPolicy.reviewer) {
         updateData.reviewer = currentUser.email;
       }
 
@@ -207,29 +201,11 @@ export const usePolicies = () => {
 
       if (updateError) {
         console.error('Error updating policy status:', updateError);
-        
-        // Handle specific database constraint violations
-        if (updateError.message?.includes('check_creator_not_publisher')) {
-          if (isSuperAdmin) {
-            toast({
-              variant: "destructive",
-              title: "Database Constraint Error",
-              description: "There's a database constraint preventing this action. Please contact system administrator to review database policies for super admin permissions.",
-            });
-          } else {
-            toast({
-              variant: "destructive",
-              title: "Publishing Not Allowed",
-              description: "Database constraint violation: Creator cannot be the publisher. Another reviewer must publish this policy.",
-            });
-          }
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: `Failed to update policy status: ${updateError.message}`,
-          });
-        }
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: `Failed to update policy status: ${updateError.message}`,
+        });
         return;
       }
 
@@ -240,7 +216,8 @@ export const usePolicies = () => {
         oldStatus: currentPolicy.status,
         newStatus,
         creatorId: currentPolicy.creator_id,
-        reviewerId: newStatus === 'under-review' ? currentUser.id : currentPolicy.reviewer ? 
+        reviewerId: (newStatus === 'approved' || newStatus === 'rejected') ? currentUser.id : 
+          currentPolicy.reviewer ? 
           (await supabase.from('profiles').select('id').eq('email', currentPolicy.reviewer).single())?.data?.id : undefined,
         reviewerComment,
         publisherId: newStatus === 'published' ? currentUser.id : undefined,
@@ -259,9 +236,13 @@ export const usePolicies = () => {
       let statusMessage = '';
       switch (newStatus) {
         case 'published':
-          statusMessage = isSuperAdmin && currentPolicy.creator_id === currentUser.id
-            ? "Policy published successfully with super admin override. All colors have been removed from the content and old versions archived."
-            : "Policy published successfully. All colors have been removed from the content and old versions archived.";
+          statusMessage = "Policy published successfully. All colors have been removed from the content and old versions archived.";
+          break;
+        case 'approved':
+          statusMessage = "Policy approved and ready for publishing.";
+          break;
+        case 'rejected':
+          statusMessage = "Policy rejected and returned to creator for changes.";
           break;
         case 'draft':
           statusMessage = currentPolicy.archived_at 
@@ -269,6 +250,7 @@ export const usePolicies = () => {
             : "Policy returned to draft status for editing.";
           break;
         case 'under-review':
+        case 'pending-review':
           statusMessage = "Policy submitted for review successfully.";
           break;
         case 'awaiting-changes':
