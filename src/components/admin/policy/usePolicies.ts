@@ -84,9 +84,9 @@ export const usePolicies = () => {
 
       console.log('=== CURRENT POLICY DATA ===', currentPolicy);
 
-      // Check permissions for status changes
-      const canEdit = userRole === 'policy-maker' || userRole === 'super-admin';
-      const canReview = userRole === 'policy-reviewer' || userRole === 'super-admin';
+      // Check permissions for status changes - using correct UserRole values
+      const canEdit = userRole === 'edit' || userRole === 'super-admin';
+      const canReview = userRole === 'publish' || userRole === 'super-admin'; // Using 'publish' role for review permissions
       const canPublish = userRole === 'super-admin'; // Will be enhanced with assignment checking
 
       // Enhanced role-based validation

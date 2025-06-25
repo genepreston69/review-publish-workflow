@@ -17,6 +17,16 @@ export interface Policy {
   updated_at: string | null;
   archived_at: string | null;
   parent_policy_id: string | null;
+  creator?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  publisher?: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 
 export type ManualType = 'HR' | 'Facility';
