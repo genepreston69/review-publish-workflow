@@ -44,6 +44,9 @@ export function PolicyCard({
   const isSuperAdmin = userRole === 'super-admin';
   const isCreator = policy.creator_id === currentUser?.id;
 
+  // Read-only users can view published policies
+  const canViewPolicy = userRole === 'read-only' ? policy.status === 'published' : true;
+
   // Super admins can publish any policy regardless of status or creator
   const canPublishPolicy = isSuperAdmin || (
     (canPublish || userRole === 'publish') && 
@@ -63,12 +66,16 @@ export function PolicyCard({
   // Super admins can submit any draft policy, others follow existing rules
   const showSubmit = (policy.status === 'draft') && (isSuperAdmin || canEdit || isCreator);
 
+  // Show view button for all users who can view the policy
+  const showView = onView && canViewPolicy;
+
   if (listView) {
     return (
       <PolicyCardListView
         policy={policy}
         showEdit={showEdit}
         showSubmit={showSubmit}
+        showView={showView}
         canPublishPolicy={canPublishPolicy}
         canArchive={canArchive}
         canDelete={canDelete}
@@ -88,6 +95,7 @@ export function PolicyCard({
       canPublish={canPublish}
       showEdit={showEdit}
       showSubmit={showSubmit}
+      showView={showView}
       canPublishPolicy={canPublishPolicy}
       canArchive={canArchive}
       canDelete={canDelete}

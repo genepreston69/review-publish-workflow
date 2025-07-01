@@ -1,21 +1,16 @@
 
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Edit, MoreHorizontal, FileText, Send, CheckCircle, Archive, Trash2 } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { PolicyCardActions } from './PolicyCardActions';
+import { stripHtml } from './policyUtils';
 import { Policy } from './types';
-import { formatDate } from '@/utils/formatDate';
-import { stripHtml, getStatusColor } from './policyUtils';
+import { Eye, FileText } from 'lucide-react';
 
 interface PolicyCardListViewProps {
   policy: Policy;
-  showEdit: boolean;
+  showEdit?: boolean;
   showSubmit: boolean;
+  showView?: boolean;
   canPublishPolicy: boolean;
   canArchive: boolean;
   canDelete: boolean;
@@ -30,6 +25,7 @@ export function PolicyCardListView({
   policy,
   showEdit,
   showSubmit,
+  showView,
   canPublishPolicy,
   canArchive,
   canDelete,
@@ -39,6 +35,26 @@ export function PolicyCardListView({
   onDelete,
   onArchive,
 }: PolicyCardListViewProps) {
+  const getStatusColor = (status: string | null) => {
+    const cleanStatus = stripHtml(status);
+    switch (cleanStatus?.toLowerCase()) {
+      case 'published':
+        return 'bg-green-100 text-green-700 border-green-200';
+      case 'draft':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'under-review':
+      case 'under review':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'archived':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'awaiting-changes':
+      case 'awaiting changes':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
   return (
     <div className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -47,15 +63,18 @@ export function PolicyCardListView({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-medium text-slate-800 truncate">{stripHtml(policy.name) || 'Untitled Policy'}</h3>
-            <Badge variant="secondary" className="text-xs px-2 py-0.5 shrink-0">
+            <h3 className="font-medium text-slate-800 truncate">
+              {stripHtml(policy.name) || 'Untitled Policy'}
+            </h3>
+            <span className="text-sm text-slate-500">
               {policy.policy_number}
-            </Badge>
+            </span>
           </div>
-          <p className="text-sm text-slate-600 line-clamp-1">{stripHtml(policy.purpose)}</p>
+          <p className="text-sm text-slate-600 line-clamp-1">
+            {stripHtml(policy.purpose)?.substring(0, 100) || 'No purpose specified'}...
+          </p>
           <div className="flex items-center gap-4 mt-1 text-xs text-slate-500">
-            {(policy as any).creator?.name && <span>By {(policy as any).creator.name}</span>}
-            <span>{formatDate(policy.created_at)}</span>
+            <span>{new Date(policy.created_at).toLocaleDateString()}</span>
             <Badge 
               variant="outline" 
               className={`${getStatusColor(policy.status)} text-xs px-2 py-0.5 capitalize`}
@@ -66,49 +85,30 @@ export function PolicyCardListView({
         </div>
       </div>
       <div className="flex items-center gap-1 ml-4">
-        {onView && (
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => onView(policy.id)}>
+        {showView && onView && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 w-8 p-0" 
+            onClick={() => onView(policy.id)}
+            title="View Policy"
+          >
             <Eye className="h-4 w-4" />
           </Button>
         )}
-        {showEdit && (
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => onEdit!(policy.id)}>
-            <Edit className="h-4 w-4" />
-          </Button>
-        )}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {showSubmit && (
-              <DropdownMenuItem onClick={() => onUpdateStatus(policy.id, 'under-review')}>
-                <Send className="mr-2 h-4 w-4" />
-                Submit
-              </DropdownMenuItem>
-            )}
-            {canPublishPolicy && (
-              <DropdownMenuItem onClick={() => onUpdateStatus(policy.id, 'published')}>
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Publish
-              </DropdownMenuItem>
-            )}
-            {canArchive && onArchive && (
-              <DropdownMenuItem onClick={() => onArchive(policy.id)}>
-                <Archive className="mr-2 h-4 w-4" />
-                Archive
-              </DropdownMenuItem>
-            )}
-            {canDelete && onDelete && (
-              <DropdownMenuItem onClick={() => onDelete(policy.id)} className="text-red-600">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <PolicyCardActions
+          policy={policy}
+          showEdit={showEdit}
+          showSubmit={showSubmit}
+          canPublishPolicy={canPublishPolicy}
+          canArchive={canArchive}
+          canDelete={canDelete}
+          onUpdateStatus={onUpdateStatus}
+          onEdit={onEdit}
+          onView={onView}
+          onDelete={onDelete}
+          onArchive={onArchive}
+        />
       </div>
     </div>
   );

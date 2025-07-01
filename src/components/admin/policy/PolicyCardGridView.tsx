@@ -1,22 +1,19 @@
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { PolicyCardActions } from './PolicyCardActions';
+import { stripHtml } from './policyUtils';
 import { Policy } from './types';
-import { formatDate } from '@/utils/formatDate';
-import { stripHtml, getStatusColor } from './policyUtils';
-import { PolicyCardDropdownActions } from './PolicyCardDropdownActions';
+import { Eye } from 'lucide-react';
 
 interface PolicyCardGridViewProps {
   policy: Policy;
   compact: boolean;
   canPublish: boolean;
-  showEdit: boolean;
+  showEdit?: boolean;
   showSubmit: boolean;
+  showView?: boolean;
   canPublishPolicy: boolean;
   canArchive: boolean;
   canDelete: boolean;
@@ -33,6 +30,7 @@ export function PolicyCardGridView({
   canPublish,
   showEdit,
   showSubmit,
+  showView,
   canPublishPolicy,
   canArchive,
   canDelete,
@@ -42,18 +40,38 @@ export function PolicyCardGridView({
   onDelete,
   onArchive,
 }: PolicyCardGridViewProps) {
+  const getStatusColor = (status: string | null) => {
+    const cleanStatus = stripHtml(status);
+    switch (cleanStatus?.toLowerCase()) {
+      case 'published':
+        return 'bg-green-100 text-green-700 border-green-200';
+      case 'draft':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'under-review':
+      case 'under review':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'archived':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'awaiting-changes':
+      case 'awaiting changes':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
   return (
     <Card className={`h-full transition-all duration-200 hover:shadow-md border-slate-200 ${compact ? 'p-2' : ''}`}>
       <CardHeader className={compact ? 'pb-2' : 'pb-3'}>
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <CardTitle className={`${compact ? 'text-sm' : 'text-base'} font-semibold text-slate-800 leading-tight`}>
+            <h3 className={`${compact ? 'text-sm' : 'text-base'} font-semibold text-slate-800 leading-tight mb-1`}>
               {stripHtml(policy.name) || 'Untitled Policy'}
-            </CardTitle>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                {policy.policy_number}
-              </Badge>
+            </h3>
+            <p className="text-xs text-slate-500 mb-2">
+              {policy.policy_number}
+            </p>
+            <div className="flex items-center gap-2">
               <Badge 
                 variant="outline" 
                 className={`${getStatusColor(policy.status)} text-xs px-2 py-0.5 capitalize`}
@@ -63,48 +81,54 @@ export function PolicyCardGridView({
             </div>
           </div>
           
-          <PolicyCardDropdownActions
-            policy={policy}
-            canPublish={canPublish}
-            showEdit={showEdit}
-            showSubmit={showSubmit}
-            canPublishPolicy={canPublishPolicy}
-            canArchive={canArchive}
-            canDelete={canDelete}
-            onUpdateStatus={onUpdateStatus}
-            onEdit={onEdit}
-            onView={onView}
-            onDelete={onDelete}
-            onArchive={onArchive}
-          />
+          <div className="flex items-center gap-1">
+            {showView && onView && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0" 
+                onClick={() => onView(policy.id)}
+                title="View Policy"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+            )}
+            <PolicyCardActions
+              policy={policy}
+              showEdit={showEdit}
+              showSubmit={showSubmit}
+              canPublishPolicy={canPublishPolicy}
+              canArchive={canArchive}
+              canDelete={canDelete}
+              onUpdateStatus={onUpdateStatus}
+              onEdit={onEdit}
+              onView={onView}
+              onDelete={onDelete}
+              onArchive={onArchive}
+            />
+          </div>
         </div>
       </CardHeader>
       
       <CardContent className={compact ? 'pt-0 px-3 pb-3' : 'pt-0'}>
         <div className="space-y-3">
-          {policy.purpose && (
-            <div>
-              <p className="text-xs font-medium text-slate-600 mb-1">Purpose:</p>
-              <p className={`text-slate-700 ${compact ? 'text-xs' : 'text-sm'} line-clamp-2`}>
-                {stripHtml(policy.purpose)}
-              </p>
-            </div>
-          )}
+          <div>
+            <p className={`text-slate-700 ${compact ? 'text-xs' : 'text-sm'} line-clamp-2`}>
+              {stripHtml(policy.purpose)?.substring(0, 100) || 'No purpose specified'}...
+            </p>
+          </div>
           
           <div className="grid grid-cols-1 gap-2 text-xs">
-            {(policy as any).creator?.name && (
-              <div className="flex justify-between">
-                <span className="text-slate-500">Creator:</span>
-                <span className="text-slate-700 font-medium truncate ml-2">{(policy as any).creator.name}</span>
-              </div>
-            )}
             <div className="flex justify-between">
               <span className="text-slate-500">Created:</span>
-              <span className="text-slate-700 font-medium">{formatDate(policy.created_at)}</span>
+              <span className="text-slate-700 font-medium">
+                {new Date(policy.created_at).toLocaleDateString()}
+              </span>
             </div>
-            {policy.reviewer_comment && (
-              <div className="text-red-600 text-xs">
-                Comment: {policy.reviewer_comment}
+            {policy.policy_type && (
+              <div className="flex justify-between">
+                <span className="text-slate-500">Type:</span>
+                <span className="text-slate-700 font-medium">{policy.policy_type}</span>
               </div>
             )}
           </div>
