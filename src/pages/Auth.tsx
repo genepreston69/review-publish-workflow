@@ -2,17 +2,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useAzureAuth } from '@/hooks/auth/AzureAuthContext';
 import { Loader2 } from 'lucide-react';
 import { AuthHeader } from '@/components/auth/AuthHeader';
-import { SignInForm } from '@/components/auth/SignInForm';
-import { SignUpForm } from '@/components/auth/SignUpForm';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { currentUser, isLoading: authLoading } = useAuth();
+  const { signIn } = useAzureAuth();
 
   // Redirect if user is already authenticated
   useEffect(() => {
@@ -37,6 +37,17 @@ const Auth = () => {
     return null;
   }
 
+  const handleSignIn = async () => {
+    try {
+      setIsLoading(true);
+      await signIn();
+    } catch (error) {
+      console.error('Sign in failed:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
@@ -44,22 +55,38 @@ const Auth = () => {
           <AuthHeader />
           
           <CardContent className="px-6 pb-6">
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="signin" className="text-sm">Sign In</TabsTrigger>
-                <TabsTrigger value="signup" className="text-sm">Sign Up</TabsTrigger>
-              </TabsList>
+            <div className="space-y-6">
+              <div className="text-center">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  Sign in with Microsoft
+                </h2>
+                <p className="text-sm text-gray-600 mb-6">
+                  Use your organizational account to access the policy management system
+                </p>
+              </div>
               
-              <TabsContent value="signin" className="space-y-4">
-                <SignInForm isLoading={isLoading} setIsLoading={setIsLoading} />
-              </TabsContent>
-              
-              <TabsContent value="signup" className="space-y-4">
-                <SignUpForm isLoading={isLoading} setIsLoading={setIsLoading} />
-              </TabsContent>
-            </Tabs>
+              <Button 
+                onClick={handleSignIn}
+                disabled={isLoading}
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    <svg className="mr-2 h-4 w-4" viewBox="0 0 23 23" fill="currentColor">
+                      <path d="M11.03 0v10.75H0V0h11.03zm11.25 0v10.75H11.53V0h10.75zm-11.25 11.53V23H0V11.53h11.03zm11.25 0V23H11.53V11.53h10.75z"/>
+                    </svg>
+                    Sign in with Microsoft
+                  </>
+                )}
+              </Button>
+            </div>
             
-            <div className="mt-6 text-center text-xs text-slate-500">
+            <div className="mt-8 text-center text-xs text-slate-500">
               <p>© 2025 Recovery Point West Virginia</p>
               <p className="mt-1">Secure policy and compliance management</p>
             </div>
