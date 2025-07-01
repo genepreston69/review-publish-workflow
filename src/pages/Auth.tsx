@@ -58,10 +58,10 @@ const Auth = () => {
             <div className="space-y-6">
               <div className="text-center">
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  Sign in with Microsoft
+                  Organizational Sign In
                 </h2>
                 <p className="text-sm text-gray-600 mb-6">
-                  Use your organizational account to access the policy management system
+                  Use your organizational Microsoft account to access the policy management system. Contact your system administrator if you need access.
                 </p>
               </div>
               
@@ -84,6 +84,12 @@ const Auth = () => {
                   </>
                 )}
               </Button>
+              
+              <div className="text-center">
+                <p className="text-xs text-gray-500 mt-4">
+                  Access is managed by your organization. New users must be added by system administrators.
+                </p>
+              </div>
             </div>
             
             <div className="mt-8 text-center text-xs text-slate-500">

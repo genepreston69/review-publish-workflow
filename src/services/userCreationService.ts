@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/user';
 
@@ -11,88 +10,50 @@ interface CreateUserParams {
 export interface UserCreationResult {
   success: boolean;
   userId?: string;
-  temporaryPassword?: string;
   error?: string;
 }
 
-export const generateTemporaryPassword = (): string => {
-  // Generate a secure temporary password
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-  let password = '';
-  for (let i = 0; i < 12; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return password;
-};
-
-export const createUserWithEmailNotification = async (params: CreateUserParams): Promise<UserCreationResult> => {
+export const createUserProfile = async (params: CreateUserParams): Promise<UserCreationResult> => {
   const { email, name, role } = params;
   
   try {
-    // Generate temporary password
-    const temporaryPassword = generateTemporaryPassword();
+    console.log('=== CREATING USER PROFILE FOR AZURE AD USER ===', { email, name, role });
     
-    console.log('=== CREATING USER WITH EMAIL NOTIFICATION ===', { email, name, role });
+    // Generate a UUID for the Azure AD user (this will be replaced when they first sign in)
+    const temporaryUserId = crypto.randomUUID();
     
-    // Create the user using regular signup
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password: temporaryPassword,
-      options: {
-        data: {
-          name,
-          full_name: name,
-          display_name: name,
-          user_name: name,
-          username: name
-        }
-      }
-    });
+    // Create the user profile directly in the profiles table
+    // The actual Azure AD user ID will be updated when they first sign in
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: temporaryUserId,
+        email,
+        name,
+        role,
+        initials: generateInitialsFromName(name)
+      })
+      .select()
+      .single();
 
-    if (authError) {
-      console.error('Auth signup error:', authError);
+    if (profileError) {
+      console.error('Profile creation error:', profileError);
       return {
         success: false,
-        error: authError.message
+        error: profileError.message
       };
     }
 
-    if (!authData.user) {
-      return {
-        success: false,
-        error: 'User creation failed - no user data returned'
-      };
-    }
+    console.log('User profile created successfully:', profileData.id);
 
-    console.log('User created successfully:', authData.user.id);
-    
-    // Wait for the profile to be created by the trigger
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Update the role if it's different from default
-    if (role !== 'read-only') {
-      console.log('Updating user role in profiles to:', role);
-      
-      const { error: roleError } = await supabase
-        .from('profiles')
-        .update({ role })
-        .eq('id', authData.user.id);
-
-      if (roleError) {
-        console.error('Role update error in profiles:', roleError);
-        // Don't fail the creation, just log the error
-      }
-    }
-
-    // Send welcome email with temporary password
+    // Send notification email to the user
     try {
       const { error: emailError } = await supabase.functions.invoke('send-user-welcome-email', {
         body: {
           to: email,
           name,
           role,
-          temporaryPassword,
-          userId: authData.user.id
+          userId: profileData.id
         }
       });
 
@@ -109,15 +70,32 @@ export const createUserWithEmailNotification = async (params: CreateUserParams):
 
     return {
       success: true,
-      userId: authData.user.id,
-      temporaryPassword
+      userId: profileData.id
     };
     
   } catch (error: any) {
-    console.error('Error in createUserWithEmailNotification:', error);
+    console.error('Error in createUserProfile:', error);
     return {
       success: false,
       error: error.message || 'An unexpected error occurred'
     };
   }
+};
+
+const generateInitialsFromName = (name: string): string => {
+  return name
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase())
+    .slice(0, 2)
+    .join('');
+};
+
+// Keep the old function name for backward compatibility but mark as deprecated
+/** @deprecated Use createUserProfile instead. This function is kept for backward compatibility. */
+export const createUserWithEmailNotification = createUserProfile;
+
+// Remove the temporary password generation since it's no longer needed
+export const generateTemporaryPassword = (): string => {
+  console.warn('generateTemporaryPassword is deprecated and no longer used with Azure AD authentication');
+  return '';
 };
