@@ -97,17 +97,13 @@ export function PolicyCardListView({
           </Button>
         )}
         <PolicyCardActions
-          policy={policy}
-          showEdit={showEdit}
-          showSubmit={showSubmit}
-          canPublishPolicy={canPublishPolicy}
-          canArchive={canArchive}
-          canDelete={canDelete}
+          policyId={policy.id}
+          policyStatus={policy.status}
+          canPublish={canPublishPolicy}
           onUpdateStatus={onUpdateStatus}
           onEdit={onEdit}
           onView={onView}
           onDelete={onDelete}
-          onArchive={onArchive}
         />
       </div>
     </div>
