@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { UserRole } from '@/types/user';
-import { UserPlus, Loader2, Eye, EyeOff, Copy } from 'lucide-react';
+import { UserPlus, Loader2 } from 'lucide-react';
 import { createUserWithEmailNotification, UserCreationResult } from '@/services/userCreationService';
 
 interface CreateUserFormProps {
@@ -17,7 +17,6 @@ interface CreateUserFormProps {
 export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [creationResult, setCreationResult] = useState<UserCreationResult | null>(null);
   const [formData, setFormData] = useState({
     email: '',
@@ -50,7 +49,7 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
         
         toast({
           title: "Success",
-          description: `User ${formData.name} created successfully. Welcome email sent with temporary password.`,
+          description: `User ${formData.name} created successfully. Welcome email sent with login instructions.`,
         });
 
         onUserCreated();
@@ -86,15 +85,6 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
       name: '',
       role: 'read-only'
     });
-    setShowPassword(false);
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copied",
-      description: "Temporary password copied to clipboard.",
-    });
   };
 
   return (
@@ -119,42 +109,9 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
                 User <strong>{formData.name}</strong> has been created successfully!
               </p>
               <p className="text-sm text-green-700">
-                A welcome email has been sent to <strong>{formData.email}</strong> with their temporary password and role information.
+                A welcome email has been sent to <strong>{formData.email}</strong> with instructions on how to access the system using their organizational Microsoft account.
               </p>
             </div>
-            
-            {creationResult.temporaryPassword && (
-              <div className="space-y-2">
-                <Label>Temporary Password (for reference)</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    value={creationResult.temporaryPassword}
-                    readOnly
-                    className="font-mono"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => copyToClipboard(creationResult.temporaryPassword!)}
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  The user will be required to change this password on first login.
-                </p>
-              </div>
-            )}
             
             <Button onClick={handleClose} className="w-full">
               Close
@@ -181,7 +138,7 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="Enter email address"
+                placeholder="Enter organizational email address"
                 required
               />
             </div>
@@ -206,8 +163,8 @@ export const CreateUserForm = ({ onUserCreated }: CreateUserFormProps) => {
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-sm text-blue-800">
-                A temporary password will be generated and sent to the user via email. 
-                They will be required to change it on first login.
+                The user will receive a welcome email with instructions to sign in using their organizational Microsoft account. 
+                They must use the same email address for authentication.
               </p>
             </div>
 
