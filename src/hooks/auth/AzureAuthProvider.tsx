@@ -42,11 +42,14 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
 
   const fetchUserRole = async (account: AccountInfo) => {
     try {
-      // Check if user exists in Supabase profiles table using their Azure AD email
+      // Use Azure AD user ID for profile lookup
+      const userId = account.localAccountId || account.homeAccountId;
+      
+      // Check if user exists in Supabase profiles table using their Azure AD ID
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('role')
-        .eq('email', account.username)
+        .eq('id', userId)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -62,6 +65,7 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
         const { error: insertError } = await supabase
           .from('profiles')
           .insert({
+            id: userId,
             email: account.username,
             name: account.name || account.username,
             role: 'read-only',
