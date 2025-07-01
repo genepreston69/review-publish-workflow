@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/user';
 
@@ -19,15 +20,79 @@ export const createUserProfile = async (params: CreateUserParams): Promise<UserC
   try {
     console.log('=== CREATING USER PROFILE FOR AZURE AD USER ===', { email, name, role });
     
-    // Generate a UUID for the Azure AD user (this will be replaced when they first sign in)
-    const temporaryUserId = crypto.randomUUID();
+    // Check if user already exists by email
+    const { data: existingProfile, error: checkError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking existing profile:', checkError);
+      return {
+        success: false,
+        error: checkError.message
+      };
+    }
+
+    if (existingProfile) {
+      console.log('=== USER ALREADY EXISTS, UPDATING ROLE ===', existingProfile);
+      
+      // Update existing user's role
+      const { data: updatedProfile, error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          role,
+          name // Update name in case it's different
+        })
+        .eq('email', email)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('Error updating existing profile:', updateError);
+        return {
+          success: false,
+          error: updateError.message
+        };
+      }
+
+      console.log('Existing user profile updated successfully:', updatedProfile.id);
+      
+      // Send notification email
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-user-welcome-email', {
+          body: {
+            to: email,
+            name,
+            role,
+            userId: updatedProfile.id
+          }
+        });
+
+        if (emailError) {
+          console.error('Email sending failed:', emailError);
+        } else {
+          console.log('Welcome email sent successfully');
+        }
+      } catch (emailError) {
+        console.error('Email service error:', emailError);
+      }
+
+      return {
+        success: true,
+        userId: updatedProfile.id
+      };
+    }
+
+    // Create new user profile with a placeholder ID
+    // The actual Azure AD user ID will be set when they first sign in
+    const placeholderUserId = crypto.randomUUID();
     
-    // Create the user profile directly in the profiles table
-    // The actual Azure AD user ID will be updated when they first sign in
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .insert({
-        id: temporaryUserId,
+        id: placeholderUserId,
         email,
         name,
         role,

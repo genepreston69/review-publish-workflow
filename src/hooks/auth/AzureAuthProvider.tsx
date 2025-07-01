@@ -69,38 +69,81 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
     try {
       // Use Azure AD user ID for profile lookup
       const userId = account.localAccountId || account.homeAccountId;
+      const userEmail = account.username;
       
-      // Check if user exists in Supabase profiles table using their Azure AD ID
-      const { data: profile, error } = await supabase
+      console.log('=== FETCHING USER ROLE FOR AZURE AD USER ===');
+      console.log('User ID:', userId);
+      console.log('User Email:', userEmail);
+      
+      // First, try to find user by email (most reliable)
+      let { data: profile, error } = await supabase
         .from('profiles')
-        .select('role')
-        .eq('id', userId)
+        .select('*')
+        .eq('email', userEmail)
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching user role:', error);
-        setUserRole('read-only');
-        return;
+        console.error('Error fetching user profile by email:', error);
       }
 
       if (profile) {
-        setUserRole(profile.role as UserRole);
-      } else {
-        // Create new profile for Azure AD user
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: userId,
-            email: account.username,
-            name: account.name || account.username,
-            role: 'read-only',
-            initials: getInitialsFromName(account.name || account.username)
-          });
-
-        if (insertError) {
-          console.error('Error creating user profile:', insertError);
+        console.log('=== FOUND PROFILE BY EMAIL ===', profile);
+        
+        // Update the profile with the correct Azure AD user ID if needed
+        if (profile.id !== userId) {
+          console.log('=== UPDATING PROFILE ID TO MATCH AZURE AD ===');
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ id: userId })
+            .eq('email', userEmail);
+            
+          if (updateError) {
+            console.error('Error updating profile ID:', updateError);
+          } else {
+            console.log('Profile ID updated successfully');
+          }
         }
         
+        setUserRole(profile.role as UserRole);
+        return;
+      }
+
+      // If no profile found by email, try by ID
+      const { data: profileById, error: errorById } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (errorById && errorById.code !== 'PGRST116') {
+        console.error('Error fetching user role by ID:', errorById);
+      }
+
+      if (profileById) {
+        console.log('=== FOUND PROFILE BY ID ===', profileById);
+        setUserRole(profileById.role as UserRole);
+        return;
+      }
+
+      // If no profile exists, create one
+      console.log('=== NO PROFILE FOUND, CREATING NEW ONE ===');
+      const { data: newProfile, error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          email: userEmail,
+          name: account.name || userEmail,
+          role: 'read-only',
+          initials: getInitialsFromName(account.name || userEmail)
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Error creating user profile:', insertError);
+        setUserRole('read-only');
+      } else {
+        console.log('=== NEW PROFILE CREATED ===', newProfile);
         setUserRole('read-only');
       }
     } catch (error) {
