@@ -4,7 +4,7 @@ import { Configuration, PopupRequest } from '@azure/msal-browser';
 // Azure AD configuration
 export const msalConfig: Configuration = {
   auth: {
-    clientId: import.meta.env.VITE_AZURE_CLIENT_ID || 'your-client-id',
+    clientId: 'dbe55234-a119-4722-bd7b-4e4c20e7864f',
     authority: `https://login.microsoftonline.com/${import.meta.env.VITE_AZURE_TENANT_ID || 'your-tenant-id'}`,
     redirectUri: window.location.origin,
   },
