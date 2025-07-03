@@ -149,8 +149,11 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
           console.log('=== TRYING WITH ALTERNATIVE ID ===');
           const alternativeId = `azure_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           const fallbackProfile = {
-            ...newProfile,
-            id: alternativeId
+            id: alternativeId,
+            email: userEmail,
+            name: userName,
+            role: 'read-only' as UserRole,
+            initials: getInitialsFromName(userName)
           };
           
           console.log('=== ALTERNATIVE PROFILE DATA ===', fallbackProfile);
@@ -171,7 +174,12 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
         } else {
           // Try without specifying ID (let database generate it)
           console.log('=== TRYING WITHOUT SPECIFIED ID ===');
-          const { id, ...profileWithoutId } = newProfile;
+          const profileWithoutId = {
+            email: userEmail,
+            name: userName,
+            role: 'read-only' as UserRole,
+            initials: getInitialsFromName(userName)
+          };
           
           const { data: generatedProfile, error: generatedError } = await supabase
             .from('profiles')
