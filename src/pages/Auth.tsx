@@ -38,6 +38,8 @@ const Auth = () => {
   }
 
   const handleSignIn = async () => {
+    if (isLoading) return; // Prevent multiple calls
+    
     try {
       setIsLoading(true);
       await signIn();
@@ -68,7 +70,7 @@ const Auth = () => {
               <Button 
                 onClick={handleSignIn}
                 disabled={isLoading}
-                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>
