@@ -58,29 +58,43 @@ export const ensureUserProfileExists = async (
       return;
     }
 
-    // Only create a new profile if none exists - do NOT use RPC function
-    console.log('=== CREATING NEW PROFILE FOR COMPLETELY NEW USER ===');
+    // Profile doesn't exist - try to create it but handle RLS errors gracefully
+    console.log('=== ATTEMPTING TO CREATE NEW PROFILE ===');
     
-    // Generate a UUID for the new user
-    const userId = crypto.randomUUID();
-    
-    const { data: newProfile, error: insertError } = await supabase
-      .from('profiles')
-      .insert({
-        id: userId,
-        email: userEmail,
-        name: userName,
-        role: 'read-only' as UserRole, // Only set read-only for NEW users
-        azure_id: azureId
-      })
-      .select()
-      .single();
-    
-    if (insertError) {
-      console.error('=== ERROR CREATING NEW USER PROFILE ===', insertError);
-      setUserRole('read-only');
-    } else {
-      console.log('=== NEW USER PROFILE CREATED WITH READ-ONLY ROLE ===', newProfile);
+    try {
+      // Generate a UUID for the new user
+      const userId = crypto.randomUUID();
+      
+      const { data: newProfile, error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          email: userEmail,
+          name: userName,
+          role: 'read-only' as UserRole,
+          azure_id: azureId
+        })
+        .select()
+        .single();
+      
+      if (insertError) {
+        // Handle RLS or permission errors specifically
+        if (insertError.code === 'PGRST301' || insertError.message?.includes('row-level security')) {
+          console.warn('=== PROFILE CREATION BLOCKED BY RLS - CONTINUING WITH LOGIN ===');
+          console.warn('Profile will need to be created manually by admin');
+          setUserRole('read-only'); // Default role for new users
+          return;
+        }
+        
+        console.error('=== ERROR CREATING NEW USER PROFILE ===', insertError);
+        setUserRole('read-only');
+      } else {
+        console.log('=== NEW USER PROFILE CREATED WITH READ-ONLY ROLE ===', newProfile);
+        setUserRole('read-only');
+      }
+    } catch (createError) {
+      console.warn('=== PROFILE CREATION FAILED - CONTINUING WITH LOGIN ===', createError);
+      console.warn('User will have read-only access until profile is created manually');
       setUserRole('read-only');
     }
     
