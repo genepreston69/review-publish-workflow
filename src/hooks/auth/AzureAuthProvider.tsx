@@ -25,10 +25,15 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
         await msalInstance.initialize();
         
         const accounts = msalInstance.getAllAccounts();
+        console.log('=== INITIALIZATION - ACCOUNTS FOUND ===', accounts);
+        
         if (accounts.length > 0) {
           const account = accounts[0];
+          console.log('=== SETTING CURRENT USER FROM EXISTING ACCOUNT ===', account);
           setCurrentUser(account);
           await ensureUserProfileExists(account);
+        } else {
+          console.log('=== NO EXISTING ACCOUNTS FOUND ===');
         }
       } catch (error) {
         console.error('Failed to initialize MSAL:', error);
@@ -50,8 +55,25 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
       console.log('Azure User ID:', azureUserId);
       console.log('User Email:', userEmail);
       console.log('User Name:', userName);
+      console.log('Account Object:', JSON.stringify(account, null, 2));
       
-      // First, check if user exists by email
+      // Test Supabase connection first
+      console.log('=== TESTING SUPABASE CONNECTION ===');
+      const { data: testData, error: testError } = await supabase
+        .from('profiles')
+        .select('count')
+        .limit(1);
+      
+      if (testError) {
+        console.error('=== SUPABASE CONNECTION ERROR ===', testError);
+        setUserRole('read-only');
+        return;
+      }
+      
+      console.log('=== SUPABASE CONNECTION SUCCESSFUL ===');
+      
+      // Check if user exists by email
+      console.log('=== CHECKING FOR EXISTING PROFILE BY EMAIL ===');
       const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
         .select('*')
@@ -59,7 +81,7 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
         .maybeSingle();
 
       if (checkError) {
-        console.error('Error checking existing profile:', checkError);
+        console.error('=== ERROR CHECKING EXISTING PROFILE ===', checkError);
         setUserRole('read-only');
         return;
       }
@@ -67,26 +89,31 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
       if (existingProfile) {
         console.log('=== EXISTING PROFILE FOUND ===', existingProfile);
         
-        // Update the Azure ID if it's different (in case user signed in before)
-        if (existingProfile.id !== azureUserId) {
-          console.log('=== UPDATING PROFILE ID TO MATCH AZURE AD ===');
-          const { error: updateError } = await supabase
+        // Update the Azure ID and name if needed
+        if (existingProfile.id !== azureUserId || existingProfile.name !== userName) {
+          console.log('=== UPDATING EXISTING PROFILE ===');
+          const { data: updatedProfile, error: updateError } = await supabase
             .from('profiles')
             .update({ 
               id: azureUserId,
               name: userName,
               initials: getInitialsFromName(userName)
             })
-            .eq('email', userEmail);
+            .eq('email', userEmail)
+            .select()
+            .single();
             
           if (updateError) {
-            console.error('Error updating profile ID:', updateError);
+            console.error('=== ERROR UPDATING PROFILE ===', updateError);
+            // Continue with existing profile data
+            setUserRole(existingProfile.role as UserRole);
           } else {
-            console.log('Profile ID updated successfully');
+            console.log('=== PROFILE UPDATED SUCCESSFULLY ===', updatedProfile);
+            setUserRole(updatedProfile.role as UserRole);
           }
+        } else {
+          setUserRole(existingProfile.role as UserRole);
         }
-        
-        setUserRole(existingProfile.role as UserRole);
         return;
       }
 
@@ -99,6 +126,8 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
         role: 'read-only' as UserRole,
         initials: getInitialsFromName(userName)
       };
+      
+      console.log('=== NEW PROFILE DATA ===', newProfile);
 
       const { data: createdProfile, error: insertError } = await supabase
         .from('profiles')
@@ -107,15 +136,24 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
         .single();
 
       if (insertError) {
-        console.error('Error creating user profile:', insertError);
+        console.error('=== ERROR CREATING USER PROFILE ===', insertError);
+        console.error('=== ERROR DETAILS ===', {
+          code: insertError.code,
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint
+        });
         
-        // Try to handle potential ID conflicts by using email as fallback
-        if (insertError.code === '23505') { // unique constraint violation
-          console.log('=== ID CONFLICT, TRYING WITH GENERATED ID ===');
+        // Try alternative approach with different ID
+        if (insertError.code === '23505' || insertError.message?.includes('duplicate')) {
+          console.log('=== TRYING WITH ALTERNATIVE ID ===');
+          const alternativeId = `azure_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           const fallbackProfile = {
             ...newProfile,
-            id: crypto.randomUUID()
+            id: alternativeId
           };
+          
+          console.log('=== ALTERNATIVE PROFILE DATA ===', fallbackProfile);
           
           const { data: fallbackCreated, error: fallbackError } = await supabase
             .from('profiles')
@@ -124,26 +162,43 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
             .single();
             
           if (fallbackError) {
-            console.error('Error creating fallback profile:', fallbackError);
+            console.error('=== ERROR CREATING FALLBACK PROFILE ===', fallbackError);
             setUserRole('read-only');
           } else {
-            console.log('=== FALLBACK PROFILE CREATED ===', fallbackCreated);
+            console.log('=== FALLBACK PROFILE CREATED SUCCESSFULLY ===', fallbackCreated);
             setUserRole('read-only');
           }
         } else {
-          setUserRole('read-only');
+          // Try without specifying ID (let database generate it)
+          console.log('=== TRYING WITHOUT SPECIFIED ID ===');
+          const { id, ...profileWithoutId } = newProfile;
+          
+          const { data: generatedProfile, error: generatedError } = await supabase
+            .from('profiles')
+            .insert(profileWithoutId)
+            .select()
+            .single();
+            
+          if (generatedError) {
+            console.error('=== ERROR CREATING PROFILE WITHOUT ID ===', generatedError);
+            setUserRole('read-only');
+          } else {
+            console.log('=== PROFILE CREATED WITH GENERATED ID ===', generatedProfile);
+            setUserRole('read-only');
+          }
         }
       } else {
         console.log('=== NEW PROFILE CREATED SUCCESSFULLY ===', createdProfile);
         setUserRole('read-only');
       }
     } catch (error) {
-      console.error('Error in ensureUserProfileExists:', error);
+      console.error('=== UNEXPECTED ERROR IN ensureUserProfileExists ===', error);
       setUserRole('read-only');
     }
   };
 
   const getInitialsFromName = (name: string): string => {
+    if (!name) return 'UN';
     return name
       .split(' ')
       .map(word => word.charAt(0).toUpperCase())
@@ -154,14 +209,20 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
   const signIn = async () => {
     try {
       setIsLoading(true);
+      console.log('=== STARTING SIGN IN PROCESS ===');
+      
       const response: AuthenticationResult = await msalInstance.loginPopup(loginRequest);
+      console.log('=== SIGN IN RESPONSE ===', response);
       
       if (response.account) {
+        console.log('=== SIGN IN SUCCESSFUL, SETTING USER ===', response.account);
         setCurrentUser(response.account);
         await ensureUserProfileExists(response.account);
+      } else {
+        console.log('=== NO ACCOUNT IN SIGN IN RESPONSE ===');
       }
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('=== LOGIN FAILED ===', error);
     } finally {
       setIsLoading(false);
     }
@@ -169,14 +230,16 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
 
   const signOut = async () => {
     try {
+      console.log('=== SIGNING OUT ===');
       await msalInstance.logoutPopup();
       setCurrentUser(null);
       setUserRole(null);
       
       // Clear any Supabase session
       await supabase.auth.signOut();
+      console.log('=== SIGN OUT COMPLETE ===');
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('=== LOGOUT FAILED ===', error);
     }
   };
 
