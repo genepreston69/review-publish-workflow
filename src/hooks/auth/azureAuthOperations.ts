@@ -72,19 +72,19 @@ export const createSignOutHandler = (
       console.log('=== ACCOUNTS TO LOGOUT ===', accounts);
       
       if (accounts.length > 0) {
-        // Use logoutRedirect instead of logoutPopup for more reliable logout
-        await msalInstance.logoutRedirect({
-          account: accounts[0],
-          postLogoutRedirectUri: window.location.origin + '/auth'
+        // Use logoutPopup instead of logoutRedirect to work in iframe
+        await msalInstance.logoutPopup({
+          account: accounts[0]
         });
-      } else {
-        // If no accounts, just redirect to auth page
-        window.location.href = '/auth';
+        console.log('=== POPUP LOGOUT SUCCESSFUL ===');
       }
       
       // Clear any Supabase session
       await supabase.auth.signOut();
       console.log('=== SIGN OUT COMPLETE ===');
+      
+      // Navigate to auth page after successful logout
+      window.location.href = '/auth';
     } catch (error) {
       console.error('=== LOGOUT FAILED ===', error);
       // Force redirect to auth page even if logout fails
