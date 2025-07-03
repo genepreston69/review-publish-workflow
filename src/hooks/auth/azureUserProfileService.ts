@@ -10,46 +10,51 @@ export const ensureUserProfileExists = async (
   try {
     const userEmail = account.username;
     const userName = account.name || userEmail;
+    const azureId = account.localAccountId || account.homeAccountId;
     
     console.log('=== ENSURING USER PROFILE EXISTS ===');
     console.log('User Email:', userEmail);
     console.log('User Name:', userName);
+    console.log('Azure ID:', azureId);
     
-    // First check if user profile exists
+    // First check if user profile exists by email
     const { data: existingProfile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, role, name')
+      .select('id, role, name, azure_id')
       .eq('email', userEmail)
       .maybeSingle();
 
     if (profileError) {
       console.error('=== ERROR CHECKING EXISTING PROFILE ===', profileError);
+      setUserRole('read-only');
       return;
     }
 
     if (existingProfile) {
       console.log('=== FOUND EXISTING PROFILE - PRESERVING ROLE ===', existingProfile);
       
-      // For existing users, ONLY update the name if it has changed
-      // NEVER touch the role field at all
-      if (existingProfile.name !== userName) {
-        console.log('=== UPDATING ONLY USER NAME, PRESERVING ROLE ===');
+      // Update Azure ID if it's missing or different
+      if (!existingProfile.azure_id || existingProfile.azure_id !== azureId) {
+        console.log('=== UPDATING AZURE ID FOR EXISTING USER ===');
         const { error: updateError } = await supabase
           .from('profiles')
-          .update({ name: userName })
+          .update({ 
+            azure_id: azureId,
+            name: userName // Also update name in case it changed
+          })
           .eq('email', userEmail);
           
         if (updateError) {
-          console.error('=== ERROR UPDATING USER NAME ===', updateError);
+          console.error('=== ERROR UPDATING AZURE ID ===', updateError);
         } else {
-          console.log('=== USER NAME UPDATED, ROLE PRESERVED ===', existingProfile.role);
+          console.log('=== AZURE ID UPDATED FOR EXISTING USER ===');
         }
       }
       
-      // Set the role from the existing profile - this is the key fix
+      // Set the role from the existing profile - this preserves admin roles
       console.log('=== SETTING EXISTING USER ROLE ===', existingProfile.role);
       setUserRole(existingProfile.role as UserRole);
-      return; // Exit early for existing users
+      return;
     }
 
     // Only create a new profile if none exists - use the RPC function for new users
@@ -64,16 +69,27 @@ export const ensureUserProfileExists = async (
     
     if (rpcError) {
       console.error('=== ERROR CREATING NEW USER PROFILE VIA RPC ===', rpcError);
-      // If RPC fails, the user will default to read-only via the role service
       setUserRole('read-only');
     } else {
       console.log('=== NEW USER PROFILE CREATED WITH READ-ONLY ROLE ===', data);
+      
+      // Now update the newly created profile with Azure ID
+      const { error: azureIdError } = await supabase
+        .from('profiles')
+        .update({ azure_id: azureId })
+        .eq('email', userEmail);
+        
+      if (azureIdError) {
+        console.error('=== ERROR SETTING AZURE ID FOR NEW USER ===', azureIdError);
+      } else {
+        console.log('=== AZURE ID SET FOR NEW USER ===');
+      }
+      
       setUserRole('read-only');
     }
     
   } catch (error) {
     console.error('=== UNEXPECTED ERROR IN ensureUserProfileExists ===', error);
-    // Default to read-only if there's any error
     setUserRole('read-only');
   }
 };

@@ -5,6 +5,7 @@ import { loginRequest } from '@/config/azureAuthConfig';
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/user';
 import { fetchUserRole } from './azureUserRoleService';
+import { ensureUserProfileExists } from './azureUserProfileService';
 
 export const createSignInHandler = (
   msalInstance: PublicClientApplication,
@@ -24,54 +25,8 @@ export const createSignInHandler = (
         console.log('=== SIGN IN SUCCESSFUL, SETTING USER ===', response.account);
         setCurrentUser(response.account);
         
-        // Check if user profile exists in Supabase
-        const userEmail = response.account.username;
-        const userName = response.account.name || userEmail;
-        const azureId = response.account.localAccountId || response.account.homeAccountId;
-        
-        console.log('=== CHECKING/CREATING USER PROFILE ===');
-        console.log('Email:', userEmail);
-        console.log('Name:', userName);
-        console.log('Azure ID:', azureId);
-        
-        // Check if profile exists
-        const { data: existingProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, role, name')
-          .eq('email', userEmail)
-          .maybeSingle();
-
-        if (profileError) {
-          console.error('=== ERROR CHECKING EXISTING PROFILE ===', profileError);
-          // Default to read-only if there's an error
-          setUserRole('read-only');
-          return;
-        }
-
-        if (existingProfile) {
-          console.log('=== FOUND EXISTING PROFILE ===', existingProfile);
-          // User exists, just fetch their role
-          const role = await fetchUserRole(userEmail, true);
-          console.log('=== SETTING EXISTING USER ROLE ===', role);
-          setUserRole(role);
-        } else {
-          console.log('=== CREATING NEW USER PROFILE ===');
-          // Create new profile using RPC function
-          const { data: rpcData, error: rpcError } = await supabase
-            .rpc('create_or_update_azure_user', {
-              user_email: userEmail,
-              user_name: userName,
-              user_role: 'read-only' as UserRole
-            });
-          
-          if (rpcError) {
-            console.error('=== ERROR CREATING USER PROFILE ===', rpcError);
-            setUserRole('read-only'); // Default fallback
-          } else {
-            console.log('=== NEW USER PROFILE CREATED ===', rpcData);
-            setUserRole('read-only');
-          }
-        }
+        // Use the profile service to handle user creation/updating
+        await ensureUserProfileExists(response.account, setUserRole);
       } else {
         console.log('=== NO ACCOUNT IN SIGN IN RESPONSE ===');
       }

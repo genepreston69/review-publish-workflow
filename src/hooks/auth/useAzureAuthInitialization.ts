@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { PublicClientApplication, AccountInfo } from '@azure/msal-browser';
 import { UserRole } from '@/types/user';
 import { fetchUserRole } from './azureUserRoleService';
+import { ensureUserProfileExists } from './azureUserProfileService';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useAzureAuthInitialization = (
@@ -42,48 +43,8 @@ export const useAzureAuthInitialization = (
           console.log('=== SETTING CURRENT USER FROM EXISTING ACCOUNT ===', account);
           setCurrentUser(account);
           
-          // Check/create user profile for existing sessions
-          const userEmail = account.username;
-          const userName = account.name || userEmail;
-          
-          console.log('=== CHECKING/CREATING PROFILE FOR EXISTING SESSION ===');
-          
-          // Check if profile exists
-          const { data: existingProfile, error: profileError } = await supabase
-            .from('profiles')
-            .select('id, role, name')
-            .eq('email', userEmail)
-            .maybeSingle();
-
-          if (profileError) {
-            console.error('=== ERROR CHECKING EXISTING PROFILE ===', profileError);
-            setUserRole('read-only');
-            return;
-          }
-
-          if (existingProfile) {
-            console.log('=== FOUND EXISTING PROFILE FOR SESSION ===', existingProfile);
-            const role = await fetchUserRole(userEmail, true);
-            console.log('=== SETTING USER ROLE FROM EXISTING SESSION ===', role);
-            setUserRole(role);
-          } else {
-            console.log('=== CREATING PROFILE FOR EXISTING SESSION ===');
-            // Create new profile using RPC function
-            const { data: rpcData, error: rpcError } = await supabase
-              .rpc('create_or_update_azure_user', {
-                user_email: userEmail,
-                user_name: userName,
-                user_role: 'read-only' as UserRole
-              });
-            
-            if (rpcError) {
-              console.error('=== ERROR CREATING PROFILE FOR SESSION ===', rpcError);
-              setUserRole('read-only');
-            } else {
-              console.log('=== PROFILE CREATED FOR SESSION ===', rpcData);
-              setUserRole('read-only');
-            }
-          }
+          // Use the profile service to handle existing session profile
+          await ensureUserProfileExists(account, setUserRole);
         } else {
           console.log('=== NO EXISTING ACCOUNTS FOUND ===');
           setCurrentUser(null);
