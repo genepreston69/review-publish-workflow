@@ -33,7 +33,7 @@ export const ensureUserProfileExists = async (
     if (existingProfile) {
       console.log('=== FOUND EXISTING PROFILE - PRESERVING ROLE ===', existingProfile);
       
-      // Update Azure ID if it's missing or different
+      // Update Azure ID if it's missing or different, but NEVER update the role
       if (!existingProfile.azure_id || existingProfile.azure_id !== azureId) {
         console.log('=== UPDATING AZURE ID FOR EXISTING USER ===');
         const { error: updateError } = await supabase
@@ -41,6 +41,7 @@ export const ensureUserProfileExists = async (
           .update({ 
             azure_id: azureId,
             name: userName // Also update name in case it changed
+            // IMPORTANT: Do NOT include role here - preserve existing role
           })
           .eq('email', userEmail);
           
@@ -64,7 +65,7 @@ export const ensureUserProfileExists = async (
       .rpc('create_or_update_azure_user', {
         user_email: userEmail,
         user_name: userName,
-        user_role: 'read-only' as UserRole
+        user_role: 'read-only' as UserRole // Only set read-only for NEW users
       });
     
     if (rpcError) {
