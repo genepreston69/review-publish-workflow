@@ -20,7 +20,7 @@ export const UserRoleSelect = ({ userId, currentRole, onRoleUpdated }: UserRoleS
   const updateUserRole = async (newRole: UserRole) => {
     try {
       setIsUpdating(true);
-      console.log('=== ROLE UPDATE ATTEMPT IN PROFILES ===');
+      console.log('=== ROLE UPDATE ATTEMPT IN USER_ROLES ===');
       console.log('Current user ID:', currentUser?.id);
       console.log('Current user role:', userRole);
       console.log('Target user ID:', userId);
@@ -39,18 +39,22 @@ export const UserRoleSelect = ({ userId, currentRole, onRoleUpdated }: UserRoleS
         throw new Error('Insufficient privileges to update user roles');
       }
       
-      // Update role directly in profiles table
+      // Update role in user_roles table using upsert
       const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', userId);
+        .from('user_roles')
+        .upsert({
+          user_id: userId,
+          role: newRole
+        }, {
+          onConflict: 'user_id'
+        });
 
       if (updateError) {
-        console.error('Error updating role in profiles:', updateError);
+        console.error('Error updating role in user_roles:', updateError);
         throw updateError;
       }
 
-      console.log('=== ROLE UPDATE SUCCESS IN PROFILES ===');
+      console.log('=== ROLE UPDATE SUCCESS IN USER_ROLES ===');
       
       toast({
         title: "Success",
@@ -59,7 +63,7 @@ export const UserRoleSelect = ({ userId, currentRole, onRoleUpdated }: UserRoleS
 
       onRoleUpdated();
     } catch (error) {
-      console.error('=== ROLE UPDATE FAILED IN PROFILES ===', error);
+      console.error('=== ROLE UPDATE FAILED IN USER_ROLES ===', error);
       toast({
         variant: "destructive",
         title: "Error",

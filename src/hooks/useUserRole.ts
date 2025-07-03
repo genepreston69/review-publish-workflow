@@ -24,24 +24,43 @@ export const useUserRole = () => {
 
         console.log('=== FETCHING USER ROLE FOR EMAIL ===', currentAccount.username);
         
-        // Query the profiles table to get the user role
-        const { data: profile, error } = await supabase
+        // First get the profile ID from email
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('role')
+          .select('id')
           .eq('email', currentAccount.username)
           .maybeSingle();
 
-        if (error) {
-          console.error('=== ERROR FETCHING USER ROLE ===', error);
+        if (profileError) {
+          console.error('=== ERROR FETCHING PROFILE ===', profileError);
           setUserRole('read-only'); // Default fallback
           return;
         }
 
-        if (profile) {
-          console.log('=== USER ROLE FOUND ===', profile.role);
-          setUserRole(profile.role as UserRole);
-        } else {
+        if (!profile) {
           console.log('=== NO PROFILE FOUND, DEFAULTING TO READ-ONLY ===');
+          setUserRole('read-only');
+          return;
+        }
+
+        // Query the user_roles table to get the user role
+        const { data: userRoleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', profile.id)
+          .maybeSingle();
+
+        if (roleError) {
+          console.error('=== ERROR FETCHING USER ROLE ===', roleError);
+          setUserRole('read-only'); // Default fallback
+          return;
+        }
+
+        if (userRoleData) {
+          console.log('=== USER ROLE FOUND ===', userRoleData.role);
+          setUserRole(userRoleData.role as UserRole);
+        } else {
+          console.log('=== NO ROLE FOUND, DEFAULTING TO READ-ONLY ===');
           setUserRole('read-only');
         }
       } catch (error) {

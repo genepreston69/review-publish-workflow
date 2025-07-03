@@ -6,42 +6,21 @@ export const fetchUserRole = async (userId: string): Promise<UserRole> => {
   try {
     console.log('=== FETCHING ROLE FOR USER ===', userId);
     
-    // Add timeout to the RPC call
-    const rolePromise = supabase.rpc('get_current_user_role');
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Role fetch timeout')), 3000)
-    );
+    // Query user_roles table directly
+    const { data: userRoleData, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    const { data, error } = await Promise.race([
-      rolePromise,
-      timeoutPromise
-    ]) as any;
-
-    if (error) {
-      console.error('=== ERROR FETCHING USER ROLE FROM RPC ===', error);
-      
-      // Fallback to direct query if RPC fails
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-
-      if (profileError) {
-        console.error('=== ERROR FETCHING USER ROLE FROM PROFILES ===', profileError);
-        return 'read-only';
-      }
-
-      if (profileData && profileData.role) {
-        const role = profileData.role as UserRole;
-        console.log('=== FOUND ROLE IN PROFILES FALLBACK ===', role);
-        return role;
-      }
+    if (roleError) {
+      console.error('=== ERROR FETCHING USER ROLE FROM USER_ROLES ===', roleError);
+      return 'read-only';
     }
 
-    if (data) {
-      const role = data as UserRole;
-      console.log('=== FOUND ROLE FROM RPC ===', role);
+    if (userRoleData) {
+      const role = userRoleData.role as UserRole;
+      console.log('=== FOUND ROLE FROM USER_ROLES ===', role);
       return role;
     }
 

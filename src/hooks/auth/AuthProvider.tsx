@@ -18,20 +18,39 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (azureAuth.currentUser) {
       try {
         console.log('=== REFRESHING USER ROLE IN AUTH PROVIDER ===');
-        const { data: profile, error } = await supabase
+        
+        // First get the profile ID from email
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('role')
+          .select('id')
           .eq('email', azureAuth.currentUser.username)
           .maybeSingle();
 
-        if (error) {
-          console.error('Error fetching user role:', error);
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
           return;
         }
 
-        if (profile) {
-          console.log('=== REFRESHED USER ROLE IN AUTH PROVIDER ===', profile.role);
-          setUserRole(profile.role as UserRole);
+        if (!profile) {
+          console.log('No profile found for user');
+          return;
+        }
+
+        // Query the user_roles table to get the user role
+        const { data: userRoleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', profile.id)
+          .maybeSingle();
+
+        if (roleError) {
+          console.error('Error fetching user role:', roleError);
+          return;
+        }
+
+        if (userRoleData) {
+          console.log('=== REFRESHED USER ROLE IN AUTH PROVIDER ===', userRoleData.role);
+          setUserRole(userRoleData.role as UserRole);
           
           // Also refresh the Azure auth role
           if (azureAuth.refreshUserRole) {
