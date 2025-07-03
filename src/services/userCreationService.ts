@@ -50,8 +50,8 @@ export const createUserProfile = async (params: CreateUserProfileParams): Promis
 
     console.log('=== RPC RESPONSE ===', data);
 
-    // Cast the data to our expected response structure
-    const response = data as RpcResponse;
+    // Safely cast the data to our expected response structure
+    const response = data as unknown as RpcResponse;
 
     if (response && response.success) {
       return {
