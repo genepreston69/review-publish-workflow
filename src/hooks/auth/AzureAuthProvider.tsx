@@ -18,6 +18,7 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
   const [currentUser, setCurrentUser] = useState<AccountInfo | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const fetchUserRole = async (userEmail: string, forceRefresh = false) => {
     try {
@@ -48,9 +49,17 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     const initializeAuth = async () => {
       try {
+        console.log('=== INITIALIZING MSAL ===');
         await msalInstance.initialize();
+        console.log('=== MSAL INITIALIZED SUCCESSFULLY ===');
+        
+        if (!isMounted) return;
+        
+        setIsInitialized(true);
         
         const accounts = msalInstance.getAllAccounts();
         console.log('=== INITIALIZATION - ACCOUNTS FOUND ===', accounts);
@@ -72,11 +81,17 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
       } catch (error) {
         console.error('Failed to initialize MSAL:', error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     initializeAuth();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const ensureUserProfileExists = async (account: AccountInfo) => {
@@ -160,6 +175,11 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
   };
 
   const signIn = async () => {
+    if (!isInitialized) {
+      console.error('=== MSAL NOT INITIALIZED YET ===');
+      return;
+    }
+
     try {
       setIsLoading(true);
       console.log('=== STARTING SIGN IN PROCESS ===');
@@ -188,6 +208,11 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
   };
 
   const signOut = async () => {
+    if (!isInitialized) {
+      console.error('=== MSAL NOT INITIALIZED YET ===');
+      return;
+    }
+
     try {
       console.log('=== SIGNING OUT ===');
       await msalInstance.logoutPopup();
@@ -203,6 +228,11 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
   };
 
   const isAuthenticated = currentUser !== null;
+
+  // Don't render anything until MSAL is initialized
+  if (!isInitialized) {
+    return null;
+  }
 
   return (
     <AzureAuthContext.Provider value={{
