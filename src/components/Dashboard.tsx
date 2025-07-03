@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/hooks/useAuth';
 import { usePublishedPolicies } from '@/hooks/usePublishedPolicies';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +11,7 @@ import { useAppNavigation } from '@/hooks/useAppNavigation';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Grid, List, LayoutGrid } from 'lucide-react';
 import { PolicyManualGenerator } from './admin/policy/PolicyManualGenerator';
+import { AuthDiagnostic } from './AuthDiagnostic';
 
 export function Dashboard() {
   console.log('=== DASHBOARD RENDERING ===');
@@ -190,6 +190,9 @@ export function Dashboard() {
     // Default dashboard view with stats cards
     return (
       <div className="flex-1 space-y-6 p-6">
+        {/* Add Auth Diagnostic at the top temporarily */}
+        <AuthDiagnostic />
+        
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Policy Library</h1>
           <p className="text-muted-foreground">
