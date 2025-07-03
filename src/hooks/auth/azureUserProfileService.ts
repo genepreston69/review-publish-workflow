@@ -30,12 +30,12 @@ export const ensureUserProfileExists = async (
     }
 
     if (existingProfile) {
-      console.log('=== FOUND EXISTING PROFILE - NEVER TOUCHING ROLE ===', existingProfile);
+      console.log('=== FOUND EXISTING PROFILE - PRESERVING ROLE ===', existingProfile);
       
       // For existing users, ONLY update the name if it has changed
       // NEVER touch the role field at all
       if (existingProfile.name !== userName) {
-        console.log('=== UPDATING ONLY USER NAME, NEVER TOUCHING ROLE ===');
+        console.log('=== UPDATING ONLY USER NAME, PRESERVING ROLE ===');
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ name: userName })
@@ -44,11 +44,13 @@ export const ensureUserProfileExists = async (
         if (updateError) {
           console.error('=== ERROR UPDATING USER NAME ===', updateError);
         } else {
-          console.log('=== USER NAME UPDATED, ROLE UNTOUCHED ===', existingProfile.role);
+          console.log('=== USER NAME UPDATED, ROLE PRESERVED ===', existingProfile.role);
         }
       }
       
-      console.log('=== EXISTING USER - ROLE COMPLETELY UNTOUCHED ===', existingProfile.role);
+      // Set the role from the existing profile - this is the key fix
+      console.log('=== SETTING EXISTING USER ROLE ===', existingProfile.role);
+      setUserRole(existingProfile.role as UserRole);
       return; // Exit early for existing users
     }
 

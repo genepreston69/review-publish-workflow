@@ -43,7 +43,7 @@ export const useAzureAuthInitialization = (
             .maybeSingle();
           
           if (existingProfile) {
-            console.log('=== EXISTING USER DURING INIT - SKIP PROFILE CREATION ===', existingProfile);
+            console.log('=== EXISTING USER DURING INIT - FETCH ROLE ===', existingProfile);
             // For existing users, just fetch their role
             const role = await fetchUserRole(account.username, true);
             console.log('=== SETTING EXISTING USER ROLE FROM INITIALIZATION ===', role);
@@ -52,11 +52,6 @@ export const useAzureAuthInitialization = (
             console.log('=== NEW USER DURING INIT - CREATE PROFILE ===');
             // Only for new users, create profile
             await ensureUserProfileExists(account, setUserRole);
-            
-            // Then fetch the role
-            const role = await fetchUserRole(account.username, true);
-            console.log('=== SETTING NEW USER ROLE FROM INITIALIZATION ===', role);
-            setUserRole(role);
           }
         } else {
           console.log('=== NO EXISTING ACCOUNTS FOUND ===');

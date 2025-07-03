@@ -6,7 +6,7 @@ export const fetchUserRole = async (userEmail: string, forceRefresh = false): Pr
   try {
     console.log('=== FETCHING USER ROLE FOR EMAIL ===', userEmail, 'Force refresh:', forceRefresh);
     
-    // First check profiles table
+    // First check profiles table directly
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('id, role')
@@ -15,28 +15,28 @@ export const fetchUserRole = async (userEmail: string, forceRefresh = false): Pr
 
     if (profileError) {
       console.error('=== ERROR FETCHING USER PROFILE ===', profileError);
+      return 'read-only';
     }
 
-    let userRole: UserRole = 'read-only';
-    let userId: string | null = null;
-
-    if (profile) {
-      console.log('=== FOUND USER PROFILE ===', profile);
-      userRole = profile.role as UserRole;
-      userId = profile.id;
+    if (!profile) {
+      console.log('=== NO PROFILE FOUND, DEFAULTING TO READ-ONLY ===');
+      return 'read-only';
     }
 
-    // Also check user_roles table for additional roles
-    if (userId) {
+    console.log('=== FOUND USER PROFILE WITH ROLE ===', profile);
+    const userRole = profile.role as UserRole;
+    
+    // Also check user_roles table for additional roles (if any exist)
+    if (profile.id) {
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', userId);
+        .eq('user_id', profile.id);
 
       if (rolesError) {
         console.error('=== ERROR FETCHING USER ROLES ===', rolesError);
       } else if (userRoles && userRoles.length > 0) {
-        console.log('=== FOUND USER ROLES ===', userRoles);
+        console.log('=== FOUND ADDITIONAL USER ROLES ===', userRoles);
         
         // Take the highest priority role
         const roleHierarchy = {
@@ -52,15 +52,15 @@ export const fetchUserRole = async (userEmail: string, forceRefresh = false): Pr
           return currentPriority > highestPriority ? current.role as UserRole : highest;
         }, userRole);
         
-        userRole = highestRole;
-        console.log('=== HIGHEST ROLE FROM USER_ROLES ===', userRole);
+        console.log('=== USING HIGHEST PRIORITY ROLE ===', highestRole);
+        return highestRole;
       }
     }
 
-    console.log('=== FINAL USER ROLE ===', userRole);
+    console.log('=== FINAL USER ROLE FROM PROFILES ===', userRole);
     return userRole;
   } catch (error) {
     console.error('=== ERROR IN fetchUserRole ===', error);
-    return 'read-only' as UserRole;
+    return 'read-only';
   }
 };

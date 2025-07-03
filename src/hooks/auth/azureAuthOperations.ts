@@ -1,4 +1,3 @@
-
 import { PublicClientApplication, AuthenticationResult } from '@azure/msal-browser';
 import { AccountInfo } from '@azure/msal-browser';
 import { loginRequest } from '@/config/azureAuthConfig';
@@ -33,20 +32,15 @@ export const createSignInHandler = (
           .maybeSingle();
         
         if (existingProfile) {
-          console.log('=== EXISTING USER - SKIP PROFILE CREATION ===', existingProfile);
-          // For existing users, just fetch their role
+          console.log('=== EXISTING USER - FETCHING CURRENT ROLE ===', existingProfile);
+          // For existing users, fetch their current role
           const role = await fetchUserRole(response.account.username, true);
           console.log('=== SETTING EXISTING USER ROLE ===', role);
           setUserRole(role);
         } else {
           console.log('=== NEW USER - CREATE PROFILE ===');
-          // Only for new users, create profile
+          // Only for new users, create profile and set role
           await ensureUserProfileExists(response.account, setUserRole);
-          
-          // Then fetch the role
-          const role = await fetchUserRole(response.account.username, true);
-          console.log('=== SETTING NEW USER ROLE ===', role);
-          setUserRole(role);
         }
       } else {
         console.log('=== NO ACCOUNT IN SIGN IN RESPONSE ===');
