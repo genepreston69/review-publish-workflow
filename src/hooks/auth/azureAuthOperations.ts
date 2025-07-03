@@ -1,3 +1,4 @@
+
 import { PublicClientApplication, AuthenticationResult } from '@azure/msal-browser';
 import { AccountInfo } from '@azure/msal-browser';
 import { loginRequest } from '@/config/azureAuthConfig';
@@ -60,16 +61,34 @@ export const createSignOutHandler = (
 ) => {
   return async () => {
     try {
-      console.log('=== SIGNING OUT ===');
-      await msalInstance.logoutPopup();
+      console.log('=== STARTING SIGN OUT PROCESS ===');
+      
+      // Clear state first
       setCurrentUser(null);
       setUserRole(null);
+      
+      // Get all accounts and logout each one
+      const accounts = msalInstance.getAllAccounts();
+      console.log('=== ACCOUNTS TO LOGOUT ===', accounts);
+      
+      if (accounts.length > 0) {
+        // Use logoutRedirect instead of logoutPopup for more reliable logout
+        await msalInstance.logoutRedirect({
+          account: accounts[0],
+          postLogoutRedirectUri: window.location.origin + '/auth'
+        });
+      } else {
+        // If no accounts, just redirect to auth page
+        window.location.href = '/auth';
+      }
       
       // Clear any Supabase session
       await supabase.auth.signOut();
       console.log('=== SIGN OUT COMPLETE ===');
     } catch (error) {
       console.error('=== LOGOUT FAILED ===', error);
+      // Force redirect to auth page even if logout fails
+      window.location.href = '/auth';
     }
   };
 };

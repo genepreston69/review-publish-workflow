@@ -2,14 +2,23 @@
 import { Button } from '@/components/ui/button';
 import { RoleBadge } from './RoleBadge';
 import { useAuth } from '@/hooks/useAuth';
+import { useAzureAuth } from '@/hooks/auth/AzureAuthContext';
 import { User, LogOut, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Header = () => {
-  const { currentUser, userRole, signOut } = useAuth();
+  const { currentUser, userRole } = useAuth();
+  const { signOut } = useAzureAuth();
 
   const handleLogout = async () => {
-    await signOut();
+    console.log('=== LOGOUT BUTTON CLICKED ===');
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('=== LOGOUT ERROR IN HEADER ===', error);
+      // Force redirect if logout fails
+      window.location.href = '/auth';
+    }
   };
 
   // Get user name from metadata or email

@@ -6,58 +6,60 @@ export const fetchUserRole = async (userEmail: string, forceRefresh = false): Pr
   try {
     console.log('=== FETCHING USER ROLE FOR EMAIL ===', userEmail, 'Force refresh:', forceRefresh);
     
-    // First check profiles table directly
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id, role')
-      .eq('email', userEmail)
-      .maybeSingle();
+    // Add a small delay to ensure database is ready
+    if (forceRefresh) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    // Direct query to profiles table with retry logic
+    let profile = null;
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (!profile && attempts < maxAttempts) {
+      attempts++;
+      console.log(`=== ATTEMPT ${attempts} TO FETCH PROFILE ===`);
+      
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, role, email')
+        .eq('email', userEmail)
+        .maybeSingle();
 
-    if (profileError) {
-      console.error('=== ERROR FETCHING USER PROFILE ===', profileError);
-      return 'read-only';
+      if (profileError) {
+        console.error('=== ERROR FETCHING USER PROFILE ===', profileError);
+        if (attempts === maxAttempts) {
+          return 'read-only';
+        }
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 500));
+        continue;
+      }
+
+      profile = profileData;
+      
+      if (!profile && attempts < maxAttempts) {
+        console.log('=== NO PROFILE FOUND, RETRYING ===');
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
 
     if (!profile) {
-      console.log('=== NO PROFILE FOUND, DEFAULTING TO READ-ONLY ===');
+      console.log('=== NO PROFILE FOUND AFTER ALL ATTEMPTS, DEFAULTING TO READ-ONLY ===');
       return 'read-only';
     }
 
     console.log('=== FOUND USER PROFILE WITH ROLE ===', profile);
     const userRole = profile.role as UserRole;
     
-    // Also check user_roles table for additional roles (if any exist)
-    if (profile.id) {
-      const { data: userRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', profile.id);
-
-      if (rolesError) {
-        console.error('=== ERROR FETCHING USER ROLES ===', rolesError);
-      } else if (userRoles && userRoles.length > 0) {
-        console.log('=== FOUND ADDITIONAL USER ROLES ===', userRoles);
-        
-        // Take the highest priority role
-        const roleHierarchy = {
-          'super-admin': 4,
-          'publish': 3,
-          'edit': 2,
-          'read-only': 1
-        };
-        
-        const highestRole = userRoles.reduce((highest, current) => {
-          const currentPriority = roleHierarchy[current.role as UserRole] || 0;
-          const highestPriority = roleHierarchy[highest] || 0;
-          return currentPriority > highestPriority ? current.role as UserRole : highest;
-        }, userRole);
-        
-        console.log('=== USING HIGHEST PRIORITY ROLE ===', highestRole);
-        return highestRole;
-      }
+    // Validate the role
+    const validRoles: UserRole[] = ['read-only', 'edit', 'publish', 'super-admin'];
+    if (!validRoles.includes(userRole)) {
+      console.warn('=== INVALID ROLE FOUND, DEFAULTING TO READ-ONLY ===', userRole);
+      return 'read-only';
     }
-
-    console.log('=== FINAL USER ROLE FROM PROFILES ===', userRole);
+    
+    console.log('=== FINAL USER ROLE ===', userRole);
     return userRole;
   } catch (error) {
     console.error('=== ERROR IN fetchUserRole ===', error);

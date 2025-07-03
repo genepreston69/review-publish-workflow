@@ -38,29 +38,22 @@ export const useAzureAuthInitialization = (
           console.log('=== SETTING CURRENT USER FROM EXISTING ACCOUNT ===', account);
           setCurrentUser(account);
           
-          // Check if user already exists
-          const { data: existingProfile } = await supabase
-            .from('profiles')
-            .select('id, role')
-            .eq('email', account.username)
-            .maybeSingle();
-          
-          if (existingProfile) {
-            console.log('=== EXISTING USER DURING INIT - FETCH ROLE ===', existingProfile);
-            // For existing users, just fetch their role
-            const role = await fetchUserRole(account.username, true);
-            console.log('=== SETTING EXISTING USER ROLE FROM INITIALIZATION ===', role);
-            setUserRole(role);
-          } else {
-            console.log('=== NEW USER DURING INIT - CREATE PROFILE ===');
-            // Only for new users, create profile
-            await ensureUserProfileExists(account, setUserRole);
-          }
+          // Always fetch the current role from database for existing sessions
+          console.log('=== FETCHING ROLE FOR EXISTING SESSION ===');
+          const role = await fetchUserRole(account.username, true);
+          console.log('=== SETTING USER ROLE FROM EXISTING SESSION ===', role);
+          setUserRole(role);
         } else {
           console.log('=== NO EXISTING ACCOUNTS FOUND ===');
+          setCurrentUser(null);
+          setUserRole(null);
         }
       } catch (error) {
         console.error('Failed to initialize MSAL:', error);
+        if (isMounted) {
+          setCurrentUser(null);
+          setUserRole(null);
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false);
