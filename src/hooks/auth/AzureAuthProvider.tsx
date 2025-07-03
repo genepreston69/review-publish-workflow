@@ -19,6 +19,34 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchUserRole = async (userEmail: string) => {
+    try {
+      console.log('=== FETCHING USER ROLE FOR EMAIL ===', userEmail);
+      
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('email', userEmail)
+        .maybeSingle();
+
+      if (error) {
+        console.error('=== ERROR FETCHING USER ROLE ===', error);
+        return 'read-only' as UserRole;
+      }
+
+      if (profile && profile.role) {
+        console.log('=== FOUND USER ROLE ===', profile.role);
+        return profile.role as UserRole;
+      }
+
+      console.log('=== NO ROLE FOUND, DEFAULTING TO READ-ONLY ===');
+      return 'read-only' as UserRole;
+    } catch (error) {
+      console.error('=== ERROR IN fetchUserRole ===', error);
+      return 'read-only' as UserRole;
+    }
+  };
+
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -31,6 +59,12 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
           const account = accounts[0];
           console.log('=== SETTING CURRENT USER FROM EXISTING ACCOUNT ===', account);
           setCurrentUser(account);
+          
+          // Fetch the user role immediately
+          const role = await fetchUserRole(account.username);
+          console.log('=== SETTING USER ROLE FROM INITIALIZATION ===', role);
+          setUserRole(role);
+          
           await ensureUserProfileExists(account);
         } else {
           console.log('=== NO EXISTING ACCOUNTS FOUND ===');
@@ -69,7 +103,8 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
 
       if (existingProfile) {
         console.log('=== FOUND EXISTING PROFILE WITH ROLE ===', existingProfile.role);
-        setUserRole(existingProfile.role as UserRole);
+        const roleFromProfile = existingProfile.role as UserRole;
+        setUserRole(roleFromProfile);
         return;
       }
 
@@ -97,6 +132,15 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
     }
   };
 
+  const refreshUserRole = async () => {
+    if (currentUser) {
+      console.log('=== REFRESHING USER ROLE ===');
+      const role = await fetchUserRole(currentUser.username);
+      console.log('=== REFRESHED USER ROLE ===', role);
+      setUserRole(role);
+    }
+  };
+
   const signIn = async () => {
     try {
       setIsLoading(true);
@@ -108,6 +152,12 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
       if (response.account) {
         console.log('=== SIGN IN SUCCESSFUL, SETTING USER ===', response.account);
         setCurrentUser(response.account);
+        
+        // Fetch the user role immediately after sign in
+        const role = await fetchUserRole(response.account.username);
+        console.log('=== SETTING USER ROLE FROM SIGN IN ===', role);
+        setUserRole(role);
+        
         await ensureUserProfileExists(response.account);
       } else {
         console.log('=== NO ACCOUNT IN SIGN IN RESPONSE ===');
@@ -143,7 +193,8 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
       isLoading,
       signIn,
       signOut,
-      isAuthenticated
+      isAuthenticated,
+      refreshUserRole
     }}>
       {children}
     </AzureAuthContext.Provider>

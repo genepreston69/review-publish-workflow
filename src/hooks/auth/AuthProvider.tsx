@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const refreshUserRole = async () => {
     if (azureAuth.currentUser) {
       try {
-        console.log('=== REFRESHING USER ROLE ===');
+        console.log('=== REFRESHING USER ROLE IN AUTH PROVIDER ===');
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('role')
@@ -30,8 +30,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
 
         if (profile) {
-          console.log('=== REFRESHED USER ROLE ===', profile.role);
+          console.log('=== REFRESHED USER ROLE IN AUTH PROVIDER ===', profile.role);
           setUserRole(profile.role as UserRole);
+          
+          // Also refresh the Azure auth role
+          if (azureAuth.refreshUserRole) {
+            await azureAuth.refreshUserRole();
+          }
         }
       } catch (error) {
         console.error('Error refreshing user role:', error);
@@ -40,6 +45,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   useEffect(() => {
+    console.log('=== AUTH PROVIDER EFFECT TRIGGERED ===');
+    console.log('Azure currentUser:', azureAuth.currentUser?.username);
+    console.log('Azure userRole:', azureAuth.userRole);
+    
     // Map Azure AD user to Supabase User interface for compatibility
     if (azureAuth.currentUser) {
       const mappedUser: User = {
@@ -73,6 +82,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       };
       
       setSession(mockSession);
+      
+      // Use the role from Azure auth
+      console.log('=== SETTING USER ROLE FROM AZURE AUTH ===', azureAuth.userRole);
       setUserRole(azureAuth.userRole);
     } else {
       setCurrentUser(null);
