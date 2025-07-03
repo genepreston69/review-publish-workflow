@@ -153,11 +153,11 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
       }
 
       if (existingProfile) {
-        console.log('=== FOUND EXISTING PROFILE ===', existingProfile);
+        console.log('=== FOUND EXISTING PROFILE - PRESERVING ROLE ===', existingProfile);
         
         // Update only the name if it has changed, NEVER touch the role
         if (existingProfile.name !== userName) {
-          console.log('=== UPDATING USER NAME ONLY (PRESERVING ROLE) ===');
+          console.log('=== UPDATING ONLY USER NAME, PRESERVING ROLE ===');
           const { error: updateError } = await supabase
             .from('profiles')
             .update({ name: userName })
@@ -166,30 +166,32 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
           if (updateError) {
             console.error('=== ERROR UPDATING USER NAME ===', updateError);
           } else {
-            console.log('=== USER NAME UPDATED, ROLE PRESERVED ===');
+            console.log('=== USER NAME UPDATED, ROLE PRESERVED ===', existingProfile.role);
           }
         }
         
-        // Don't change the role state here - let fetchUserRole handle it
-        console.log('=== EXISTING USER - ROLE PRESERVED ===', existingProfile.role);
+        console.log('=== EXISTING USER - ROLE COMPLETELY PRESERVED ===', existingProfile.role);
         return;
       }
 
       // Only create a new profile if none exists - this is a truly new user
-      console.log('=== CREATING NEW PROFILE FOR NEW USER ===');
-      const { createUserProfile } = await import('@/services/userCreationService');
+      console.log('=== CREATING NEW PROFILE FOR COMPLETELY NEW USER ===');
       
-      const result = await createUserProfile({
-        email: userEmail,
-        name: userName,
-        role: 'read-only' // Only new users get read-only by default
-      });
+      // Create the profile directly without using the service to avoid any role overrides
+      const newUserId = crypto.randomUUID();
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          id: newUserId,
+          email: userEmail,
+          name: userName,
+          role: 'read-only' // Only new users get read-only by default
+        });
       
-      if (result.success) {
-        console.log('=== NEW USER PROFILE CREATED SUCCESSFULLY ===', result.userId);
-        setUserRole('read-only');
+      if (insertError) {
+        console.error('=== ERROR CREATING NEW USER PROFILE ===', insertError);
       } else {
-        console.error('=== ERROR FROM USER CREATION SERVICE ===', result.error);
+        console.log('=== NEW USER PROFILE CREATED WITH READ-ONLY ROLE ===');
         setUserRole('read-only');
       }
       
