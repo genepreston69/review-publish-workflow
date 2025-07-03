@@ -1,3 +1,4 @@
+
 import { useAuth } from '@/hooks/useAuth';
 import { usePublishedPolicies } from '@/hooks/usePublishedPolicies';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,6 +53,15 @@ export function Dashboard() {
     creator: null,
     publisher: null,
   });
+
+  // Handle policy manuals section for ALL user roles
+  if (activeSection === 'policy-manuals') {
+    return (
+      <div className="flex-1 space-y-6 p-6">
+        <PolicyManualGenerator />
+      </div>
+    );
+  }
 
   // For read-only users, show published policies based on active section
   if (userRole === 'read-only') {
@@ -173,14 +183,6 @@ export function Dashboard() {
               onUpdateStatus={() => {}} // Read-only users can't update status
             />
           )}
-        </div>
-      );
-    }
-
-    if (activeSection === 'policy-manuals') {
-      return (
-        <div className="flex-1 space-y-6 p-6">
-          <PolicyManualGenerator />
         </div>
       );
     }
