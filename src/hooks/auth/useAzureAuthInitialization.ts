@@ -21,7 +21,7 @@ export const useAzureAuthInitialization = (
       try {
         console.log('=== INITIALIZING MSAL ===');
         
-        // Always ensure MSAL is initialized first
+        // Always ensure MSAL is initialized first - this is critical
         await msalInstance.initialize();
         console.log('=== MSAL INITIALIZED SUCCESSFULLY ===');
         
