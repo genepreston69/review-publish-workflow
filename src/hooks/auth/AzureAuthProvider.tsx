@@ -24,24 +24,59 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
     try {
       console.log('=== FETCHING USER ROLE FOR EMAIL ===', userEmail, 'Force refresh:', forceRefresh);
       
-      const { data: profile, error } = await supabase
+      // First check profiles table
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('id, role')
         .eq('email', userEmail)
         .maybeSingle();
 
-      if (error) {
-        console.error('=== ERROR FETCHING USER ROLE ===', error);
-        return 'read-only' as UserRole;
+      if (profileError) {
+        console.error('=== ERROR FETCHING USER PROFILE ===', profileError);
       }
 
-      if (profile && profile.role) {
-        console.log('=== FOUND USER ROLE ===', profile.role);
-        return profile.role as UserRole;
+      let userRole: UserRole = 'read-only';
+      let userId: string | null = null;
+
+      if (profile) {
+        console.log('=== FOUND USER PROFILE ===', profile);
+        userRole = profile.role as UserRole;
+        userId = profile.id;
       }
 
-      console.log('=== NO ROLE FOUND, DEFAULTING TO READ-ONLY ===');
-      return 'read-only' as UserRole;
+      // Also check user_roles table for additional roles
+      if (userId) {
+        const { data: userRoles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId);
+
+        if (rolesError) {
+          console.error('=== ERROR FETCHING USER ROLES ===', rolesError);
+        } else if (userRoles && userRoles.length > 0) {
+          console.log('=== FOUND USER ROLES ===', userRoles);
+          
+          // Take the highest priority role
+          const roleHierarchy = {
+            'super-admin': 4,
+            'publish': 3,
+            'edit': 2,
+            'read-only': 1
+          };
+          
+          const highestRole = userRoles.reduce((highest, current) => {
+            const currentPriority = roleHierarchy[current.role as UserRole] || 0;
+            const highestPriority = roleHierarchy[highest] || 0;
+            return currentPriority > highestPriority ? current.role as UserRole : highest;
+          }, userRole);
+          
+          userRole = highestRole;
+          console.log('=== HIGHEST ROLE FROM USER_ROLES ===', userRole);
+        }
+      }
+
+      console.log('=== FINAL USER ROLE ===', userRole);
+      return userRole;
     } catch (error) {
       console.error('=== ERROR IN fetchUserRole ===', error);
       return 'read-only' as UserRole;
@@ -114,21 +149,15 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
 
       if (profileError) {
         console.error('=== ERROR CHECKING EXISTING PROFILE ===', profileError);
-        // If there's an error checking, don't create a new profile
         return;
       }
 
       if (existingProfile) {
         console.log('=== FOUND EXISTING PROFILE ===', existingProfile);
         
-        // Update the role state with the existing role (don't change it)
-        const existingRole = existingProfile.role as UserRole;
-        console.log('=== PRESERVING EXISTING USER ROLE ===', existingRole);
-        setUserRole(existingRole);
-        
-        // Optionally update the name if it has changed, but preserve the role
+        // Update only the name if it has changed, NEVER touch the role
         if (existingProfile.name !== userName) {
-          console.log('=== UPDATING USER NAME ONLY ===');
+          console.log('=== UPDATING USER NAME ONLY (PRESERVING ROLE) ===');
           const { error: updateError } = await supabase
             .from('profiles')
             .update({ name: userName })
@@ -136,12 +165,17 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
             
           if (updateError) {
             console.error('=== ERROR UPDATING USER NAME ===', updateError);
+          } else {
+            console.log('=== USER NAME UPDATED, ROLE PRESERVED ===');
           }
         }
+        
+        // Don't change the role state here - let fetchUserRole handle it
+        console.log('=== EXISTING USER - ROLE PRESERVED ===', existingProfile.role);
         return;
       }
 
-      // Only create a new profile if none exists
+      // Only create a new profile if none exists - this is a truly new user
       console.log('=== CREATING NEW PROFILE FOR NEW USER ===');
       const { createUserProfile } = await import('@/services/userCreationService');
       
@@ -161,7 +195,6 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
       
     } catch (error) {
       console.error('=== UNEXPECTED ERROR IN ensureUserProfileExists ===', error);
-      // Don't change the role if there's an error
     }
   };
 
@@ -191,12 +224,13 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
         console.log('=== SIGN IN SUCCESSFUL, SETTING USER ===', response.account);
         setCurrentUser(response.account);
         
-        // Fetch the user role immediately after sign in with force refresh
+        // Ensure profile exists first (this won't overwrite existing roles)
+        await ensureUserProfileExists(response.account);
+        
+        // Then fetch the actual role (checking both profiles and user_roles)
         const role = await fetchUserRole(response.account.username, true);
         console.log('=== SETTING USER ROLE FROM SIGN IN ===', role);
         setUserRole(role);
-        
-        await ensureUserProfileExists(response.account);
       } else {
         console.log('=== NO ACCOUNT IN SIGN IN RESPONSE ===');
       }
