@@ -19,10 +19,8 @@ export const createUserProfile = async (params: CreateUserParams): Promise<UserC
   try {
     console.log('=== CREATING USER PROFILE FOR AZURE AD USER ===', { email, name, role });
     
-    // First try to check if user exists using a service role call
-    console.log('=== CHECKING FOR EXISTING PROFILE BY EMAIL ===');
-    
     // Use RPC call to create/update user profile with service role privileges
+    console.log('=== CALLING RPC FUNCTION create_or_update_azure_user ===');
     const { data: result, error: rpcError } = await supabase.rpc('create_or_update_azure_user', {
       user_email: email,
       user_name: name,
@@ -31,35 +29,9 @@ export const createUserProfile = async (params: CreateUserParams): Promise<UserC
 
     if (rpcError) {
       console.error('=== RPC ERROR ===', rpcError);
-      
-      // Fallback: try direct insert (may fail due to RLS)
-      console.log('=== TRYING DIRECT INSERT AS FALLBACK ===');
-      const profileData = {
-        id: crypto.randomUUID(),
-        email,
-        name,
-        role,
-        initials: generateInitialsFromName(name)
-      };
-
-      const { data: directResult, error: directError } = await supabase
-        .from('profiles')
-        .upsert(profileData, { onConflict: 'email' })
-        .select()
-        .single();
-
-      if (directError) {
-        console.error('=== DIRECT INSERT FAILED ===', directError);
-        return {
-          success: false,
-          error: `Failed to create user profile: ${directError.message}`
-        };
-      }
-
-      console.log('=== DIRECT INSERT SUCCEEDED ===', directResult);
       return {
-        success: true,
-        userId: directResult.id
+        success: false,
+        error: `Failed to create user profile: ${rpcError.message}`
       };
     }
 
