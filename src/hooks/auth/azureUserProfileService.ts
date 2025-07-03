@@ -20,7 +20,7 @@ export const ensureUserProfileExists = async (
     // First check if user profile exists by email (not by Azure ID as primary key)
     const { data: existingProfile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, role, name, azure_id')
+      .select('id, name, azure_id, user_roles(role)')
       .eq('email', userEmail)
       .maybeSingle();
 
@@ -52,9 +52,10 @@ export const ensureUserProfileExists = async (
         }
       }
       
-      // Set the role from the existing profile - this preserves admin roles
-      console.log('=== SETTING EXISTING USER ROLE ===', existingProfile.role);
-      setUserRole(existingProfile.role as UserRole);
+      // Get the role from user_roles table
+      const userRole = (existingProfile.user_roles as any)?.[0]?.role || 'read-only';
+      console.log('=== SETTING EXISTING USER ROLE ===', userRole);
+      setUserRole(userRole as UserRole);
       return;
     }
 
@@ -62,8 +63,8 @@ export const ensureUserProfileExists = async (
     console.log('=== ATTEMPTING TO CREATE NEW PROFILE ===');
     
     try {
-      // Generate a UUID for the new user
-      const userId = crypto.randomUUID();
+      // Use Azure AD account ID as the profile ID
+      const userId = azureId;
       
       const { data: newProfile, error: insertError } = await supabase
         .from('profiles')
@@ -71,7 +72,6 @@ export const ensureUserProfileExists = async (
           id: userId,
           email: userEmail,
           name: userName,
-          role: 'read-only' as UserRole,
           azure_id: azureId
         })
         .select()
@@ -88,10 +88,26 @@ export const ensureUserProfileExists = async (
         
         console.error('=== ERROR CREATING NEW USER PROFILE ===', insertError);
         setUserRole('read-only');
-      } else {
-        console.log('=== NEW USER PROFILE CREATED WITH READ-ONLY ROLE ===', newProfile);
-        setUserRole('read-only');
+        return;
       }
+
+      console.log('=== NEW USER PROFILE CREATED ===', newProfile);
+      
+      // Create default role entry in user_roles table
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: userId,
+          role: 'read-only' as UserRole
+        });
+      
+      if (roleError) {
+        console.error('=== ERROR CREATING USER ROLE ===', roleError);
+      } else {
+        console.log('=== USER ROLE CREATED WITH READ-ONLY ACCESS ===');
+      }
+      
+      setUserRole('read-only');
     } catch (createError) {
       console.warn('=== PROFILE CREATION FAILED - CONTINUING WITH LOGIN ===', createError);
       console.warn('User will have read-only access until profile is created manually');

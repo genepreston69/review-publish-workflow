@@ -11,38 +11,28 @@ export const fetchUserRole = async (userEmail: string, forceRefresh = false): Pr
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     
-    // Direct query to profiles table with retry logic
-    let profile = null;
+    // Direct query to user_roles table joined with profiles table with retry logic
+    let roleData = null;
     let attempts = 0;
     const maxAttempts = 3;
     
-    while (!profile && attempts < maxAttempts) {
+    while (!roleData && attempts < maxAttempts) {
       attempts++;
-      console.log(`=== ATTEMPT ${attempts} TO FETCH PROFILE ===`);
+      console.log(`=== ATTEMPT ${attempts} TO FETCH USER ROLE ===`);
       
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, role, email')
-        .eq('email', userEmail)
+      const { data: roleResult, error: roleError } = await supabase
+        .from('user_roles')
+        .select(`
+          role,
+          profiles!inner(email)
+        `)
+        .eq('profiles.email', userEmail)
         .maybeSingle();
 
-      if (profileError) {
-        console.error('=== ERROR FETCHING USER PROFILE ===', profileError);
+      if (roleError) {
+        console.error('=== ERROR FETCHING USER ROLE ===', roleError);
         if (attempts === maxAttempts) {
-          console.log('=== MAX ATTEMPTS REACHED, CREATING PROFILE VIA RPC ===');
-          // Try to create the profile using RPC as a last resort
-          const { data: rpcData, error: rpcError } = await supabase
-            .rpc('create_or_update_azure_user', {
-              user_email: userEmail,
-              user_name: userEmail.split('@')[0],
-              user_role: 'read-only' as UserRole
-            });
-          
-          if (!rpcError && rpcData) {
-            console.log('=== PROFILE CREATED VIA RPC, RETURNING READ-ONLY ===');
-            return 'read-only';
-          }
-          
+          console.log('=== MAX ATTEMPTS REACHED, RETURNING READ-ONLY ===');
           return 'read-only';
         }
         // Wait before retry
@@ -50,36 +40,21 @@ export const fetchUserRole = async (userEmail: string, forceRefresh = false): Pr
         continue;
       }
 
-      profile = profileData;
+      roleData = roleResult;
       
-      if (!profile && attempts < maxAttempts) {
-        console.log('=== NO PROFILE FOUND, RETRYING ===');
+      if (!roleData && attempts < maxAttempts) {
+        console.log('=== NO ROLE FOUND, RETRYING ===');
         await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
 
-    if (!profile) {
-      console.log('=== NO PROFILE FOUND AFTER ALL ATTEMPTS, TRYING TO CREATE ONE ===');
-      
-      // Try to create the profile using RPC
-      const { data: rpcData, error: rpcError } = await supabase
-        .rpc('create_or_update_azure_user', {
-          user_email: userEmail,
-          user_name: userEmail.split('@')[0],
-          user_role: 'read-only' as UserRole
-        });
-      
-      if (rpcError) {
-        console.error('=== ERROR CREATING PROFILE VIA RPC ===', rpcError);
-      } else {
-        console.log('=== PROFILE CREATED VIA RPC ===', rpcData);
-      }
-      
+    if (!roleData) {
+      console.log('=== NO ROLE FOUND AFTER ALL ATTEMPTS ===');
       return 'read-only';
     }
 
-    console.log('=== FOUND USER PROFILE WITH ROLE ===', profile);
-    const userRole = profile.role as UserRole;
+    console.log('=== FOUND USER ROLE ===', roleData);
+    const userRole = roleData.role as UserRole;
     
     // Validate the role
     const validRoles: UserRole[] = ['read-only', 'edit', 'publish', 'super-admin'];
