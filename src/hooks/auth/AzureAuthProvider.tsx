@@ -23,14 +23,11 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
     try {
       console.log('=== FETCHING USER ROLE FOR EMAIL ===', userEmail, 'Force refresh:', forceRefresh);
       
-      // Add cache-busting for force refresh
-      const query = supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('role')
-        .eq('email', userEmail);
-      
-      // Force a fresh query by adding a timestamp parameter when force refreshing
-      const { data: profile, error } = await query.maybeSingle();
+        .eq('email', userEmail)
+        .maybeSingle();
 
       if (error) {
         console.error('=== ERROR FETCHING USER ROLE ===', error);
@@ -93,39 +90,54 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
       console.log('User Email:', userEmail);
       console.log('User Name:', userName);
       
-      // First check if user profile exists and get their role with force refresh
+      // First check if user profile exists
       const { data: existingProfile, error: profileError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('id, role, name')
         .eq('email', userEmail)
         .maybeSingle();
 
       if (profileError) {
         console.error('=== ERROR CHECKING EXISTING PROFILE ===', profileError);
-      }
-
-      if (existingProfile) {
-        console.log('=== FOUND EXISTING PROFILE WITH ROLE ===', existingProfile.role);
-        const roleFromProfile = existingProfile.role as UserRole;
-        
-        // Force update the role state immediately
-        console.log('=== FORCE UPDATING USER ROLE ===', roleFromProfile);
-        setUserRole(roleFromProfile);
+        // If there's an error checking, don't create a new profile
         return;
       }
 
-      // If no profile exists, create one with default role
-      console.log('=== CREATING NEW PROFILE ===');
+      if (existingProfile) {
+        console.log('=== FOUND EXISTING PROFILE ===', existingProfile);
+        
+        // Update the role state with the existing role (don't change it)
+        const existingRole = existingProfile.role as UserRole;
+        console.log('=== PRESERVING EXISTING USER ROLE ===', existingRole);
+        setUserRole(existingRole);
+        
+        // Optionally update the name if it has changed, but preserve the role
+        if (existingProfile.name !== userName) {
+          console.log('=== UPDATING USER NAME ONLY ===');
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ name: userName })
+            .eq('email', userEmail);
+            
+          if (updateError) {
+            console.error('=== ERROR UPDATING USER NAME ===', updateError);
+          }
+        }
+        return;
+      }
+
+      // Only create a new profile if none exists
+      console.log('=== CREATING NEW PROFILE FOR NEW USER ===');
       const { createUserProfile } = await import('@/services/userCreationService');
       
       const result = await createUserProfile({
         email: userEmail,
         name: userName,
-        role: 'read-only'
+        role: 'read-only' // Only new users get read-only by default
       });
       
       if (result.success) {
-        console.log('=== USER PROFILE CREATED SUCCESSFULLY ===', result.userId);
+        console.log('=== NEW USER PROFILE CREATED SUCCESSFULLY ===', result.userId);
         setUserRole('read-only');
       } else {
         console.error('=== ERROR FROM USER CREATION SERVICE ===', result.error);
@@ -134,7 +146,7 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
       
     } catch (error) {
       console.error('=== UNEXPECTED ERROR IN ensureUserProfileExists ===', error);
-      setUserRole('read-only');
+      // Don't change the role if there's an error
     }
   };
 
