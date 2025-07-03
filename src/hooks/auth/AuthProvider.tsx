@@ -5,11 +5,39 @@ import { UserRole } from '@/types/user';
 import { AuthContext } from './AuthContext';
 import { AuthProviderProps } from './types';
 import { useAzureAuth } from './AzureAuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const azureAuth = useAzureAuth();
   const [session, setSession] = useState<Session | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+
+  // Refresh user role function
+  const refreshUserRole = async () => {
+    if (azureAuth.currentUser) {
+      try {
+        console.log('=== REFRESHING USER ROLE ===');
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('email', azureAuth.currentUser.username)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error fetching user role:', error);
+          return;
+        }
+
+        if (profile) {
+          console.log('=== REFRESHED USER ROLE ===', profile.role);
+          setUserRole(profile.role as UserRole);
+        }
+      } catch (error) {
+        console.error('Error refreshing user role:', error);
+      }
+    }
+  };
 
   useEffect(() => {
     // Map Azure AD user to Supabase User interface for compatibility
@@ -45,11 +73,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       };
       
       setSession(mockSession);
+      setUserRole(azureAuth.userRole);
     } else {
       setCurrentUser(null);
       setSession(null);
+      setUserRole(null);
     }
-  }, [azureAuth.currentUser]);
+  }, [azureAuth.currentUser, azureAuth.userRole]);
 
   const signOut = async () => {
     await azureAuth.signOut();
@@ -59,9 +89,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     <AuthContext.Provider value={{ 
       currentUser, 
       session, 
-      userRole: azureAuth.userRole, 
+      userRole, 
       isLoading: azureAuth.isLoading, 
-      signOut 
+      signOut,
+      refreshUserRole
     }}>
       {children}
     </AuthContext.Provider>

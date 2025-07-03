@@ -56,10 +56,27 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
       console.log('User Email:', userEmail);
       console.log('User Name:', userName);
       
-      // Use the createUserProfile service which handles RLS properly
+      // First check if user profile exists and get their role
+      const { data: existingProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('email', userEmail)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('=== ERROR CHECKING EXISTING PROFILE ===', profileError);
+      }
+
+      if (existingProfile) {
+        console.log('=== FOUND EXISTING PROFILE WITH ROLE ===', existingProfile.role);
+        setUserRole(existingProfile.role as UserRole);
+        return;
+      }
+
+      // If no profile exists, create one with default role
+      console.log('=== CREATING NEW PROFILE ===');
       const { createUserProfile } = await import('@/services/userCreationService');
       
-      console.log('=== CALLING USER CREATION SERVICE ===');
       const result = await createUserProfile({
         email: userEmail,
         name: userName,
@@ -67,11 +84,11 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
       });
       
       if (result.success) {
-        console.log('=== USER PROFILE CREATED/UPDATED SUCCESSFULLY ===', result.userId);
+        console.log('=== USER PROFILE CREATED SUCCESSFULLY ===', result.userId);
         setUserRole('read-only');
       } else {
         console.error('=== ERROR FROM USER CREATION SERVICE ===', result.error);
-        setUserRole('read-only'); // Set default role even if creation fails
+        setUserRole('read-only');
       }
       
     } catch (error) {
