@@ -9,8 +9,17 @@ import { useAzureAuthInitialization } from './useAzureAuthInitialization';
 import { createSignInHandler, createSignOutHandler } from './azureAuthOperations';
 import { fetchUserRole } from './azureUserRoleService';
 
-// Create MSAL instance
-const msalInstance = new PublicClientApplication(msalConfig);
+// Create MSAL instance with better error handling
+const createMsalInstance = () => {
+  try {
+    return new PublicClientApplication(msalConfig);
+  } catch (error) {
+    console.error('=== FAILED TO CREATE MSAL INSTANCE ===', error);
+    throw error;
+  }
+};
+
+const msalInstance = createMsalInstance();
 
 interface AzureAuthProviderProps {
   children: ReactNode;
