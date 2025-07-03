@@ -28,8 +28,7 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
         if (accounts.length > 0) {
           const account = accounts[0];
           setCurrentUser(account);
-          await createSupabaseSession(account);
-          await fetchUserRole(account);
+          await ensureUserProfileExists(account);
         }
       } catch (error) {
         console.error('Failed to initialize MSAL:', error);
@@ -41,60 +40,43 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
     initializeAuth();
   }, []);
 
-  const createSupabaseSession = async (account: AccountInfo) => {
+  const ensureUserProfileExists = async (account: AccountInfo) => {
     try {
-      // Create a custom JWT payload for the Azure AD user
-      const customToken = {
-        sub: account.localAccountId || account.homeAccountId,
-        email: account.username,
-        name: account.name || account.username,
-        aud: 'authenticated',
-        role: 'authenticated',
-        iss: 'azure-ad',
-        exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, // 24 hours
-        iat: Math.floor(Date.now() / 1000)
-      };
-
-      console.log('Creating Supabase session for Azure AD user:', account.username);
-      
-      // Set the session in Supabase (this is a mock session for compatibility)
-      // Since we're bypassing Supabase auth, we'll handle the session state manually
-      
-    } catch (error) {
-      console.error('Error creating Supabase session:', error);
-    }
-  };
-
-  const fetchUserRole = async (account: AccountInfo) => {
-    try {
-      // Use Azure AD user ID for profile lookup
-      const userId = account.localAccountId || account.homeAccountId;
       const userEmail = account.username;
+      const userName = account.name || userEmail;
+      const azureUserId = account.localAccountId || account.homeAccountId;
       
-      console.log('=== FETCHING USER ROLE FOR AZURE AD USER ===');
-      console.log('User ID:', userId);
+      console.log('=== ENSURING USER PROFILE EXISTS ===');
+      console.log('Azure User ID:', azureUserId);
       console.log('User Email:', userEmail);
+      console.log('User Name:', userName);
       
-      // First, try to find user by email (most reliable)
-      let { data: profile, error } = await supabase
+      // First, check if user exists by email
+      const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
         .select('*')
         .eq('email', userEmail)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching user profile by email:', error);
+      if (checkError) {
+        console.error('Error checking existing profile:', checkError);
+        setUserRole('read-only');
+        return;
       }
 
-      if (profile) {
-        console.log('=== FOUND PROFILE BY EMAIL ===', profile);
+      if (existingProfile) {
+        console.log('=== EXISTING PROFILE FOUND ===', existingProfile);
         
-        // Update the profile with the correct Azure AD user ID if needed
-        if (profile.id !== userId) {
+        // Update the Azure ID if it's different (in case user signed in before)
+        if (existingProfile.id !== azureUserId) {
           console.log('=== UPDATING PROFILE ID TO MATCH AZURE AD ===');
           const { error: updateError } = await supabase
             .from('profiles')
-            .update({ id: userId })
+            .update({ 
+              id: azureUserId,
+              name: userName,
+              initials: getInitialsFromName(userName)
+            })
             .eq('email', userEmail);
             
           if (updateError) {
@@ -104,50 +86,59 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
           }
         }
         
-        setUserRole(profile.role as UserRole);
+        setUserRole(existingProfile.role as UserRole);
         return;
       }
 
-      // If no profile found by email, try by ID
-      const { data: profileById, error: errorById } = await supabase
+      // No profile exists, create one
+      console.log('=== CREATING NEW USER PROFILE ===');
+      const newProfile = {
+        id: azureUserId,
+        email: userEmail,
+        name: userName,
+        role: 'read-only' as UserRole,
+        initials: getInitialsFromName(userName)
+      };
+
+      const { data: createdProfile, error: insertError } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (errorById && errorById.code !== 'PGRST116') {
-        console.error('Error fetching user role by ID:', errorById);
-      }
-
-      if (profileById) {
-        console.log('=== FOUND PROFILE BY ID ===', profileById);
-        setUserRole(profileById.role as UserRole);
-        return;
-      }
-
-      // If no profile exists, create one
-      console.log('=== NO PROFILE FOUND, CREATING NEW ONE ===');
-      const { data: newProfile, error: insertError } = await supabase
-        .from('profiles')
-        .insert({
-          id: userId,
-          email: userEmail,
-          name: account.name || userEmail,
-          role: 'read-only',
-          initials: getInitialsFromName(account.name || userEmail)
-        })
+        .insert(newProfile)
         .select()
         .single();
 
       if (insertError) {
         console.error('Error creating user profile:', insertError);
-        setUserRole('read-only');
+        
+        // Try to handle potential ID conflicts by using email as fallback
+        if (insertError.code === '23505') { // unique constraint violation
+          console.log('=== ID CONFLICT, TRYING WITH GENERATED ID ===');
+          const fallbackProfile = {
+            ...newProfile,
+            id: crypto.randomUUID()
+          };
+          
+          const { data: fallbackCreated, error: fallbackError } = await supabase
+            .from('profiles')
+            .insert(fallbackProfile)
+            .select()
+            .single();
+            
+          if (fallbackError) {
+            console.error('Error creating fallback profile:', fallbackError);
+            setUserRole('read-only');
+          } else {
+            console.log('=== FALLBACK PROFILE CREATED ===', fallbackCreated);
+            setUserRole('read-only');
+          }
+        } else {
+          setUserRole('read-only');
+        }
       } else {
-        console.log('=== NEW PROFILE CREATED ===', newProfile);
+        console.log('=== NEW PROFILE CREATED SUCCESSFULLY ===', createdProfile);
         setUserRole('read-only');
       }
     } catch (error) {
-      console.error('Error in fetchUserRole:', error);
+      console.error('Error in ensureUserProfileExists:', error);
       setUserRole('read-only');
     }
   };
@@ -167,8 +158,7 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
       
       if (response.account) {
         setCurrentUser(response.account);
-        await createSupabaseSession(response.account);
-        await fetchUserRole(response.account);
+        await ensureUserProfileExists(response.account);
       }
     } catch (error) {
       console.error('Login failed:', error);
