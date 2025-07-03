@@ -487,6 +487,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_or_update_azure_user: {
+        Args: {
+          user_email: string
+          user_name: string
+          user_role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: Json
+      }
       generate_next_form_number: {
         Args: { f_form_type: string }
         Returns: string

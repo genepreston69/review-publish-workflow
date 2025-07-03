@@ -64,9 +64,28 @@ export const createUserProfile = async (params: CreateUserParams): Promise<UserC
     }
 
     console.log('=== RPC CALL SUCCEEDED ===', result);
+    
+    // Handle the JSON result from the RPC function
+    if (result && typeof result === 'object' && 'success' in result) {
+      const rpcResult = result as { success: boolean; user_id?: string; error?: string };
+      
+      if (rpcResult.success) {
+        return {
+          success: true,
+          userId: rpcResult.user_id || 'unknown'
+        };
+      } else {
+        return {
+          success: false,
+          error: rpcResult.error || 'Unknown error from RPC function'
+        };
+      }
+    }
+
+    // Fallback if result format is unexpected
     return {
       success: true,
-      userId: result?.user_id || 'unknown'
+      userId: 'unknown'
     };
     
   } catch (error: any) {
