@@ -33,7 +33,11 @@ export const createSignInHandler = (
       } else {
         console.log('=== NO ACCOUNT IN SIGN IN RESPONSE ===');
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error.errorCode === 'interaction_in_progress') {
+        console.log('Login already in progress');
+        return;
+      }
       console.error('=== LOGIN FAILED ===', error);
     } finally {
       setIsLoading(false);
