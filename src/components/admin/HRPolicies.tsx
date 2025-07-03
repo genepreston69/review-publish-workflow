@@ -3,12 +3,17 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { PolicyViewModal } from './policy/PolicyViewModal';
 import { FacilityPoliciesGrid } from './policy/FacilityPoliciesGrid';
+import { PolicyList } from './policy/PolicyList';
 import { useAllUserPolicies } from '@/hooks/useAllUserPolicies';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Grid, List, LayoutGrid } from 'lucide-react';
 
 export function HRPolicies() {
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'compact'>('grid');
   const { userRole } = useAuth();
   const { hrPolicies, isLoadingPolicies, refetchPolicies } = useAllUserPolicies();
   const { toast } = useToast();
@@ -119,7 +124,7 @@ export function HRPolicies() {
         <div>
           <h2 className="text-2xl font-bold tracking-tight">HR Policies</h2>
           <p className="text-muted-foreground">
-            View published human resources policies and procedures
+            Human resources policies and procedures
           </p>
           {hrPolicies.length > 0 && (
             <p className="text-sm text-gray-600 mt-1">
@@ -127,6 +132,26 @@ export function HRPolicies() {
             </p>
           )}
         </div>
+
+        {/* View Mode Toggle */}
+        {hrPolicies.length > 0 && (
+          <div className="flex items-center gap-2">
+            <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'grid' | 'list' | 'compact')}>
+              <ToggleGroupItem value="grid" aria-label="Grid view">
+                <Grid className="h-4 w-4" />
+                Grid
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label="List view">
+                <List className="h-4 w-4" />
+                List
+              </ToggleGroupItem>
+              <ToggleGroupItem value="compact" aria-label="Compact view">
+                <LayoutGrid className="h-4 w-4" />
+                Compact
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+        )}
       </div>
 
       {hrPolicies.length === 0 ? (
@@ -135,16 +160,32 @@ export function HRPolicies() {
           <p className="text-gray-500">No HR policies have been published yet.</p>
         </div>
       ) : (
-        <FacilityPoliciesGrid
-          policies={hrPolicies}
-          isEditor={isEditor}
-          canPublish={canPublish}
-          isSuperAdmin={isSuperAdmin}
-          onView={handleViewPolicy}
-          onUpdateStatus={handleUpdateStatus}
-          onDelete={handleDeletePolicy}
-          onRefresh={refetchPolicies}
-        />
+        <>
+          {viewMode === 'list' ? (
+            <PolicyList
+              policies={hrPolicies}
+              isLoading={isLoadingPolicies}
+              isEditor={isEditor}
+              canPublish={canPublish}
+              onUpdateStatus={handleUpdateStatus}
+              onEdit={() => {}} // HR policies don't have edit functionality in this context
+              onView={handleViewPolicy}
+              onDelete={handleDeletePolicy}
+            />
+          ) : (
+            <FacilityPoliciesGrid
+              policies={hrPolicies}
+              isEditor={isEditor}
+              canPublish={canPublish}
+              isSuperAdmin={isSuperAdmin}
+              compact={viewMode === 'compact'}
+              onView={handleViewPolicy}
+              onUpdateStatus={handleUpdateStatus}
+              onDelete={handleDeletePolicy}
+              onRefresh={refetchPolicies}
+            />
+          )}
+        </>
       )}
 
       {viewingPolicyId && (
