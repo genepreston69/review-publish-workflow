@@ -1,56 +1,78 @@
 
-import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Separator } from '@/components/ui/separator';
-import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { Bell, Settings, User, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { RoleBadge } from '@/components/RoleBadge';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
-import { User, LogOut } from 'lucide-react';
+import { useState } from 'react';
 
 interface AdminHeaderProps {
   isSuperAdmin: boolean;
   pageTitle: string;
 }
 
-export function AdminHeader({ isSuperAdmin, pageTitle }: AdminHeaderProps) {
-  const { currentUser, userRole, signOut } = useAuth();
+export const AdminHeader = ({ isSuperAdmin, pageTitle }: AdminHeaderProps) => {
+  const { currentUser, userRole, refreshUserRole } = useAuth();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleLogout = async () => {
-    await signOut();
+  const handleRefreshRole = async () => {
+    if (refreshUserRole) {
+      setIsRefreshing(true);
+      try {
+        await refreshUserRole();
+        console.log('=== MANUAL ROLE REFRESH COMPLETED ===');
+      } catch (error) {
+        console.error('=== MANUAL ROLE REFRESH FAILED ===', error);
+      } finally {
+        setIsRefreshing(false);
+      }
+    }
   };
 
-  // Get user name from metadata or email
-  const userName = currentUser?.user_metadata?.name || 
-                  currentUser?.email?.split('@')[0] || 
-                  'User';
-
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 bg-white border-b px-4">
-      <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="mr-2 h-4" />
-      <div className="flex-1">
-        <h1 className="font-semibold">{pageTitle}</h1>
-      </div>
-      <div className="flex items-center gap-4">
-        <NotificationBell />
-        {currentUser && userRole && (
-          <>
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-gray-500" />
-              <span className="text-sm font-medium">{userName}</span>
-              <RoleBadge role={userRole} />
-            </div>
+    <header className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <h1 className="text-2xl font-bold text-gray-900">{pageTitle}</h1>
+          {isSuperAdmin && (
+            <Badge variant="destructive" className="text-xs">
+              Super Admin
+            </Badge>
+          )}
+        </div>
+        
+        <div className="flex items-center space-x-4">
+          {/* Role Debug Info */}
+          <div className="text-sm text-gray-600 flex items-center gap-2">
+            <span>Role: {userRole}</span>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              onClick={handleLogout}
+              onClick={handleRefreshRole}
+              disabled={isRefreshing}
+              className="h-6 w-6 p-0"
             >
-              <LogOut className="w-4 h-4 mr-1" />
-              Logout
+              <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
             </Button>
-          </>
-        )}
+          </div>
+          
+          <Button variant="ghost" size="sm">
+            <Bell className="h-4 w-4" />
+          </Button>
+          
+          <Button variant="ghost" size="sm">
+            <Settings className="h-4 w-4" />
+          </Button>
+          
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+              <User className="h-4 w-4 text-gray-600" />
+            </div>
+            <span className="text-sm font-medium text-gray-700">
+              {currentUser?.email || 'Unknown User'}
+            </span>
+          </div>
+        </div>
       </div>
     </header>
   );
-}
+};
