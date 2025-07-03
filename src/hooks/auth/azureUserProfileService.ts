@@ -17,7 +17,7 @@ export const ensureUserProfileExists = async (
     console.log('User Name:', userName);
     console.log('Azure ID:', azureId);
     
-    // First check if user profile exists by email
+    // First check if user profile exists by email (not by Azure ID as primary key)
     const { data: existingProfile, error: profileError } = await supabase
       .from('profiles')
       .select('id, role, name, azure_id')
