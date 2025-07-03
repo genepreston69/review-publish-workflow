@@ -30,11 +30,12 @@ export const ensureUserProfileExists = async (
     }
 
     if (existingProfile) {
-      console.log('=== FOUND EXISTING PROFILE - PRESERVING ROLE ===', existingProfile);
+      console.log('=== FOUND EXISTING PROFILE - NEVER TOUCHING ROLE ===', existingProfile);
       
-      // Update only the name if it has changed, NEVER touch the role
+      // For existing users, ONLY update the name if it has changed
+      // NEVER touch the role field at all
       if (existingProfile.name !== userName) {
-        console.log('=== UPDATING ONLY USER NAME, PRESERVING ROLE ===');
+        console.log('=== UPDATING ONLY USER NAME, NEVER TOUCHING ROLE ===');
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ name: userName })
@@ -43,18 +44,17 @@ export const ensureUserProfileExists = async (
         if (updateError) {
           console.error('=== ERROR UPDATING USER NAME ===', updateError);
         } else {
-          console.log('=== USER NAME UPDATED, ROLE PRESERVED ===', existingProfile.role);
+          console.log('=== USER NAME UPDATED, ROLE UNTOUCHED ===', existingProfile.role);
         }
       }
       
-      console.log('=== EXISTING USER - ROLE COMPLETELY PRESERVED ===', existingProfile.role);
-      return;
+      console.log('=== EXISTING USER - ROLE COMPLETELY UNTOUCHED ===', existingProfile.role);
+      return; // Exit early for existing users
     }
 
     // Only create a new profile if none exists - this is a truly new user
     console.log('=== CREATING NEW PROFILE FOR COMPLETELY NEW USER ===');
     
-    // Create the profile directly without using the service to avoid any role overrides
     const newUserId = crypto.randomUUID();
     const { error: insertError } = await supabase
       .from('profiles')

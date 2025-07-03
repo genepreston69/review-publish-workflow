@@ -4,6 +4,7 @@ import { PublicClientApplication, AccountInfo } from '@azure/msal-browser';
 import { UserRole } from '@/types/user';
 import { fetchUserRole } from './azureUserRoleService';
 import { ensureUserProfileExists } from './azureUserProfileService';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useAzureAuthInitialization = (
   msalInstance: PublicClientApplication,
@@ -34,12 +35,29 @@ export const useAzureAuthInitialization = (
           console.log('=== SETTING CURRENT USER FROM EXISTING ACCOUNT ===', account);
           setCurrentUser(account);
           
-          // Fetch the user role immediately with force refresh on initialization
-          const role = await fetchUserRole(account.username, true);
-          console.log('=== SETTING USER ROLE FROM INITIALIZATION ===', role);
-          setUserRole(role);
+          // Check if user already exists
+          const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('id, role')
+            .eq('email', account.username)
+            .maybeSingle();
           
-          await ensureUserProfileExists(account, setUserRole);
+          if (existingProfile) {
+            console.log('=== EXISTING USER DURING INIT - SKIP PROFILE CREATION ===', existingProfile);
+            // For existing users, just fetch their role
+            const role = await fetchUserRole(account.username, true);
+            console.log('=== SETTING EXISTING USER ROLE FROM INITIALIZATION ===', role);
+            setUserRole(role);
+          } else {
+            console.log('=== NEW USER DURING INIT - CREATE PROFILE ===');
+            // Only for new users, create profile
+            await ensureUserProfileExists(account, setUserRole);
+            
+            // Then fetch the role
+            const role = await fetchUserRole(account.username, true);
+            console.log('=== SETTING NEW USER ROLE FROM INITIALIZATION ===', role);
+            setUserRole(role);
+          }
         } else {
           console.log('=== NO EXISTING ACCOUNTS FOUND ===');
         }
