@@ -1,5 +1,6 @@
 
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
@@ -8,10 +9,11 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { currentUser, userRole, isLoading } = useAuth();
+  const { currentUser, isLoading } = useAuth();
+  const { userRole, isLoading: roleLoading } = useUserRole();
   const location = useLocation();
 
-  if (isLoading) {
+  if (isLoading || roleLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-600" />

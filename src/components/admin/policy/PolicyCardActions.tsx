@@ -3,6 +3,7 @@ import { CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trash2, Edit, Eye, RotateCcw, Send } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { usePolicyDuplication } from '@/hooks/usePolicyDuplication';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -28,7 +29,8 @@ export function PolicyCardActions({
   onDelete,
   onRefresh
 }: PolicyCardActionsProps) {
-  const { userRole, currentUser } = useAuth();
+  const { currentUser } = useAuth();
+  const { userRole } = useUserRole();
   const isSuperAdmin = userRole === 'super-admin';
   const isEditor = userRole === 'edit';
   const { duplicatePolicyForUpdate, archiveByPolicyNumber, isLoading: isDuplicating } = usePolicyDuplication();

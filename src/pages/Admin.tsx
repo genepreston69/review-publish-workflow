@@ -1,5 +1,7 @@
+
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Navigate } from 'react-router-dom';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { AssignmentManagement } from '@/components/admin/AssignmentManagement';
@@ -23,10 +25,11 @@ import { ReviewDashboard } from '@/components/admin/ReviewDashboard';
 import { PublishInterface } from '@/components/admin/PublishInterface';
 
 const Admin = () => {
-  const { userRole, isLoading } = useAuth();
+  const { isLoading } = useAuth();
+  const { userRole, isLoading: roleLoading } = useUserRole();
   const { activeSection } = useAppNavigation();
 
-  if (isLoading) {
+  if (isLoading || roleLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>

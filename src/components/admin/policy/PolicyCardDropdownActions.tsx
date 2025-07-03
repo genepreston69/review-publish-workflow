@@ -19,8 +19,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Policy } from './types';
 
 interface PolicyCardDropdownActionsProps {
@@ -54,7 +54,7 @@ export function PolicyCardDropdownActions({
 }: PolicyCardDropdownActionsProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
-  const { userRole } = useAuth();
+  const { userRole } = useUserRole();
 
   const isSuperAdmin = userRole === 'super-admin';
 

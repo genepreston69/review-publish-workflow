@@ -1,5 +1,6 @@
 
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Policy } from './types';
 import { PolicyCardListView } from './PolicyCardListView';
 import { PolicyCardGridView } from './PolicyCardGridView';
@@ -36,7 +37,8 @@ export function PolicyCard({
     maxRenders: 20
   });
 
-  const { currentUser, userRole } = useAuth();
+  const { currentUser } = useAuth();
+  const { userRole } = useUserRole();
 
   const canEdit = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
   const canDelete = userRole === 'super-admin';

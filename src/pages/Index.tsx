@@ -2,6 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { RoleBadge } from '@/components/RoleBadge';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { User, LogOut, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Dashboard } from '@/components/Dashboard';
@@ -11,7 +12,8 @@ import { AppSidebar } from '@/components/AppSidebar';
 const Index = () => {
   console.log('=== INDEX PAGE RENDERING ===');
   
-  const { currentUser, userRole, signOut } = useAuth();
+  const { currentUser, signOut } = useAuth();
+  const { userRole } = useUserRole();
 
   const handleLogout = async () => {
     await signOut();
