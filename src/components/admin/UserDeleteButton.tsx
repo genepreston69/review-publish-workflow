@@ -23,7 +23,18 @@ export const UserDeleteButton = ({ userId, userName, userEmail, onUserDeleted }:
       console.log('=== DELETE USER ATTEMPT ===');
       console.log('Target user ID:', userId);
 
-      // Delete profile (role is now included in profiles table)
+      // First delete from user_roles table
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (roleError) {
+        console.error('Error deleting user role:', roleError);
+        // Continue with profile deletion even if role deletion fails
+      }
+
+      // Delete profile
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
@@ -32,17 +43,6 @@ export const UserDeleteButton = ({ userId, userName, userEmail, onUserDeleted }:
       if (profileError) {
         console.error('Error deleting profile:', profileError);
         throw profileError;
-      }
-
-      // Try to delete from auth - this may fail if we don't have admin privileges
-      try {
-        const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-        if (authError) {
-          console.warn('Could not delete from auth (may need admin privileges):', authError);
-          // Don't throw here - user is effectively deleted from our app
-        }
-      } catch (authDeleteError) {
-        console.warn('Auth delete failed (expected if not admin):', authDeleteError);
       }
 
       console.log('=== DELETE USER SUCCESS ===');

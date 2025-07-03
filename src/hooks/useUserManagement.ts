@@ -20,15 +20,22 @@ export const useUserManagement = () => {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      console.log('=== FETCHING USERS FROM PROFILES ===');
+      console.log('=== FETCHING USERS FROM PROFILES WITH ROLES ===');
       
+      // Join profiles with user_roles to get the role information
       const { data: profilesData, error } = await supabase
         .from('profiles')
-        .select('id, name, email, created_at, role')
+        .select(`
+          id, 
+          name, 
+          email, 
+          created_at,
+          user_roles(role)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching profiles:', error);
+        console.error('Error fetching profiles with roles:', error);
         toast({
           variant: "destructive",
           title: "Error",
@@ -38,46 +45,10 @@ export const useUserManagement = () => {
         return;
       }
 
-      console.log('=== PROFILES FETCHED ===', profilesData);
+      console.log('=== PROFILES WITH ROLES FETCHED ===', profilesData);
 
       if (!profilesData || profilesData.length === 0) {
         console.log('=== NO PROFILES FOUND ===');
-        
-        // Check if there are users in auth.users that don't have profiles
-        const { data: authUsers } = await supabase.auth.admin.listUsers();
-        if (authUsers?.users && authUsers.users.length > 0) {
-          console.log('=== FOUND AUTH USERS WITHOUT PROFILES ===', authUsers.users.length);
-          toast({
-            title: "Creating Missing Profiles",
-            description: `Found ${authUsers.users.length} users without profiles. Creating them now...`,
-          });
-          
-          // Create profiles for users that don't have them
-          const missingProfiles = authUsers.users.map(user => ({
-            id: user.id,
-            name: user.user_metadata?.name || user.email || 'Unknown User',
-            email: user.email || '',
-            role: 'read-only' as UserRole
-          }));
-          
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert(missingProfiles);
-            
-          if (insertError) {
-            console.error('Error creating missing profiles:', insertError);
-          } else {
-            console.log('=== MISSING PROFILES CREATED ===');
-            // Fetch again after creating profiles
-            return fetchUsers();
-          }
-        } else {
-          toast({
-            title: "No Users Found",
-            description: "No user profiles found in the database.",
-          });
-        }
-        
         setUsers([]);
         return;
       }
@@ -87,7 +58,7 @@ export const useUserManagement = () => {
         name: profile.name || 'Unknown',
         email: profile.email,
         created_at: profile.created_at || new Date().toISOString(),
-        role: profile.role as UserRole
+        role: (profile.user_roles as any)?.[0]?.role || 'read-only' as UserRole
       }));
 
       console.log('=== FINAL USERS WITH ROLES ===', usersWithRoles);

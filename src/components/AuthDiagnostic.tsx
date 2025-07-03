@@ -36,9 +36,16 @@ export function AuthDiagnostic() {
       try {
         console.log('=== FETCHING PROFILE FOR EMAIL ===', azureAccount.username);
         
+        // Join profiles with user_roles to get role information
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('id, email, name, role, created_at')
+          .select(`
+            id, 
+            email, 
+            name, 
+            created_at,
+            user_roles(role)
+          `)
           .eq('email', azureAccount.username)
           .maybeSingle();
 
@@ -49,7 +56,19 @@ export function AuthDiagnostic() {
         }
 
         console.log('=== PROFILE FETCH RESULT ===', profile);
-        setProfileData(profile);
+        
+        if (profile) {
+          const profileWithRole = {
+            id: profile.id,
+            email: profile.email,
+            name: profile.name,
+            created_at: profile.created_at,
+            role: (profile.user_roles as any)?.[0]?.role || 'read-only'
+          };
+          setProfileData(profileWithRole);
+        } else {
+          setProfileData(null);
+        }
       } catch (error) {
         console.error('=== PROFILE FETCH EXCEPTION ===', error);
         setProfileError(error instanceof Error ? error.message : 'Unknown error');
