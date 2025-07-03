@@ -7,6 +7,7 @@ import { PolicyList } from '@/components/admin/policy/PolicyList';
 import { PolicyViewModal } from '@/components/admin/policy/PolicyViewModal';
 import { useState } from 'react';
 import { FileText, Shield, Users, BarChart3 } from 'lucide-react';
+import { Policy } from '@/components/admin/policy/types';
 
 export function Dashboard() {
   console.log('=== DASHBOARD RENDERING ===');
@@ -24,9 +25,34 @@ export function Dashboard() {
     setViewingPolicyId(null);
   };
 
+  // Convert the simplified policies to full Policy type for read-only users
+  const convertToFullPolicy = (policy: any): Policy => ({
+    id: policy.id,
+    name: policy.name,
+    policy_number: policy.policy_number,
+    policy_type: policy.policy_type,
+    purpose: policy.purpose,
+    policy_text: policy.policy_text,
+    procedure: policy.procedure,
+    reviewer: policy.reviewer,
+    created_at: policy.created_at,
+    status: policy.status,
+    creator_id: null,
+    publisher_id: null,
+    reviewer_comment: null,
+    published_at: null,
+    updated_at: null,
+    archived_at: null,
+    parent_policy_id: null,
+    creator: null,
+    publisher: null,
+  });
+
   // For read-only users, show published policies
   if (userRole === 'read-only') {
     const totalPolicies = hrPolicies.length + facilityPolicies.length;
+    const fullHrPolicies = hrPolicies.map(convertToFullPolicy);
+    const fullFacilityPolicies = facilityPolicies.map(convertToFullPolicy);
     
     return (
       <div className="flex-1 space-y-6 p-6">
@@ -81,7 +107,7 @@ export function Dashboard() {
               <p className="text-slate-600">Human resources policies and procedures</p>
             </div>
             <PolicyList
-              policies={hrPolicies}
+              policies={fullHrPolicies}
               isLoading={isLoadingPolicies}
               isEditor={false}
               canPublish={false}
@@ -96,7 +122,7 @@ export function Dashboard() {
         {/* Facility Policies Section */}
         {facilityPolicies.length > 0 && (
           <FacilityPoliciesGrid
-            policies={facilityPolicies}
+            policies={fullFacilityPolicies}
             isEditor={false}
             canPublish={false}
             isSuperAdmin={false}
