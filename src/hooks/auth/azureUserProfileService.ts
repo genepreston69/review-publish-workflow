@@ -58,34 +58,29 @@ export const ensureUserProfileExists = async (
       return;
     }
 
-    // Only create a new profile if none exists - use the RPC function for new users
+    // Only create a new profile if none exists - do NOT use RPC function
     console.log('=== CREATING NEW PROFILE FOR COMPLETELY NEW USER ===');
     
-    const { data, error: rpcError } = await supabase
-      .rpc('create_or_update_azure_user', {
-        user_email: userEmail,
-        user_name: userName,
-        user_role: 'read-only' as UserRole // Only set read-only for NEW users
-      });
+    // Generate a UUID for the new user
+    const userId = crypto.randomUUID();
     
-    if (rpcError) {
-      console.error('=== ERROR CREATING NEW USER PROFILE VIA RPC ===', rpcError);
+    const { data: newProfile, error: insertError } = await supabase
+      .from('profiles')
+      .insert({
+        id: userId,
+        email: userEmail,
+        name: userName,
+        role: 'read-only' as UserRole, // Only set read-only for NEW users
+        azure_id: azureId
+      })
+      .select()
+      .single();
+    
+    if (insertError) {
+      console.error('=== ERROR CREATING NEW USER PROFILE ===', insertError);
       setUserRole('read-only');
     } else {
-      console.log('=== NEW USER PROFILE CREATED WITH READ-ONLY ROLE ===', data);
-      
-      // Now update the newly created profile with Azure ID
-      const { error: azureIdError } = await supabase
-        .from('profiles')
-        .update({ azure_id: azureId })
-        .eq('email', userEmail);
-        
-      if (azureIdError) {
-        console.error('=== ERROR SETTING AZURE ID FOR NEW USER ===', azureIdError);
-      } else {
-        console.log('=== AZURE ID SET FOR NEW USER ===');
-      }
-      
+      console.log('=== NEW USER PROFILE CREATED WITH READ-ONLY ROLE ===', newProfile);
       setUserRole('read-only');
     }
     
