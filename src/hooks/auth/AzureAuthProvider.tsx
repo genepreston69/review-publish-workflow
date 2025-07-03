@@ -49,11 +49,26 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
 
   const isAuthenticated = currentUser !== null;
 
-  // Show loading while initializing
-  if (isLoading || !isInitialized) {
+  // Show loading while initializing - improved loading state
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2 text-sm text-gray-600">Initializing authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render the app until MSAL is initialized
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2 text-sm text-gray-600">Setting up authentication...</p>
+        </div>
       </div>
     );
   }
