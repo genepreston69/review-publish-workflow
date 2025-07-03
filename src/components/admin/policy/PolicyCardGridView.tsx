@@ -61,7 +61,7 @@ export function PolicyCardGridView({
   };
 
   return (
-    <Card className={`h-full transition-all duration-200 hover:shadow-md border-slate-200 ${compact ? 'p-2' : ''}`}>
+    <Card className={`h-full flex flex-col transition-all duration-200 hover:shadow-md border-slate-200 ${compact ? 'p-2' : ''}`}>
       <CardHeader className={compact ? 'pb-2' : 'pb-3'}>
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
@@ -81,38 +81,26 @@ export function PolicyCardGridView({
             </div>
           </div>
           
-          <div className="flex items-center gap-1">
-            {showView && onView && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 w-8 p-0" 
-                onClick={() => onView(policy.id)}
-                title="View Policy"
-              >
-                <Eye className="h-4 w-4" />
-              </Button>
-            )}
-            <PolicyCardActions
-              policyId={policy.id}
-              policyStatus={policy.status}
-              canPublish={canPublishPolicy}
-              onUpdateStatus={onUpdateStatus}
-              onEdit={onEdit}
-              onView={onView}
-              onDelete={onDelete}
-            />
-          </div>
+          {/* Always show view button on the right */}
+          {onView && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 w-8 p-0 flex-shrink-0" 
+              onClick={() => onView(policy.id)}
+              title="View Policy"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </CardHeader>
       
-      <CardContent className={compact ? 'pt-0 px-3 pb-3' : 'pt-0'}>
-        <div className="space-y-3">
-          <div>
-            <p className={`text-slate-700 ${compact ? 'text-xs' : 'text-sm'} line-clamp-2`}>
-              {stripHtml(policy.purpose)?.substring(0, 100) || 'No purpose specified'}...
-            </p>
-          </div>
+      <CardContent className={`${compact ? 'pt-0 px-3 pb-3' : 'pt-0'} flex-1 flex flex-col`}>
+        <div className="flex-1">
+          <p className={`text-slate-700 ${compact ? 'text-xs' : 'text-sm'} line-clamp-2 mb-3`}>
+            {stripHtml(policy.purpose)?.substring(0, 100) || 'No purpose specified'}...
+          </p>
           
           <div className="grid grid-cols-1 gap-2 text-xs">
             <div className="flex justify-between">
@@ -129,6 +117,21 @@ export function PolicyCardGridView({
             )}
           </div>
         </div>
+        
+        {/* Footer actions - stick to bottom */}
+        {(showEdit || showSubmit || canPublishPolicy || canArchive || canDelete) && (
+          <div className="mt-4 pt-3 border-t border-slate-100">
+            <PolicyCardActions
+              policyId={policy.id}
+              policyStatus={policy.status}
+              canPublish={canPublishPolicy}
+              onUpdateStatus={onUpdateStatus}
+              onEdit={onEdit}
+              onView={onView}
+              onDelete={onDelete}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

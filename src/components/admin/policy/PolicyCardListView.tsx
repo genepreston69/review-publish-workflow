@@ -84,8 +84,9 @@ export function PolicyCardListView({
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-1 ml-4">
-        {showView && onView && (
+      <div className="flex items-center gap-1 ml-4 flex-shrink-0">
+        {/* Always show view button on the right */}
+        {onView && (
           <Button 
             variant="ghost" 
             size="sm" 
@@ -96,15 +97,18 @@ export function PolicyCardListView({
             <Eye className="h-4 w-4" />
           </Button>
         )}
-        <PolicyCardActions
-          policyId={policy.id}
-          policyStatus={policy.status}
-          canPublish={canPublishPolicy}
-          onUpdateStatus={onUpdateStatus}
-          onEdit={onEdit}
-          onView={onView}
-          onDelete={onDelete}
-        />
+        {/* Show other actions only if they exist */}
+        {(showEdit || showSubmit || canPublishPolicy || canArchive || canDelete) && (
+          <PolicyCardActions
+            policyId={policy.id}
+            policyStatus={policy.status}
+            canPublish={canPublishPolicy}
+            onUpdateStatus={onUpdateStatus}
+            onEdit={onEdit}
+            onView={onView}
+            onDelete={onDelete}
+          />
+        )}
       </div>
     </div>
   );
