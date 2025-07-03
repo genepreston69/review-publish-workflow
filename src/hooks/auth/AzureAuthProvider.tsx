@@ -55,163 +55,29 @@ const AzureAuthProviderInner = ({ children }: AzureAuthProviderProps) => {
       console.log('Azure User ID:', azureUserId);
       console.log('User Email:', userEmail);
       console.log('User Name:', userName);
-      console.log('Account Object:', JSON.stringify(account, null, 2));
       
-      // Test Supabase connection first
-      console.log('=== TESTING SUPABASE CONNECTION ===');
-      const { data: testData, error: testError } = await supabase
-        .from('profiles')
-        .select('count')
-        .limit(1);
+      // Use the createUserProfile service which handles RLS properly
+      const { createUserProfile } = await import('@/services/userCreationService');
       
-      if (testError) {
-        console.error('=== SUPABASE CONNECTION ERROR ===', testError);
-        setUserRole('read-only');
-        return;
-      }
-      
-      console.log('=== SUPABASE CONNECTION SUCCESSFUL ===');
-      
-      // Check if user exists by email
-      console.log('=== CHECKING FOR EXISTING PROFILE BY EMAIL ===');
-      const { data: existingProfile, error: checkError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('email', userEmail)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error('=== ERROR CHECKING EXISTING PROFILE ===', checkError);
-        setUserRole('read-only');
-        return;
-      }
-
-      if (existingProfile) {
-        console.log('=== EXISTING PROFILE FOUND ===', existingProfile);
-        
-        // Update the Azure ID and name if needed
-        if (existingProfile.id !== azureUserId || existingProfile.name !== userName) {
-          console.log('=== UPDATING EXISTING PROFILE ===');
-          const { data: updatedProfile, error: updateError } = await supabase
-            .from('profiles')
-            .update({ 
-              id: azureUserId,
-              name: userName,
-              initials: getInitialsFromName(userName)
-            })
-            .eq('email', userEmail)
-            .select()
-            .single();
-            
-          if (updateError) {
-            console.error('=== ERROR UPDATING PROFILE ===', updateError);
-            // Continue with existing profile data
-            setUserRole(existingProfile.role as UserRole);
-          } else {
-            console.log('=== PROFILE UPDATED SUCCESSFULLY ===', updatedProfile);
-            setUserRole(updatedProfile.role as UserRole);
-          }
-        } else {
-          setUserRole(existingProfile.role as UserRole);
-        }
-        return;
-      }
-
-      // No profile exists, create one
-      console.log('=== CREATING NEW USER PROFILE ===');
-      const newProfile = {
-        id: azureUserId,
+      console.log('=== CALLING USER CREATION SERVICE ===');
+      const result = await createUserProfile({
         email: userEmail,
         name: userName,
-        role: 'read-only' as UserRole,
-        initials: getInitialsFromName(userName)
-      };
+        role: 'read-only'
+      });
       
-      console.log('=== NEW PROFILE DATA ===', newProfile);
-
-      const { data: createdProfile, error: insertError } = await supabase
-        .from('profiles')
-        .insert(newProfile)
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('=== ERROR CREATING USER PROFILE ===', insertError);
-        console.error('=== ERROR DETAILS ===', {
-          code: insertError.code,
-          message: insertError.message,
-          details: insertError.details,
-          hint: insertError.hint
-        });
-        
-        // Try alternative approach with different ID
-        if (insertError.code === '23505' || insertError.message?.includes('duplicate')) {
-          console.log('=== TRYING WITH ALTERNATIVE ID ===');
-          const alternativeId = `azure_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          const fallbackProfile = {
-            id: alternativeId,
-            email: userEmail,
-            name: userName,
-            role: 'read-only' as UserRole,
-            initials: getInitialsFromName(userName)
-          };
-          
-          console.log('=== ALTERNATIVE PROFILE DATA ===', fallbackProfile);
-          
-          const { data: fallbackCreated, error: fallbackError } = await supabase
-            .from('profiles')
-            .insert(fallbackProfile)
-            .select()
-            .single();
-            
-          if (fallbackError) {
-            console.error('=== ERROR CREATING FALLBACK PROFILE ===', fallbackError);
-            setUserRole('read-only');
-          } else {
-            console.log('=== FALLBACK PROFILE CREATED SUCCESSFULLY ===', fallbackCreated);
-            setUserRole('read-only');
-          }
-        } else {
-          // Try without specifying ID (let database generate it)
-          console.log('=== TRYING WITHOUT SPECIFIED ID ===');
-          const profileWithoutId = {
-            email: userEmail,
-            name: userName,
-            role: 'read-only' as UserRole,
-            initials: getInitialsFromName(userName)
-          };
-          
-          const { data: generatedProfile, error: generatedError } = await supabase
-            .from('profiles')
-            .insert(profileWithoutId)
-            .select()
-            .single();
-            
-          if (generatedError) {
-            console.error('=== ERROR CREATING PROFILE WITHOUT ID ===', generatedError);
-            setUserRole('read-only');
-          } else {
-            console.log('=== PROFILE CREATED WITH GENERATED ID ===', generatedProfile);
-            setUserRole('read-only');
-          }
-        }
-      } else {
-        console.log('=== NEW PROFILE CREATED SUCCESSFULLY ===', createdProfile);
+      if (result.success) {
+        console.log('=== USER PROFILE CREATED/UPDATED SUCCESSFULLY ===', result.userId);
         setUserRole('read-only');
+      } else {
+        console.error('=== ERROR FROM USER CREATION SERVICE ===', result.error);
+        setUserRole('read-only'); // Set default role even if creation fails
       }
+      
     } catch (error) {
       console.error('=== UNEXPECTED ERROR IN ensureUserProfileExists ===', error);
       setUserRole('read-only');
     }
-  };
-
-  const getInitialsFromName = (name: string): string => {
-    if (!name) return 'UN';
-    return name
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase())
-      .slice(0, 2)
-      .join('');
   };
 
   const signIn = async () => {

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/user';
 
@@ -20,126 +19,58 @@ export const createUserProfile = async (params: CreateUserParams): Promise<UserC
   try {
     console.log('=== CREATING USER PROFILE FOR AZURE AD USER ===', { email, name, role });
     
-    // Check if user already exists by email
-    const { data: existingProfile, error: checkError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('email', email)
-      .single();
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Error checking existing profile:', checkError);
-      return {
-        success: false,
-        error: checkError.message
-      };
-    }
-
-    if (existingProfile) {
-      console.log('=== USER ALREADY EXISTS, UPDATING ROLE ===', existingProfile);
-      
-      // Update existing user's role
-      const { data: updatedProfile, error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          role,
-          name // Update name in case it's different
-        })
-        .eq('email', email)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error('Error updating existing profile:', updateError);
-        return {
-          success: false,
-          error: updateError.message
-        };
-      }
-
-      console.log('Existing user profile updated successfully:', updatedProfile.id);
-      
-      // Send notification email
-      try {
-        const { error: emailError } = await supabase.functions.invoke('send-user-welcome-email', {
-          body: {
-            to: email,
-            name,
-            role,
-            userId: updatedProfile.id
-          }
-        });
-
-        if (emailError) {
-          console.error('Email sending failed:', emailError);
-        } else {
-          console.log('Welcome email sent successfully');
-        }
-      } catch (emailError) {
-        console.error('Email service error:', emailError);
-      }
-
-      return {
-        success: true,
-        userId: updatedProfile.id
-      };
-    }
-
-    // Create new user profile with a placeholder ID
-    // The actual Azure AD user ID will be set when they first sign in
-    const placeholderUserId = crypto.randomUUID();
+    // First try to check if user exists using a service role call
+    console.log('=== CHECKING FOR EXISTING PROFILE BY EMAIL ===');
     
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        id: placeholderUserId,
+    // Use RPC call to create/update user profile with service role privileges
+    const { data: result, error: rpcError } = await supabase.rpc('create_or_update_azure_user', {
+      user_email: email,
+      user_name: name,
+      user_role: role
+    });
+
+    if (rpcError) {
+      console.error('=== RPC ERROR ===', rpcError);
+      
+      // Fallback: try direct insert (may fail due to RLS)
+      console.log('=== TRYING DIRECT INSERT AS FALLBACK ===');
+      const profileData = {
+        id: crypto.randomUUID(),
         email,
         name,
         role,
         initials: generateInitialsFromName(name)
-      })
-      .select()
-      .single();
+      };
 
-    if (profileError) {
-      console.error('Profile creation error:', profileError);
+      const { data: directResult, error: directError } = await supabase
+        .from('profiles')
+        .upsert(profileData, { onConflict: 'email' })
+        .select()
+        .single();
+
+      if (directError) {
+        console.error('=== DIRECT INSERT FAILED ===', directError);
+        return {
+          success: false,
+          error: `Failed to create user profile: ${directError.message}`
+        };
+      }
+
+      console.log('=== DIRECT INSERT SUCCEEDED ===', directResult);
       return {
-        success: false,
-        error: profileError.message
+        success: true,
+        userId: directResult.id
       };
     }
 
-    console.log('User profile created successfully:', profileData.id);
-
-    // Send notification email to the user
-    try {
-      const { error: emailError } = await supabase.functions.invoke('send-user-welcome-email', {
-        body: {
-          to: email,
-          name,
-          role,
-          userId: profileData.id
-        }
-      });
-
-      if (emailError) {
-        console.error('Email sending failed:', emailError);
-        // Don't fail user creation if email fails
-      } else {
-        console.log('Welcome email sent successfully');
-      }
-    } catch (emailError) {
-      console.error('Email service error:', emailError);
-      // Don't fail user creation if email fails
-    }
-
+    console.log('=== RPC CALL SUCCEEDED ===', result);
     return {
       success: true,
-      userId: profileData.id
+      userId: result?.user_id || 'unknown'
     };
     
   } catch (error: any) {
-    console.error('Error in createUserProfile:', error);
+    console.error('=== ERROR IN createUserProfile ===', error);
     return {
       success: false,
       error: error.message || 'An unexpected error occurred'
