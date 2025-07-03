@@ -1,10 +1,10 @@
 
-import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { CreateFormForm } from './form/CreateFormForm';
 import { useForms } from './form/useForms';
 
 export function CreateForm() {
-  const { userRole } = useAuth();
+  const { userRole } = useUserRole();
   const { isLoadingForms } = useForms();
 
   const hasEditAccess = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';

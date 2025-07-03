@@ -1,10 +1,10 @@
 
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield, Users, Link, BarChart3, FileText, Plus, FileClock, FileCheck, BookOpen, ClipboardList } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 
 export function AdminTabs() {
-  const { userRole } = useAuth();
+  const { userRole } = useUserRole();
 
   const isEditor = userRole === 'edit';
   const canPublish = userRole === 'publish' || userRole === 'super-admin';

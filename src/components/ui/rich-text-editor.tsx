@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { RichTextEditorCore } from './rich-text-editor/RichTextEditorCore';
 import { ChangeTrackingIntegration } from './rich-text-editor/ChangeTrackingIntegration';
 
@@ -31,7 +31,7 @@ export function RichTextEditor({
   showChangeTracking = false,
   isNewPolicy = false
 }: RichTextEditorProps) {
-  const { userRole } = useAuth();
+  const { userRole } = useUserRole();
   const [trackingEnabled, setTrackingEnabled] = useState(false);
 
   const handleToggleTracking = () => {

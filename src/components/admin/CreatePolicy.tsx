@@ -1,10 +1,10 @@
 
-import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { CreatePolicyForm } from './policy/CreatePolicyForm';
 import { usePolicies } from './policy/usePolicies';
 
 export function CreatePolicy() {
-  const { userRole } = useAuth();
+  const { userRole } = useUserRole();
   const { fetchPolicies } = usePolicies();
 
   // Check if user has edit access

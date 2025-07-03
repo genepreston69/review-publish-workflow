@@ -1,12 +1,14 @@
 
-import { authConfig } from '@/config/authConfig';
 import { useAuth } from '@/hooks/useAuth';
-import { useMockAuth } from '@/hooks/useMockAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 
 export const useConditionalAuth = () => {
-  if (authConfig.useMockAuth) {
-    return useMockAuth();
-  }
+  const auth = useAuth();
+  const { userRole, isLoading: roleLoading } = useUserRole();
   
-  return useAuth();
+  return {
+    ...auth,
+    userRole,
+    isLoading: auth.isLoading || roleLoading
+  };
 };

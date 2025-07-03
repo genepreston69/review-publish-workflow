@@ -12,7 +12,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Users, Link, BarChart3, Settings, Plus, FileText, FileClock, FileCheck } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const adminItems = [
   {
@@ -43,7 +43,7 @@ interface AdminSidebarProps {
 }
 
 export function AdminSidebar({ onTabChange, activeTab }: AdminSidebarProps) {
-  const { userRole } = useAuth();
+  const { userRole } = useUserRole();
 
   const isEditor = userRole === 'edit';
   const canPublish = userRole === 'publish' || userRole === 'super-admin';

@@ -15,11 +15,11 @@ import {
   Users, FileText, FileClock, FileCheck, Plus, BookOpen, 
   Building, Eye, CheckCircle, BarChart3, Settings, ClipboardList, Archive 
 } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
 
 export function AppSidebar() {
-  const { userRole } = useAuth();
+  const { userRole } = useUserRole();
   const { activeSection, navigateToSection } = useAppNavigation();
 
   const isEditor = userRole === 'edit';

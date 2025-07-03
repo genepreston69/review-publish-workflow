@@ -1,14 +1,16 @@
 
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface DashboardHeaderProps {
-  userRole: string | null;
-  canCreate: boolean;
   onCreateNew: () => void;
 }
 
-export const DashboardHeader = ({ userRole, canCreate, onCreateNew }: DashboardHeaderProps) => {
+export const DashboardHeader = ({ onCreateNew }: DashboardHeaderProps) => {
+  const { userRole } = useUserRole();
+  const canCreate = userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
+
   return (
     <div className="flex justify-between items-center">
       <div>

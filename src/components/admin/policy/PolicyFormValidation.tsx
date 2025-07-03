@@ -1,13 +1,21 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus } from 'lucide-react';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface PolicyFormValidationProps {
-  hasEditAccess: boolean;
+  hasEditAccess?: boolean;
 }
 
 export function PolicyFormValidation({ hasEditAccess }: PolicyFormValidationProps) {
-  if (!hasEditAccess) {
+  const { userRole } = useUserRole();
+  
+  // If hasEditAccess is provided, use it; otherwise calculate from userRole
+  const canEdit = hasEditAccess !== undefined 
+    ? hasEditAccess 
+    : userRole === 'edit' || userRole === 'publish' || userRole === 'super-admin';
+
+  if (!canEdit) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-12">
