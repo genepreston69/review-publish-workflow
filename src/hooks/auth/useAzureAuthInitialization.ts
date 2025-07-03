@@ -20,6 +20,8 @@ export const useAzureAuthInitialization = (
     const initializeAuth = async () => {
       try {
         console.log('=== INITIALIZING MSAL ===');
+        
+        // Wait for MSAL to be fully initialized
         await msalInstance.initialize();
         console.log('=== MSAL INITIALIZED SUCCESSFULLY ===');
         
@@ -27,6 +29,7 @@ export const useAzureAuthInitialization = (
         
         setIsInitialized(true);
         
+        // Now safely get accounts after initialization
         const accounts = msalInstance.getAllAccounts();
         console.log('=== INITIALIZATION - ACCOUNTS FOUND ===', accounts);
         
@@ -65,10 +68,14 @@ export const useAzureAuthInitialization = (
       }
     };
 
-    initializeAuth();
+    // Add a small delay to ensure MSAL instance is ready
+    const timeoutId = setTimeout(() => {
+      initializeAuth();
+    }, 100);
 
     return () => {
       isMounted = false;
+      clearTimeout(timeoutId);
     };
   }, [msalInstance, setCurrentUser, setUserRole]);
 
