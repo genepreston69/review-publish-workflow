@@ -133,7 +133,7 @@ export function HRPolicies() {
           )}
         </div>
 
-        {/* View Mode Toggle */}
+        {/* View Mode Toggle - Always show when there are policies */}
         {hrPolicies.length > 0 && (
           <div className="flex items-center gap-2">
             <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'grid' | 'list' | 'compact')}>
@@ -183,6 +183,7 @@ export function HRPolicies() {
               onUpdateStatus={handleUpdateStatus}
               onDelete={handleDeletePolicy}
               onRefresh={refetchPolicies}
+              hideHeader={true}
             />
           )}
         </>

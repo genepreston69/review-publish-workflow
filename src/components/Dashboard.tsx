@@ -8,13 +8,18 @@ import { PolicyViewModal } from '@/components/admin/policy/PolicyViewModal';
 import { useState } from 'react';
 import { FileText, Shield, Users, BarChart3 } from 'lucide-react';
 import { Policy } from '@/components/admin/policy/types';
+import { useAppNavigation } from '@/hooks/useAppNavigation';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Grid, List, LayoutGrid } from 'lucide-react';
 
 export function Dashboard() {
   console.log('=== DASHBOARD RENDERING ===');
   
   const { userRole } = useAuth();
+  const { activeSection } = useAppNavigation();
   const { hrPolicies, facilityPolicies, isLoadingPolicies } = usePublishedPolicies(userRole);
   const [viewingPolicyId, setViewingPolicyId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'compact'>('grid');
 
   const handleViewPolicy = (policyId: string) => {
     console.log('View policy:', policyId);
@@ -48,12 +53,131 @@ export function Dashboard() {
     publisher: null,
   });
 
-  // For read-only users, show published policies
+  // For read-only users, show published policies based on active section
   if (userRole === 'read-only') {
     const totalPolicies = hrPolicies.length + facilityPolicies.length;
     const fullHrPolicies = hrPolicies.map(convertToFullPolicy);
     const fullFacilityPolicies = facilityPolicies.map(convertToFullPolicy);
     
+    // Show specific section based on navigation
+    if (activeSection === 'hr-policies') {
+      return (
+        <div className="flex-1 space-y-6 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">HR Policies</h1>
+              <p className="text-muted-foreground">
+                Human resources policies and procedures
+              </p>
+              {fullHrPolicies.length > 0 && (
+                <p className="text-sm text-gray-600 mt-1">
+                  {fullHrPolicies.length} published HR {fullHrPolicies.length === 1 ? 'policy' : 'policies'}
+                </p>
+              )}
+            </div>
+
+            {/* View Mode Toggle */}
+            {fullHrPolicies.length > 0 && (
+              <div className="flex items-center gap-2">
+                <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'grid' | 'list' | 'compact')}>
+                  <ToggleGroupItem value="grid" aria-label="Grid view">
+                    <Grid className="h-4 w-4" />
+                    Grid
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="list" aria-label="List view">
+                    <List className="h-4 w-4" />
+                    List
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="compact" aria-label="Compact view">
+                    <LayoutGrid className="h-4 w-4" />
+                    Compact
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+            )}
+          </div>
+
+          {fullHrPolicies.length === 0 ? (
+            <Card>
+              <CardContent className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <Users className="mx-auto h-8 w-8 text-gray-400" />
+                  <h4 className="mt-2 text-sm font-medium">No published HR policies</h4>
+                  <p className="text-xs text-gray-500">
+                    HR policies will appear here when published
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {viewMode === 'list' ? (
+                <PolicyList
+                  policies={fullHrPolicies}
+                  isLoading={isLoadingPolicies}
+                  isEditor={false}
+                  canPublish={false}
+                  onUpdateStatus={() => {}} // Read-only users can't update status
+                  onEdit={() => {}} // Read-only users can't edit
+                  onView={handleViewPolicy}
+                  onDelete={undefined} // Read-only users can't delete
+                />
+              ) : (
+                <FacilityPoliciesGrid
+                  policies={fullHrPolicies}
+                  isEditor={false}
+                  canPublish={false}
+                  isSuperAdmin={false}
+                  compact={viewMode === 'compact'}
+                  hideHeader={true}
+                  onView={handleViewPolicy}
+                  onUpdateStatus={() => {}} // Read-only users can't update status
+                  onDelete={() => {}} // Read-only users can't delete
+                />
+              )}
+            </>
+          )}
+
+          {/* Policy View Modal */}
+          {viewingPolicyId && (
+            <PolicyViewModal
+              policyId={viewingPolicyId}
+              onClose={handleCloseView}
+              onEdit={() => {}} // Read-only users can't edit
+              onUpdateStatus={() => {}} // Read-only users can't update status
+            />
+          )}
+        </div>
+      );
+    }
+
+    if (activeSection === 'facility-policies') {
+      return (
+        <div className="flex-1 space-y-6 p-6">
+          <FacilityPoliciesGrid
+            policies={fullFacilityPolicies}
+            isEditor={false}
+            canPublish={false}
+            isSuperAdmin={false}
+            onView={handleViewPolicy}
+            onUpdateStatus={() => {}} // Read-only users can't update status
+            onDelete={() => {}} // Read-only users can't delete
+          />
+
+          {/* Policy View Modal */}
+          {viewingPolicyId && (
+            <PolicyViewModal
+              policyId={viewingPolicyId}
+              onClose={handleCloseView}
+              onEdit={() => {}} // Read-only users can't edit
+              onUpdateStatus={() => {}} // Read-only users can't update status
+            />
+          )}
+        </div>
+      );
+    }
+
+    // Default dashboard view with stats cards
     return (
       <div className="flex-1 space-y-6 p-6">
         <div>
@@ -99,39 +223,6 @@ export function Dashboard() {
           </Card>
         </div>
 
-        {/* HR Policies Section */}
-        {hrPolicies.length > 0 && (
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-800">HR Policies</h2>
-              <p className="text-slate-600">Human resources policies and procedures</p>
-            </div>
-            <PolicyList
-              policies={fullHrPolicies}
-              isLoading={isLoadingPolicies}
-              isEditor={false}
-              canPublish={false}
-              onUpdateStatus={() => {}} // Read-only users can't update status
-              onEdit={() => {}} // Read-only users can't edit
-              onView={handleViewPolicy}
-              onDelete={undefined} // Read-only users can't delete
-            />
-          </div>
-        )}
-
-        {/* Facility Policies Section */}
-        {facilityPolicies.length > 0 && (
-          <FacilityPoliciesGrid
-            policies={fullFacilityPolicies}
-            isEditor={false}
-            canPublish={false}
-            isSuperAdmin={false}
-            onView={handleViewPolicy}
-            onUpdateStatus={() => {}} // Read-only users can't update status
-            onDelete={() => {}} // Read-only users can't delete
-          />
-        )}
-
         {/* Empty State */}
         {totalPolicies === 0 && !isLoadingPolicies && (
           <Card>
@@ -152,16 +243,6 @@ export function Dashboard() {
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
           </div>
-        )}
-
-        {/* Policy View Modal */}
-        {viewingPolicyId && (
-          <PolicyViewModal
-            policyId={viewingPolicyId}
-            onClose={handleCloseView}
-            onEdit={() => {}} // Read-only users can't edit
-            onUpdateStatus={() => {}} // Read-only users can't update status
-          />
         )}
       </div>
     );

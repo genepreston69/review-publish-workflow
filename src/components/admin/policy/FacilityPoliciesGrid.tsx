@@ -13,6 +13,7 @@ interface FacilityPoliciesGridProps {
   canPublish: boolean;
   isSuperAdmin: boolean;
   compact?: boolean;
+  hideHeader?: boolean;
   onView: (policyId: string) => void;
   onUpdateStatus: (policyId: string, newStatus: string) => void;
   onDelete: (policyId: string) => void;
@@ -25,6 +26,7 @@ export function FacilityPoliciesGrid({
   canPublish,
   isSuperAdmin,
   compact = false,
+  hideHeader = false,
   onView,
   onUpdateStatus,
   onDelete,
@@ -41,44 +43,46 @@ export function FacilityPoliciesGrid({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">Facility Policies</h2>
-          <p className="text-slate-600">View published facility policies and procedures</p>
-          <p className="text-sm text-gray-600 mt-1">
-            {policies.length} published facility {policies.length === 1 ? 'policy' : 'policies'}
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {onRefresh && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRefresh}
-              className="flex items-center gap-1"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Refresh
-            </Button>
-          )}
+      {!hideHeader && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-800">Facility Policies</h2>
+            <p className="text-slate-600">View published facility policies and procedures</p>
+            <p className="text-sm text-gray-600 mt-1">
+              {policies.length} published facility {policies.length === 1 ? 'policy' : 'policies'}
+            </p>
+          </div>
           
-          <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'grid' | 'list' | 'compact')}>
-            <ToggleGroupItem value="grid" aria-label="Grid view">
-              <Grid className="h-4 w-4" />
-              Grid
-            </ToggleGroupItem>
-            <ToggleGroupItem value="list" aria-label="List view">
-              <List className="h-4 w-4" />
-              List
-            </ToggleGroupItem>
-            <ToggleGroupItem value="compact" aria-label="Compact view">
-              <LayoutGrid className="h-4 w-4" />
-              Compact
-            </ToggleGroupItem>
-          </ToggleGroup>
+          <div className="flex items-center gap-2">
+            {onRefresh && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRefresh}
+                className="flex items-center gap-1"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </Button>
+            )}
+            
+            <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'grid' | 'list' | 'compact')}>
+              <ToggleGroupItem value="grid" aria-label="Grid view">
+                <Grid className="h-4 w-4" />
+                Grid
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label="List view">
+                <List className="h-4 w-4" />
+                List
+              </ToggleGroupItem>
+              <ToggleGroupItem value="compact" aria-label="Compact view">
+                <LayoutGrid className="h-4 w-4" />
+                Compact
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className={isListMode ? 'space-y-2' : `grid gap-4 ${isCompactMode ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
         {policies.map((policy) => (
