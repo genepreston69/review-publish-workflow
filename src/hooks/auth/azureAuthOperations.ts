@@ -14,6 +14,9 @@ export const createSignInHandler = (
   setUserRole: (role: UserRole | null) => void
 ) => {
   return async () => {
+    // Prevent login if already logged in
+    if (msalInstance.getActiveAccount()) return;
+    
     try {
       setIsLoading(true);
       console.log('=== STARTING SIGN IN PROCESS ===');
