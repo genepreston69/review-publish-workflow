@@ -1,3 +1,4 @@
+
 import {
   Sidebar,
   SidebarContent,
@@ -85,14 +86,14 @@ export function AppSidebar() {
     },
   ] : [];
 
-  // Admin-only policy items
-  const adminPolicyItems = hasAdminAccess ? [
+  // Tools items - available to all users (including read-only for policy manuals)
+  const toolsItems = [
     {
       id: "policy-manuals",
       title: "Policy Manuals",
       icon: BookOpen,
     },
-  ] : [];
+  ];
 
   // Admin items (super-admin only)
   const adminItems = isSuperAdmin ? [
@@ -165,7 +166,7 @@ export function AppSidebar() {
       <SidebarContent>
         {renderMenuSection(policyItems, "Policies")}
         {renderMenuSection(formItems, "Forms")}
-        {renderMenuSection(adminPolicyItems, "Tools")}
+        {renderMenuSection(toolsItems, "Tools")}
         {renderMenuSection(adminItems, "Administration")}
       </SidebarContent>
 

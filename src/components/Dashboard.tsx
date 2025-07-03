@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/hooks/useAuth';
 import { usePublishedPolicies } from '@/hooks/usePublishedPolicies';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +10,7 @@ import { Policy } from '@/components/admin/policy/types';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Grid, List, LayoutGrid } from 'lucide-react';
+import { PolicyManualGenerator } from './admin/policy/PolicyManualGenerator';
 
 export function Dashboard() {
   console.log('=== DASHBOARD RENDERING ===');
@@ -173,6 +173,14 @@ export function Dashboard() {
               onUpdateStatus={() => {}} // Read-only users can't update status
             />
           )}
+        </div>
+      );
+    }
+
+    if (activeSection === 'policy-manuals') {
+      return (
+        <div className="flex-1 space-y-6 p-6">
+          <PolicyManualGenerator />
         </div>
       );
     }
